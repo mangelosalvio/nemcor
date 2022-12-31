@@ -1,0 +1,35 @@
+.env
+
+/node_modules
+yarn.lock
+
+# dependencies
+/node_modules
+
+# testing
+/client/coverage
+
+# production
+#/client/build
+
+# misc
+.DS_Store
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+/client/.DS_Store
+/client/.env.local
+/client/.env.development.local
+/client/.env.test.local
+/client/.env.production.local
+
+/client/npm-debug.log*
+/client/yarn-debug.log*
+/client/yarn-error.log*
+
+yarn-error.log
+*.txt
+*.xlsx
+virtual-receipts.txt

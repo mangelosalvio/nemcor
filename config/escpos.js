@@ -1,0 +1,18 @@
+module.exports = {
+  INITALIZE: "\x1b\x40",
+  ALIGN_LEFT: "\x1b\x61\x00",
+  ALIGN_CENTER: "\x1b\x61\x01",
+  ALIGN_RIGHT: "\x1b\x61\x02",
+  CARRIAGE_RETURN: "\x0d",
+  EMPHASIZE: "\x1b\x21\x38",
+  NORMAL: "\x1b\x21\x00",
+  CUT: "\x1d\x56\x00",
+  BOLD: "\x1b\x45\x01",
+  BOLD_OFF: "\x1b\x45\x00",
+  FONT_A: "\x1b\x4d\x48",
+  FONT_B: "\x1b\x4d\x49",
+  UNDERLINE_ON: "\x1b\x2d\x01",
+  UNDERLINE_OFF: "\x1b\x2d\x00",
+  OPEN_DRAWER_1: "\x1b\x70\x00",
+  OPEN_DRAWER_2: "\x1b\x70\x01",
+};

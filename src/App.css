@@ -1,0 +1,891 @@
+.Aligner {
+  display: flex;
+  height: 100%;
+  justify-content: center;
+  align-content: center;
+  align-items: center;
+}
+
+.Aligner-item {
+  display: flex;
+  width: 800px;
+  height: 600px;
+  flex-direction: column;
+}
+
+.Aligner-item > div {
+  text-align: center;
+}
+
+.dtr-options-container {
+  padding: 0.5rem;
+  flex: 1;
+  text-align: center;
+}
+
+.dtr-options-container .control {
+  text-align: center;
+}
+
+.dtr-options-container label {
+  padding: 20px;
+}
+
+.dtr-options-container label input {
+  margin-right: 6px;
+}
+
+.date-container {
+  flex: 1;
+  font-size: 2rem;
+}
+
+.time-container {
+  font-size: 6rem;
+  font-weight: bold;
+  flex: 2;
+}
+
+.id-number-container {
+  flex: 1;
+  text-align: center;
+}
+.id-number-container input {
+  height: 100%;
+  width: 300px;
+  font-size: 20px;
+  text-align: right;
+}
+.id-number-container input {
+  padding: 0.5rem;
+}
+
+.table-container {
+  flex: 4;
+  padding-top: 1rem;
+}
+
+.Aligner-item--top {
+  align-self: flex-start;
+}
+
+.Aligner-item--bottom {
+  align-self: flex-end;
+}
+
+form {
+  height: 100%;
+}
+
+.container-is-fullheight,
+.full-height,
+.is-full-height {
+  height: 100% !important;
+  background-color: #fff;
+}
+
+.full-width {
+  width: 100% !important;
+}
+
+.full-bordered {
+  border: 1px solid #000;
+}
+
+.OrderForm--category-container {
+  font-size: 9px;
+  text-align: center;
+  outline: 1px solid #fff;
+  font-weight: bold;
+  line-height: 1.3vw;
+  height: 4vw;
+  width: 50%;
+  display: inline-block;
+  word-wrap: break-word;
+  font-size: 0.8vw;
+  padding: 0.3vw 0.2vw;
+}
+
+.OrderForm--product-container {
+  font-size: 9px;
+  text-align: center;
+  outline: 1px solid #fff;
+  font-weight: bold;
+  height: 4vw;
+  line-height: 1vw;
+  width: 10%;
+  word-wrap: break-word;
+  font-size: 0.8vw;
+  padding: 0.3vw 0.2vw;
+}
+
+.OrderForm--orders-table tbody td {
+  font-size: 1vw;
+  line-height: 1.3vw;
+  padding: 1vw 0.3vw;
+}
+.OrderForm--orders-table tbody td div.is-small {
+  padding-left: 6px;
+  font-size: 10px;
+}
+.OrderForm--amount-container {
+  font-size: 2.5rem;
+  font-weight: bold;
+  border-top: 1px solid #000;
+}
+.flex {
+  display: flex !important;
+}
+
+.flex-1 {
+  flex: 1 !important;
+}
+.flex-10 {
+  flex: 10;
+}
+.flex-2 {
+  flex: 2;
+}
+
+.flex-column {
+  flex-direction: column;
+}
+
+.flex-row {
+  flex-direction: row;
+}
+
+.display-none {
+  display: none !important;
+}
+
+div.react-date-picker__button__input {
+  padding: 0.5rem !important;
+}
+
+div.react-date-picker__wrapper {
+  border: 1px solid #dbdbdb !important;
+  border-radius: 4px !important;
+  padding: 4px;
+}
+
+#components-form-demo-normal-login .login-form {
+  max-width: 300px;
+}
+#components-form-demo-normal-login .login-form-forgot {
+  float: right;
+}
+#components-form-demo-normal-login .login-form-button {
+  width: 100%;
+}
+
+.inv-input {
+  border: none;
+  width: 100%;
+  background-color: transparent;
+}
+
+table.product-order-table tbody tr td:nth-child(1) {
+  width: 140px;
+  font-size: 1.5rem;
+}
+
+table.product-order-table tbody td {
+  vertical-align: middle !important;
+}
+
+table.product-order-table tbody tr td:nth-child(1) input {
+  font-size: 1.5rem;
+}
+
+table.product-order-table tbody tr td {
+  padding: 20px;
+}
+
+table.product-order-table tbody tr td:nth-child(4) button,
+table.product-order-table tbody tr td:nth-child(5) button {
+  width: 80px !important;
+}
+
+table.product-order-table tbody tr td:nth-child(2) {
+  font-size: 1.5rem;
+  vertical-align: middle;
+}
+
+.record-log {
+  font-size: 10px !important;
+}
+
+.product-add-on {
+  padding-left: 16px !important;
+}
+
+div.m-b-0 {
+  margin-bottom: 0px !important;
+}
+
+.m-b-1 {
+  margin-bottom: 16px;
+}
+.m-l-1 {
+  margin-left: 16px;
+}
+
+.b-t-3 {
+  border-top: 3px solid #000 !important;
+}
+
+.height-80 {
+  min-height: 80% !important;
+}
+
+.print {
+  color: #000 !important;
+  background-color: #fff !important;
+}
+
+.print * {
+  color: #000 !important;
+  border-color: #000 !important;
+}
+
+.print table {
+  font-size: 10px !important;
+}
+
+.print .ant-list-bordered {
+  border: none !important;
+}
+
+.print span.print-title {
+  font-size: 12px !important;
+}
+
+.print .ant-list-item {
+  padding: 5px 0px !important;
+}
+
+.print .ant-list-item-meta {
+  margin: 0px !important;
+}
+
+.print table thead th,
+.print table thead td {
+  text-transform: uppercase !important;
+}
+
+.print table tr.has-background-danger td {
+  background: #fff;
+  font-weight: bold;
+  color: #000;
+}
+
+.print table td {
+  padding: 2px !important;
+}
+
+.print .ant-table-tbody tr td {
+  padding: 0px !important;
+}
+
+.print button {
+  display: none;
+}
+
+.print .ant-list-item-meta-title span {
+  font-size: 10px !important;
+  font-weight: normal;
+}
+
+.print .report-heading {
+  font-size: 10px;
+}
+.print .anticon.anticon-snippets {
+  display: none;
+}
+
+.print .anticon {
+  display: none;
+}
+
+.footer-summary {
+  border-top: 3px double #000;
+}
+
+.cashier-button {
+  height: 50px !important;
+}
+
+.ant-table-body,
+.ant-table-thead {
+  font-size: 11px !important;
+}
+
+.ant-table.ant-table-small {
+  font-size: 11px !important;
+}
+
+.is-selected {
+  background-image: url("./images/check-bg.png");
+  background-repeat: no-repeat;
+  background-size: contain;
+  background-position: center;
+}
+
+.table-selection {
+  height: 120px !important;
+  font-size: 30px;
+  font-weight: bold;
+  line-height: 90px;
+}
+
+.module-heading {
+  letter-spacing: 5px;
+  font-size: 20px;
+  font-weight: bold;
+  text-align: center;
+}
+
+.cls-1 {
+  opacity: 0.25;
+}
+
+.st1,
+.cls-3 {
+  fill: #000;
+  fill-opacity: 0.1 !important;
+  stroke: #000;
+}
+
+.is-occupied {
+  fill: #f00 !important;
+  fill-opacity: 0.1 !important;
+  stroke: #f00;
+}
+
+.logo {
+  text-align: center;
+  color: #fff;
+  padding: 24px;
+  font-size: 18px;
+}
+
+.amount-due {
+  font-size: 60px;
+  font-weight: bold;
+}
+
+.cashier-buttons {
+  height: 55px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #0e7651;
+  margin: 2px;
+  color: #fff;
+  border-radius: 2px;
+  font-size: 11px;
+}
+
+.is-item-selected,
+.is-senior-item-selected,
+.is-item-selected:hover td {
+  background-color: #018901;
+  color: #fff;
+  font-weight: bold;
+}
+
+div.report-heading {
+  font-size: 11px;
+}
+
+.ant-table td {
+  vertical-align: middle;
+}
+
+.ant-table .ant-table-content .ant-table-body tr.ant-table-row:hover td {
+  background-color: #018901;
+  color: #fff;
+}
+.ant-table-tbody
+  > tr:hover:not(.ant-table-expanded-row):not(.ant-table-row-selected)
+  > td {
+  background: inherit;
+}
+
+.MuiInputBase-input.MuiInput-input {
+  font-size: 14px;
+  color: rgba(0, 0, 0, 0.6);
+}
+
+.MuiFormControl-root.MuiTextField-root {
+  border: 1px solid rgb(217, 217, 217);
+  border-radius: 4px;
+  padding: 0px 11px;
+}
+
+.has-error .MuiFormControl-root.MuiTextField-root {
+  border: 1px solid #f5222d;
+}
+.module-title {
+  font-size: 18px;
+  font-weight: bold;
+}
+
+.footer-summary td {
+  border-top: 3px double #000 !important;
+}
+
+.is-flex {
+  display: flex;
+}
+
+.flex-direction-column {
+  flex-direction: column;
+}
+.flex-direction-row {
+  flex-direction: row;
+}
+
+.flex-wrap {
+  flex-wrap: wrap;
+}
+
+.pad-container {
+  padding: 1vw;
+}
+
+.option-button {
+  height: 3vw !important;
+  width: 10vw;
+  line-height: 3vw;
+  margin: 0.3vw;
+}
+.option-button * {
+  font-size: 1vw;
+}
+
+.order-item-display td * {
+  font-size: 1vw;
+}
+
+.msalvio-logo {
+  width: 20%;
+}
+
+.align-items-center {
+  align-items: center;
+}
+
+.justify-content-center {
+  justify-content: center;
+}
+.justify-content-flex-end {
+  justify-content: flex-end;
+}
+.bg-white {
+  background-color: #fff;
+}
+div.option-billing-button {
+  height: 5vw;
+  line-height: 40px;
+  margin: 3px;
+  color: #000 !important;
+  font-size: 1vw;
+  width: 47%;
+}
+
+.align-content-start {
+  align-content: flex-start;
+}
+
+.is-primary.update-button {
+  color: #000 !important;
+  font-weight: bold;
+  font-size: 1.3vw;
+  line-height: 1.3vw;
+  height: 3.5vw;
+  margin: 3px;
+}
+
+.content-padding {
+  padding: 0px 50px;
+}
+
+.add-button-height {
+  padding-top: 30px;
+}
+.add-button-height input[type="button"] {
+  height: 32px;
+  text-align: center;
+}
+.summary {
+  font-weight: bold;
+  font-size: 10px;
+}
+
+.ant-table-row-cell-break-word .ant-input {
+  font-size: 10px !important;
+  text-align: right;
+}
+
+.ant-menu .fas {
+  padding-right: 8px;
+}
+
+.print * {
+  color: rgba(0, 0, 0, 1);
+  border-color: #000;
+  background-color: #fff !important;
+  font-size: 10px !important;
+}
+
+.print.inventory-print * {
+  font-size: 11px !important;
+  font-family: Arial, Helvetica, sans-serif;
+  color: #000;
+}
+
+.inventory-print .signatories-container {
+  margin-top: 8px;
+}
+
+.inventory-print .signatory {
+  border-top: 1px solid #000;
+  margin-top: 32px;
+  text-align: center;
+}
+.inline-block {
+  display: inline-block;
+}
+.print.inventory-print .is-size-5 {
+  font-size: 0.75rem !important;
+  font-weight: bold;
+}
+
+.print.inventory-print .ref-number {
+  font-size: 1rem !important;
+  font-weight: bold;
+}
+.align-items-flex-end {
+  align-items: flex-end;
+}
+
+.search-col .ant-checkbox-group-item {
+  min-width: 200px;
+}
+
+.pad-l-1 {
+  padding-left: 8px;
+}
+.pad-l-2 {
+  padding-left: 16px;
+}
+.pad-l-3 {
+  padding-left: 24px;
+}
+.label-heading {
+  font-weight: bold;
+  font-size: 11px;
+}
+
+.underline-input {
+  display: inline-block;
+  width: 50px;
+  border-bottom: 1px solid #000;
+  padding: 0px 15px;
+}
+
+.overflow-auto {
+  overflow: auto;
+}
+
+.ant-table-thead > tr > th,
+.ant-table-tbody > tr > td {
+  vertical-align: middle;
+  padding: 0px !important;
+  padding: 8px 2px !important;
+}
+.ant-form-item {
+  margin-bottom: 4px !important;
+}
+
+.stock-category-search {
+  justify-content: flex-end;
+  align-items: center;
+}
+.stock-category-search .ant-form-item {
+  margin-bottom: 0px !important;
+}
+
+.m-t-1 {
+  margin-top: 16px !important;
+}
+.m-t-5 {
+  margin-top: 34px;
+}
+
+.pad-right-8 {
+  padding-right: 8px;
+}
+.pad-top-button {
+  padding-top: 26px;
+}
+
+.input-price {
+  width: 100px !important;
+  text-align: right;
+}
+
+input[disabled],
+select[disabled],
+.ant-select-disabled span {
+  font-weight: bold;
+  color: #000 !important;
+}
+
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Firefox */
+input[type="number"] {
+  -moz-appearance: textfield;
+}
+.print .report-title {
+  font-size: 16px !important;
+  font-weight: bold;
+}
+.print .ant-table table {
+  border-collapse: collapse;
+}
+.print .ant-table-thead th {
+  /* border-left: 1px solid #000;
+  border-right: 1px solid #000; */
+  border-top: 1px solid #000;
+}
+
+.print .ant-table-tbody > tr > td {
+  border-bottom: none;
+}
+
+.print .delivery-report .ant-table-thead th {
+  border-left: 1px solid #000;
+  border-right: 1px solid #000;
+  border-top: 1px solid #000;
+}
+.print .delivery-report .ant-table-tbody td {
+  font-size: 14px !important;
+  border-left: 1px solid #000;
+  border-right: 1px solid #000;
+  padding: 4px 4px !important;
+}
+
+.print .delivery-report .ant-table-tbody > tr > td {
+  border-bottom: 1px solid #000;
+}
+
+.page-break-after {
+  page-break-after: always;
+}
+.items-entry-form .ant-select-selector,
+.items-entry-form div.ant-select-item.ant-select-option,
+div.ant-select-item-option-content,
+.ant-select-selection-item {
+  font-size: 10px !important;
+}
+
+.ant-menu-sub > .ant-menu-item {
+  height: 30px !important;
+  line-height: 30px !important;
+}
+
+@media print {
+  .report-container {
+    padding: 1rem 3rem;
+  }
+  .print {
+    padding: 1rem;
+  }
+}
+
+.field-button-padding {
+  margin-top: 29px;
+}
+
+.report-container table {
+  width: 100%;
+  font-size: 11px;
+  border-collapse: collapse;
+}
+
+.report-container table thead tr th {
+  border: 1px solid #000 !important;
+  text-align: center;
+}
+.report-container table tbody td {
+  border: 1px solid #000;
+}
+
+.print .aging-footer {
+  margin-top: 16px;
+  font-size: 11px;
+  padding: 6px;
+  background-color: transparent;
+  border-top: 3px solid #000;
+}
+
+.aging-footer {
+  margin-top: 16px;
+  font-size: 11px;
+  padding: 6px;
+}
+
+.aging-footer > div:nth-child(2) {
+  font-weight: bold;
+  text-align: right;
+}
+
+.payment-status-button {
+  font-size: 10px !important;
+  padding: 2px !important;
+  margin: 4px 2px;
+}
+
+.danger-button {
+  background-color: red !important;
+}
+
+.width-100px {
+  width: 100px !important;
+}
+.width-40px {
+  width: 40px !important;
+}
+
+.payroll-table input[type="number"] {
+  -moz-appearance: textfield;
+}
+
+.attendance-table .fas {
+  cursor: pointer;
+}
+
+.attendance-table .fas {
+  font-size: 16px;
+  padding-right: 1rem;
+}
+
+.attendance-table .fas.fa-user-check {
+  color: green;
+}
+
+.attendance-table .fas.fa-user-times {
+  color: red;
+}
+
+.attendance-table .fas.fa-user-clock {
+  color: orange;
+}
+
+.attendance-table .fas.fa-business-time {
+  color: orange;
+}
+.attendance-table .fas.fa-clock {
+  color: orange;
+}
+.attendance-table .fas.fa-frown,
+.attendance-table .fas.fa-random {
+  color: orange;
+}
+
+.attendance-table .ant-checkbox + span {
+  font-size: 10px !important;
+  font-weight: bold;
+}
+
+.attendance-table input {
+  font-size: 10px;
+  width: 50px;
+}
+
+.tableFixHead {
+  overflow: auto;
+  max-height: 500px;
+  width: 100%;
+}
+
+.tableFixHead table {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+.tableFixHead th,
+.tableFixHead td {
+  padding: 4px;
+  font-size: 9px;
+  border: 1px solid #000;
+}
+
+.tableFixHead td:first-child,
+.tableFixHead th:first-child {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  background-color: white;
+}
+.tableFixHead tr td:nth-child(2),
+.tableFixHead tr th:nth-child(2) {
+  position: sticky;
+  left: 20px;
+  z-index: 1;
+  background-color: white;
+}
+.tableFixHead th {
+  position: sticky;
+  top: 0;
+  background: #eee;
+  z-index: 2;
+}
+.tableFixHead tr:first-child th:first-child,
+.tableFixHead tr:first-child th:nth-child(2) {
+  z-index: 3;
+}
+
+table.payroll-table {
+  table-layout: fixed;
+  overflow-x: visible;
+  overflow-y: visible;
+}
+
+table.payroll-table tbody td {
+  font-size: 12px;
+  border-top: 1px dashed #c0c0c0;
+}
+
+table.payroll-table thead th {
+  font-size: 12px;
+}
+
+table.payroll-table tbody input {
+  font-size: 12px;
+  padding: 2px;
+  text-align: right;
+}
+
+.tbl-container ::-webkit-scrollbar {
+  -webkit-appearance: none;
+  width: 7px;
+}
+
+.tbl-container ::-webkit-scrollbar-thumb {
+  border-radius: 4px;
+  background-color: rgba(0, 0, 0, 0.5);
+  box-shadow: 0 0 1px rgba(255, 255, 255, 0.5);
+}
+
+.payroll-table label span {
+  font-size: 8px;
+}

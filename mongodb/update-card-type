@@ -1,0 +1,21 @@
+db.sales.updateMany({
+  'payments.credit_cards' : {
+    $exists : true
+  },
+  'payments.credit_cards.credit_card.card_type' : {
+    $exists : false
+  }
+}, {
+  $set : {
+    'payments.credit_cards.$[elem].credit_card.card_type' : 'Credit'
+  }
+},{
+  arrayFilters : [
+    {
+      'elem.credit_card.card_type' : {
+        $exists : false
+      }
+    }
+  ],
+  multi : true
+})
