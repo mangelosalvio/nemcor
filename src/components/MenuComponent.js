@@ -73,9 +73,9 @@ const MenuComponent = ({ component: Component, auth, logoutUser, ...rest }) => {
               <MenuPermission to="/areas" label="Areas" />
               <MenuPermission to="/suppliers" label="Suppliers" /> */}
               <MenuPermission to="/companies" label="Companies" />
-              <MenuPermission to="/products" label="Products" />
+              {/* <MenuPermission to="/products" label="Products" /> */}
               <MenuPermission to="/employees" label="Employees" />
-              <MenuPermission to="/customers" label="Customers" />
+              {/* <MenuPermission to="/customers" label="Customers" /> */}
               <MenuPermission to="/branches" label="Branches" />
             </SubMenu>
 
