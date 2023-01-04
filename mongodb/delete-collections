@@ -56,6 +56,7 @@ db.sales_returns_other_sets.drop();
 db.scheduled_deductions.drop();
 db.sellers.drop();
 db.staffs.drop();
+db.stocks_receivings.drop();
 db.stock_releasings.drop();
 db.stock_transfers.drop();
 db.supplier_withdrawals.drop();

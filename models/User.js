@@ -6,6 +6,7 @@ const UserSchema = require("./UserSchema");
 
 const ModelSchema = new Schema({
   ...UserSchema,
+  password: String,
   role: String,
   branches: [
     {

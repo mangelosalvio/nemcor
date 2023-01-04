@@ -401,7 +401,7 @@ router.put("/", (req, res) => {
 
       const role_permission = await RolePermission.findOne({
         role: req.body.role,
-      });
+      }).lean();
 
       let permissions = [];
 
@@ -420,7 +420,7 @@ router.put("/", (req, res) => {
       });
 
       bcrypt.genSalt(10, (err, salt) => {
-        bcrypt.hash(newUser.password, salt, (err, hash) => {
+        bcrypt.hash(req.body.password, salt, (err, hash) => {
           if (err) throw err;
           newUser.password = hash;
           newUser
