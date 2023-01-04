@@ -75,7 +75,7 @@
     "eject": "react-scripts eject",
     "dev": "concurrently \"yarn start\"  \"nodemon server.js\" "
   },
-  "proxy": "http://127.0.0.1:5031",
+  "proxy": "http://127.0.0.1:5035",
   "browserslist": {
     "production": [
       ">0.2%",
