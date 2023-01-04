@@ -44,7 +44,7 @@ router.get("/:id/permissions", (req, res) => {
     .then((user) =>
       res.json({
         permissions: user?.permissions || [],
-        branch: user?.branch || [],
+        branches: user?.branches || [],
       })
     )
     .catch((err) => console.log(err));

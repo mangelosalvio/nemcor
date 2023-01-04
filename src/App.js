@@ -21,8 +21,8 @@ if (localStorage.getItem("jwtToken")) {
   axios
     .get(`/api/users/${decoded.id}/permissions`)
     .then((response) => {
-      const { permissions, branch = [] } = response.data;
-      store.dispatch(setCurrentUser({ ...decoded, permissions, branch }));
+      const { permissions, branches = [] } = response.data;
+      store.dispatch(setCurrentUser({ ...decoded, permissions, branches }));
     })
     .catch((err) => console.log(err));
 

@@ -6,6 +6,7 @@ const Schema = mongoose.Schema;
 
 const PayrollSchema = new Schema({
   cv_no: Number,
+  branch_reference: String,
 
   period_covered: [Date],
   employee: {

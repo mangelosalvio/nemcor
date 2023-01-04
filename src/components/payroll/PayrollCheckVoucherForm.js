@@ -91,7 +91,15 @@ export default function PayrollCheckVoucherForm({ history }) {
   const getReport = useCallback(({ ...form_data }) => {
     const source = axios.CancelToken.source();
 
-    if (form_data.period_covered) {
+    if (
+      isEmpty(form_data?.branch?._id) ||
+      isEmpty(form_data?.period_covered?.[0]) ||
+      isEmpty(form_data?.period_covered?.[1])
+    ) {
+      return message.error("Branch and period covered are required");
+    }
+
+    if (form_data.period_covered && form_data.branch?._id) {
       const loading = message.loading("Loading...");
       axios
         .post(`${url}period-report`, form_data, {
@@ -226,7 +234,7 @@ export default function PayrollCheckVoucherForm({ history }) {
           </Col>
         </Row>
         <Row>
-          <Col span={24}>
+          {/* <Col span={24}>
             <SelectTagFieldGroup
               label="Employees"
               value={state.employees}
@@ -250,7 +258,7 @@ export default function PayrollCheckVoucherForm({ history }) {
               }))}
               formItemLayout={formItemLayout}
             />
-          </Col>
+          </Col> */}
           <Col span={24}>
             <SelectFieldGroup
               label="Branch"
@@ -317,7 +325,7 @@ export default function PayrollCheckVoucherForm({ history }) {
               });
             return ["Original Copy", "Employee's Copy"].map((copy) => (
               <div
-                key={index}
+                key={`${copy} ${index}`}
                 className={classnames("report-heading ", {
                   "page-break-after m-t-5 ": copy === "Employee's Copy",
                   "bottom-border-dashed": copy === "Original Copy",
@@ -332,11 +340,11 @@ export default function PayrollCheckVoucherForm({ history }) {
                   {/* <Col span={12} className="is-flex align-items-flex-end">
                   Payee : {o?.employee?.name}
                 </Col> */}
-                  <Col offset={20} span={4}>
+                  <Col offset={18} span={6}>
                     <div className="is-flex">
-                      <div>CV #:</div>
+                      <div>Ref:</div>
                       <div className="flex-1 b-b-1 has-text-centered">
-                        {o.cv_no}
+                        {o.branch_reference}
                       </div>
                     </div>
                     <div className="is-flex">

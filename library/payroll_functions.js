@@ -21,6 +21,7 @@ const Attendance = require("../models/Attendance");
 const util = require("util");
 const ScheduledDeduction = require("../models/ScheduledDeduction");
 const { STATUS_PAID } = require("../config/constants");
+const BranchCounter = require("../models/BranchCounter");
 
 const ObjectId = mongoose.Types.ObjectId;
 
@@ -41,13 +42,14 @@ module.exports.getDaysInArray = ({ period_covered }) => {
   return dates;
 };
 
-module.exports.updateCheckVoucherRefefence = ({ period_covered }) => {
+module.exports.updateCheckVoucherRefefence = ({ period_covered, branch }) => {
   return new Promise((resolve, reject) => {
     Payroll.find({
       period_covered: [
         period_covered[0].clone().toDate(),
         period_covered[1].clone().toDate(),
       ],
+      "branch._id": ObjectId(branch._id),
     })
       .sort({
         "employee.name": 1,
@@ -59,6 +61,24 @@ module.exports.updateCheckVoucherRefefence = ({ period_covered }) => {
 
             record.set({
               cv_no: counter_result.next,
+            });
+            await record.save();
+          }
+
+          if (isEmpty(record.branch_reference)) {
+            const counter_result = await BranchCounter.increment(
+              "cv_no",
+              branch
+            );
+
+            const next = counter_result.next;
+
+            const branch_reference = `${branch?.company?.company_code}-${
+              branch?.name
+            }-${next.toString()?.padStart(5, "0")}`;
+
+            record.set({
+              branch_reference,
             });
             await record.save();
           }

@@ -781,10 +781,11 @@ export default function PayrollForm({ history }) {
                               {numberFormat(record.total_premium_deductions)}
                             </td>
                             {deductions.map((deduction, index) => {
-                              const value =
-                                (record.deductions || [])?.filter((o) => {
+                              const value = (record.deductions || [])?.filter(
+                                (o) => {
                                   return o.deduction === deduction.name;
-                                })?.[0]?.amount || "";
+                                }
+                              )?.[0]?.amount;
                               return record.is_expense ? (
                                 <td />
                               ) : (

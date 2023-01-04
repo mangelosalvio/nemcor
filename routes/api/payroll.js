@@ -1079,11 +1079,12 @@ router.post("/period-report", async (req, res) => {
     moment(req.body.period_covered[0]).startOf("day"),
     moment(req.body.period_covered[1]).endOf("day"),
   ];
+  const branch = req.body.branch;
 
   const { is_cv_form = false, is_fa_cv_form = false } = req.body;
 
   if (is_cv_form) {
-    await updateCheckVoucherRefefence({ period_covered });
+    await updateCheckVoucherRefefence({ period_covered, branch });
   } else if (is_fa_cv_form) {
     await updateCheckVoucherFinancialAssistanceRefefence({ period_covered });
   }
