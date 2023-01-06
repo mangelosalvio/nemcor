@@ -22,6 +22,7 @@ const SelectFieldGroup = ({
   disabled,
   help,
   loading = false,
+  onFocus,
 }) => (
   <Form.Item
     name={name}
@@ -32,6 +33,7 @@ const SelectFieldGroup = ({
   >
     <div>
       <Select
+        onFocus={onFocus}
         loading={loading}
         disabled={disabled}
         showSearch

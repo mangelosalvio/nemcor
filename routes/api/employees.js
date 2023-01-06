@@ -1,3 +1,4 @@
+const mongoose = require("mongoose");
 const express = require("express");
 const router = express.Router();
 const Employee = require("./../../models/Employee");
@@ -5,8 +6,11 @@ const isEmpty = require("./../../validators/is-empty");
 const filterId = require("./../../utils/filterId");
 const validateInput = require("./../../validators/employees");
 const moment = require("moment-timezone");
+const { CANCELLED } = require("../../config/constants");
+const constants = require("../../config/constants");
 
 const Model = Employee;
+const ObjectId = mongoose.Types.ObjectId;
 
 router.get("/listings", (req, res) => {
   const string = req.query.s
@@ -110,6 +114,7 @@ router.put("/", (req, res) => {
 
 router.post("/paginate", (req, res) => {
   let page = req.body.page || 1;
+  let advance_search = req.body.advance_search || {};
 
   const form_data = {
     ...(!isEmpty(req.body.s) && {
@@ -119,17 +124,53 @@ router.post("/paginate", (req, res) => {
     }),
   };
 
-  Model.paginate(form_data, {
-    sort: {
-      name: 1,
+  Model.paginate(
+    {
+      ...form_data,
+      ...(advance_search.branch?._id && {
+        "branch._id": ObjectId(advance_search.branch?._id),
+      }),
+      "status.approval_status": {
+        $ne: constants.CANCELLED,
+      },
     },
-    page,
-    limit: 10,
-  })
+    {
+      sort: {
+        name: 1,
+      },
+      page,
+      limit: 10,
+    }
+  )
     .then((records) => {
       return res.json(records);
     })
     .catch((err) => console.log(err));
+});
+router.post("/:id/contribution", async (req, res) => {
+  const applicable_contributions = [
+    "weekly_sss_contribution",
+    "weekly_philhealth_contribution",
+    "weekly_hdmf_contribution",
+  ];
+  const { contribution, amount } = req.body;
+
+  if (!applicable_contributions.includes(contribution)) {
+    return res.status(401).json({ msg: "Contribution not found" });
+  }
+
+  await Employee.updateOne(
+    {
+      _id: ObjectId(req.params.id),
+    },
+    {
+      $set: {
+        [contribution]: amount,
+      },
+    }
+  );
+
+  return res.json(true);
 });
 
 router.post("/:id", (req, res) => {

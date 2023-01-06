@@ -323,162 +323,166 @@ export default function PayrollCheckVoucherForm({ history }) {
               .map((day, i) => {
                 return `${moment(day.date).format("MM/DD/YYYY")}`;
               });
-            return ["Original Copy", "Employee's Copy"].map((copy) => (
-              <div
-                key={`${copy} ${index}`}
-                className={classnames("report-heading ", {
-                  "page-break-after m-t-5 ": copy === "Employee's Copy",
-                  "bottom-border-dashed": copy === "Original Copy",
-                })}
-              >
-                <CheckVoucherHeading
-                  title="PAYSLIP VOUCHER"
-                  type_of_copy={copy}
-                  branch={o.employee?.branch}
-                />
-                <Row className="cv-reference">
-                  {/* <Col span={12} className="is-flex align-items-flex-end">
+            return ["Original Copy", "Employee's Copy"].map(
+              (copy, copy_index) => (
+                <div
+                  key={`${copy} ${index}`}
+                  className={classnames(
+                    `report-heading payroll-check-voucher-${copy_index % 2}`,
+                    {
+                      "page-break-after m-t-5 ": copy === "Employee's Copy",
+                      "bottom-border-dashed": copy === "Original Copy",
+                    }
+                  )}
+                >
+                  <CheckVoucherHeading
+                    title="PAYSLIP VOUCHER"
+                    type_of_copy={copy}
+                    branch={o.employee?.branch}
+                  />
+                  <Row className="cv-reference">
+                    {/* <Col span={12} className="is-flex align-items-flex-end">
                   Payee : {o?.employee?.name}
                 </Col> */}
-                  <Col offset={18} span={6}>
-                    <div className="is-flex">
-                      <div>Ref:</div>
-                      <div className="flex-1 b-b-1 has-text-centered">
-                        {o.branch_reference}
+                    <Col offset={18} span={6}>
+                      <div className="is-flex">
+                        <div>Ref:</div>
+                        <div className="flex-1 b-b-1 has-text-centered">
+                          {o.branch_reference}
+                        </div>
                       </div>
-                    </div>
-                    <div className="is-flex">
-                      <div>Date:</div>
-                      <div className="flex-1 b-b-1 has-text-centered">
-                        {moment(days[days.length - 1]).format("MM/DD/YYYY")}
+                      <div className="is-flex">
+                        <div>Date:</div>
+                        <div className="flex-1 b-b-1 has-text-centered">
+                          {moment(days[days.length - 1]).format("MM/DD/YYYY")}
+                        </div>
                       </div>
-                    </div>
-                  </Col>
-                </Row>
+                    </Col>
+                  </Row>
 
-                <Row gutter={8}>
-                  <Col span={12}>
-                    <table className="is-full-width">
-                      <tbody>
-                        <tr>
-                          <td style={{ width: "150px" }}>Employee Name</td>
-                          <td className="b-b-1 has-text-weight-bold">
-                            {o?.employee?.name}
-                          </td>
-                        </tr>
-                        <tr>
-                          <td>SSS No.</td>
-                          <td className="b-b-1">{o?.employee?.sss_no}</td>
-                        </tr>
-                        <tr>
-                          <td>Philhealth No.</td>
-                          <td className="b-b-1">
-                            {o?.employee?.philhealth_no}
-                          </td>
-                        </tr>
-                      </tbody>
-                    </table>
-                  </Col>
-                  <Col span={12}>
-                    <table className="is-full-width">
-                      <tbody>
-                        <tr>
-                          <td>Company/Branch</td>
-                          <td className="b-b-1 has-text-weight-bold">
-                            {o?.employee?.branch?.company?.name || ""} /{" "}
-                            {o?.employee?.branch?.name || ""}
-                          </td>
-                        </tr>
-                        <tr>
-                          <td style={{ width: "150px" }}>HDMF No.</td>
-                          <td className="b-b-1">{o?.employee?.hdmf_no}</td>
-                        </tr>
-                        <tr>
-                          <td>TIN</td>
-                          <td className="b-b-1"> {o?.employee?.tin}</td>
-                        </tr>
-                      </tbody>
-                    </table>
-                  </Col>
-                </Row>
+                  <Row gutter={8}>
+                    <Col span={12}>
+                      <table className="is-full-width">
+                        <tbody>
+                          <tr>
+                            <td style={{ width: "150px" }}>Employee Name</td>
+                            <td className="b-b-1 has-text-weight-bold">
+                              {o?.employee?.name}
+                            </td>
+                          </tr>
+                          <tr>
+                            <td>SSS No.</td>
+                            <td className="b-b-1">{o?.employee?.sss_no}</td>
+                          </tr>
+                          <tr>
+                            <td>Philhealth No.</td>
+                            <td className="b-b-1">
+                              {o?.employee?.philhealth_no}
+                            </td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </Col>
+                    <Col span={12}>
+                      <table className="is-full-width">
+                        <tbody>
+                          <tr>
+                            <td>Company/Branch</td>
+                            <td className="b-b-1 has-text-weight-bold">
+                              {o?.employee?.branch?.company?.name || ""} /{" "}
+                              {o?.employee?.branch?.name || ""}
+                            </td>
+                          </tr>
+                          <tr>
+                            <td style={{ width: "150px" }}>HDMF No.</td>
+                            <td className="b-b-1">{o?.employee?.hdmf_no}</td>
+                          </tr>
+                          <tr>
+                            <td>TIN</td>
+                            <td className="b-b-1"> {o?.employee?.tin}</td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </Col>
+                  </Row>
 
-                <div>Explanation</div>
-                <div className="has-text-weight-bold has-text-centered">
-                  IN PAYMENT FOR PAYROLL PERIOD:{" "}
-                  {moment(days[0]).format("MMM D")} -{" "}
-                  {moment(days[days.length - 1]).format("MMM D, YYYY")}
-                </div>
-                <Row gutter={16}>
-                  <Col span={12}>
-                    <Row>
-                      <Col span={10}></Col>
-                      <Col span={4} className="has-text-centered">
-                        No. of Days/Hrs
-                      </Col>
-                      <Col span={1} className="has-text-centered"></Col>
-                      <Col span={4} className="has-text-centered">
-                        Rate
-                      </Col>
-                      <Col span={1} className="has-text-centered"></Col>
-                      <Col span={4}></Col>
-                    </Row>
-                    <Row>
-                      <Col span={10}>Basic Salary</Col>
-                      <Col span={4} className="has-text-centered">
-                        {numberFormat(o.reg_days)}
-                      </Col>
-                      <Col span={1} className="has-text-centered">
-                        x
-                      </Col>
-                      <Col span={4} className="has-text-centered">
-                        {o.daily_rate}
-                      </Col>
-                      <Col span={1} className="has-text-centered">
-                        =
-                      </Col>
-                      <Col span={4} className="has-text-right">
-                        {numberFormat(o.basic_pay)}
-                      </Col>
-                    </Row>
+                  <div>Explanation</div>
+                  <div className="has-text-weight-bold has-text-centered">
+                    IN PAYMENT FOR PAYROLL PERIOD:{" "}
+                    {moment(days[0]).format("MMM D")} -{" "}
+                    {moment(days[days.length - 1]).format("MMM D, YYYY")}
+                  </div>
+                  <Row gutter={16}>
+                    <Col span={12}>
+                      <Row>
+                        <Col span={10}></Col>
+                        <Col span={4} className="has-text-centered">
+                          No. of Days/Hrs
+                        </Col>
+                        <Col span={1} className="has-text-centered"></Col>
+                        <Col span={4} className="has-text-centered">
+                          Rate
+                        </Col>
+                        <Col span={1} className="has-text-centered"></Col>
+                        <Col span={4}></Col>
+                      </Row>
+                      <Row>
+                        <Col span={10}>Basic Salary</Col>
+                        <Col span={4} className="has-text-centered">
+                          {numberFormat(o.reg_days)}
+                        </Col>
+                        <Col span={1} className="has-text-centered">
+                          x
+                        </Col>
+                        <Col span={4} className="has-text-centered">
+                          {o.daily_rate}
+                        </Col>
+                        <Col span={1} className="has-text-centered">
+                          =
+                        </Col>
+                        <Col span={4} className="has-text-right">
+                          {numberFormat(o.basic_pay)}
+                        </Col>
+                      </Row>
 
-                    <Row>
-                      <Col span={10}>Overtime (Regular) (25%)</Col>
-                      <Col span={4} className="has-text-centered">
-                        {numberFormat(o.ot_hours)}
-                      </Col>
-                      <Col span={1} className="has-text-centered">
-                        x
-                      </Col>
-                      <Col span={4} className="has-text-centered">
-                        {o.ot_rate}
-                      </Col>
-                      <Col span={1} className="has-text-centered">
-                        =
-                      </Col>
-                      <Col span={4} className="has-text-right">
-                        {numberFormat(o.ot_pay)}
-                      </Col>
-                    </Row>
+                      <Row>
+                        <Col span={10}>Overtime (Regular) (25%)</Col>
+                        <Col span={4} className="has-text-centered">
+                          {numberFormat(o.ot_hours)}
+                        </Col>
+                        <Col span={1} className="has-text-centered">
+                          x
+                        </Col>
+                        <Col span={4} className="has-text-centered">
+                          {o.ot_rate}
+                        </Col>
+                        <Col span={1} className="has-text-centered">
+                          =
+                        </Col>
+                        <Col span={4} className="has-text-right">
+                          {numberFormat(o.ot_pay)}
+                        </Col>
+                      </Row>
 
-                    <Row>
-                      <Col span={10}>Overtime (Special) (30%)</Col>
-                      <Col span={4} className="has-text-centered">
-                        {numberFormat(o.special_ot_hours)}
-                      </Col>
-                      <Col span={1} className="has-text-centered">
-                        x
-                      </Col>
-                      <Col span={4} className="has-text-centered">
-                        {o.special_ot_rate}
-                      </Col>
-                      <Col span={1} className="has-text-centered">
-                        =
-                      </Col>
-                      <Col span={4} className="has-text-right">
-                        {numberFormat(o.special_ot_pay)}
-                      </Col>
-                    </Row>
-                    {/* <Row>
+                      <Row>
+                        <Col span={10}>Overtime (Special) (30%)</Col>
+                        <Col span={4} className="has-text-centered">
+                          {numberFormat(o.special_ot_hours)}
+                        </Col>
+                        <Col span={1} className="has-text-centered">
+                          x
+                        </Col>
+                        <Col span={4} className="has-text-centered">
+                          {o.special_ot_rate}
+                        </Col>
+                        <Col span={1} className="has-text-centered">
+                          =
+                        </Col>
+                        <Col span={4} className="has-text-right">
+                          {numberFormat(o.special_ot_pay)}
+                        </Col>
+                      </Row>
+                      {/* <Row>
                       <Col span={10}>Night Diff (10%)</Col>
                       <Col span={4} className="has-text-centered">
                         {numberFormat(o.night_diff_hours)}
@@ -516,7 +520,7 @@ export default function PayrollCheckVoucherForm({ history }) {
                         {numberFormat(o.night_diff_ot_pay)}
                       </Col>
                     </Row> */}
-                    {/* <Row>
+                      {/* <Row>
                       <Col span={10}>
                         Rest Day (30%)
                         {(o?.days || [])
@@ -540,55 +544,55 @@ export default function PayrollCheckVoucherForm({ history }) {
                         {numberFormat(o.rest_day_pay)}
                       </Col>
                     </Row> */}
-                    <Row>
-                      <Col span={10}>
-                        Special Holiday (30%)
-                        {(o?.days || [])
-                          .filter((o) => o.special_holiday_hours > 0)
-                          .map((o) => moment(o.date).format("MM/DD/YYYY"))
-                          .join(", ")}
-                      </Col>
-                      <Col span={4} className="has-text-centered">
-                        {numberFormat(o.special_holiday_hours)}
-                      </Col>
-                      <Col span={1} className="has-text-centered">
-                        x
-                      </Col>
-                      <Col span={4} className="has-text-centered">
-                        {numberFormat(o.special_holiday_rate)}
-                      </Col>
-                      <Col span={1} className="has-text-centered">
-                        =
-                      </Col>
-                      <Col span={4} className="has-text-right">
-                        {numberFormat(o.special_holiday_pay)}
-                      </Col>
-                    </Row>
-                    <Row>
-                      <Col span={10}>
-                        Regular Holiday (100%)
-                        {(o?.days || [])
-                          .filter((o) => o.regular_holiday_hours > 0)
-                          .map((o) => moment(o.date).format("MM/DD/YYYY"))
-                          .join(", ")}
-                      </Col>
-                      <Col span={4} className="has-text-centered">
-                        {numberFormat(o.regular_holiday_hours)}
-                      </Col>
-                      <Col span={1} className="has-text-centered">
-                        x
-                      </Col>
-                      <Col span={4} className="has-text-centered">
-                        {numberFormat(o.regular_holiday_rate)}
-                      </Col>
-                      <Col span={1} className="has-text-centered">
-                        =
-                      </Col>
-                      <Col span={4} className="has-text-right">
-                        {numberFormat(o.regular_holiday_pay)}
-                      </Col>
-                    </Row>
-                    {/* <Row>
+                      <Row>
+                        <Col span={10}>
+                          Special Holiday (30%)
+                          {(o?.days || [])
+                            .filter((o) => o.special_holiday_hours > 0)
+                            .map((o) => moment(o.date).format("MM/DD/YYYY"))
+                            .join(", ")}
+                        </Col>
+                        <Col span={4} className="has-text-centered">
+                          {numberFormat(o.special_holiday_hours)}
+                        </Col>
+                        <Col span={1} className="has-text-centered">
+                          x
+                        </Col>
+                        <Col span={4} className="has-text-centered">
+                          {numberFormat(o.special_holiday_rate)}
+                        </Col>
+                        <Col span={1} className="has-text-centered">
+                          =
+                        </Col>
+                        <Col span={4} className="has-text-right">
+                          {numberFormat(o.special_holiday_pay)}
+                        </Col>
+                      </Row>
+                      <Row>
+                        <Col span={10}>
+                          Regular Holiday (100%)
+                          {(o?.days || [])
+                            .filter((o) => o.regular_holiday_hours > 0)
+                            .map((o) => moment(o.date).format("MM/DD/YYYY"))
+                            .join(", ")}
+                        </Col>
+                        <Col span={4} className="has-text-centered">
+                          {numberFormat(o.regular_holiday_hours)}
+                        </Col>
+                        <Col span={1} className="has-text-centered">
+                          x
+                        </Col>
+                        <Col span={4} className="has-text-centered">
+                          {numberFormat(o.regular_holiday_rate)}
+                        </Col>
+                        <Col span={1} className="has-text-centered">
+                          =
+                        </Col>
+                        <Col span={4} className="has-text-right">
+                          {numberFormat(o.regular_holiday_pay)}
+                        </Col>
+                      </Row>
+                      {/* <Row>
                       <Col span={10}>
                         Special Holiday/Rest Day (50%)
                         {(o?.days || [])
@@ -637,7 +641,7 @@ export default function PayrollCheckVoucherForm({ history }) {
                       </Col>
                     </Row> */}
 
-                    {/* <Row>
+                      {/* <Row>
                       <Col span={10}>Non-Taxable Allowance</Col>
                       <Col span={4} className="has-text-centered">
                         {numberFormat(o.reg_days)}
@@ -717,172 +721,176 @@ export default function PayrollCheckVoucherForm({ history }) {
                       </Row>
                     )} */}
 
-                    <Row>
-                      <Col span={10}>Gross Salary</Col>
-                      <Col span={4} className="has-text-centered"></Col>
-                      <Col span={1} className="has-text-centered"></Col>
-                      <Col span={4} className="has-text-centered"></Col>
-                      <Col span={1} className="has-text-centered"></Col>
-                      <Col span={4} className="has-text-right b-t-2">
-                        {numberFormat(o.total_gross_salary)}
-                      </Col>
-                    </Row>
-                  </Col>
-                  <Col span={6}>
-                    <div className="underline has-text-weight-bold">
-                      DEDUCTIONS
-                    </div>
+                      <Row>
+                        <Col span={10}>Gross Salary</Col>
+                        <Col span={4} className="has-text-centered"></Col>
+                        <Col span={1} className="has-text-centered"></Col>
+                        <Col span={4} className="has-text-centered"></Col>
+                        <Col span={1} className="has-text-centered"></Col>
+                        <Col span={4} className="has-text-right b-t-2">
+                          {numberFormat(o.total_gross_salary)}
+                        </Col>
+                      </Row>
+                    </Col>
+                    <Col span={6}>
+                      <div className="underline has-text-weight-bold">
+                        DEDUCTIONS
+                      </div>
 
-                    <div className="p-l-3">
+                      <div className="p-l-3">
+                        <Row>
+                          <Col span={16}>SSS Cont.</Col>
+                          <Col span={8} className="has-text-right">
+                            {numberFormat(o.sss_contribution)}
+                          </Col>
+                        </Row>
+                        <Row>
+                          <Col span={16}>Pag-ibig Cont.</Col>
+                          <Col span={8} className="has-text-right">
+                            {numberFormat(o.hdmf_contribution)}
+                          </Col>
+                        </Row>
+                        <Row>
+                          <Col span={16}>Philhealth Cont.</Col>
+                          <Col span={8} className="has-text-right">
+                            {numberFormat(o.philhealth_contribution)}
+                          </Col>
+                        </Row>
+                        <Row>
+                          <Col span={16}>Withholding Tax</Col>
+                          <Col span={8} className="has-text-right">
+                            {numberFormat(o.wtax)}
+                          </Col>
+                        </Row>
+                        <Row className="b-t-2">
+                          <Col span={16}>Total</Col>
+                          <Col span={8} className="has-text-right">
+                            {numberFormat(o.total_premium_deductions)}
+                          </Col>
+                        </Row>
+                      </div>
+                    </Col>
+                    <Col span={6}>
                       <Row>
-                        <Col span={16}>SSS Cont.</Col>
-                        <Col span={8} className="has-text-right">
-                          {numberFormat(o.sss_contribution)}
+                        <Col
+                          span={16}
+                          className="has-text-weight-bold underline"
+                        >
+                          OTHERS DEDUCTIONS
                         </Col>
+                        <Col span={8} className="has-text-right"></Col>
                       </Row>
-                      <Row>
-                        <Col span={16}>Pag-ibig Cont.</Col>
-                        <Col span={8} className="has-text-right">
-                          {numberFormat(o.hdmf_contribution)}
-                        </Col>
-                      </Row>
-                      <Row>
-                        <Col span={16}>Philhealth Cont.</Col>
-                        <Col span={8} className="has-text-right">
-                          {numberFormat(o.philhealth_contribution)}
-                        </Col>
-                      </Row>
-                      <Row>
-                        <Col span={16}>Withholding Tax</Col>
-                        <Col span={8} className="has-text-right">
-                          {numberFormat(o.wtax)}
-                        </Col>
-                      </Row>
+                      {(o.deductions || []).map((deduction_item, i) => (
+                        <Row key={i}>
+                          <Col span={16}>{deduction_item.deduction}</Col>
+                          <Col span={8} className="has-text-right">
+                            {numberFormat(deduction_item.amount)}
+                          </Col>
+                        </Row>
+                      ))}
                       <Row className="b-t-2">
                         <Col span={16}>Total</Col>
                         <Col span={8} className="has-text-right">
-                          {numberFormat(o.total_premium_deductions)}
+                          {numberFormat(o.other_deductions)}
                         </Col>
                       </Row>
-                    </div>
-                  </Col>
-                  <Col span={6}>
-                    <Row>
-                      <Col span={16} className="has-text-weight-bold underline">
-                        OTHERS DEDUCTIONS
-                      </Col>
-                      <Col span={8} className="has-text-right"></Col>
-                    </Row>
-                    {(o.deductions || []).map((deduction_item, i) => (
-                      <Row key={i}>
-                        <Col span={16}>{deduction_item.deduction}</Col>
+                      <Row>
+                        <Col span={16}></Col>
                         <Col span={8} className="has-text-right">
-                          {numberFormat(deduction_item.amount)}
+                          &nbsp;
                         </Col>
                       </Row>
-                    ))}
-                    <Row className="b-t-2">
-                      <Col span={16}>Total</Col>
-                      <Col span={8} className="has-text-right">
-                        {numberFormat(o.other_deductions)}
-                      </Col>
-                    </Row>
-                    <Row>
-                      <Col span={16}></Col>
-                      <Col span={8} className="has-text-right">
-                        &nbsp;
-                      </Col>
-                    </Row>
 
-                    <Row>
-                      <Col span={16}>NET SALARY</Col>
-                      <Col
-                        span={8}
-                        className="has-text-weight-bold has-text-right"
-                      >
-                        <span className="underline">
-                          ₱{numberFormat(o.net_salary_pay)}
-                        </span>
-                      </Col>
-                    </Row>
-                  </Col>
-                </Row>
-                <div>
-                  Remarks:
-                  {(o?.days || [])
-                    .filter(
-                      (o) =>
-                        o.status && o.status !== "Present" && !o.is_rest_day
-                    )
-                    .map((day, i) => {
-                      return `${day.status} - ${moment(day.date).format(
-                        "MM/DD/YYYY"
-                      )}`;
-                    })
-                    .join("; ")}{" "}
-                  {days_leave.length > 0 &&
-                    `; Leaves Availed : ${days_leave.join(", ")}`}
-                  {/* ; {o.remarks} */}
+                      <Row>
+                        <Col span={16}>NET SALARY</Col>
+                        <Col
+                          span={8}
+                          className="has-text-weight-bold has-text-right"
+                        >
+                          <span className="underline">
+                            ₱{numberFormat(o.net_salary_pay)}
+                          </span>
+                        </Col>
+                      </Row>
+                    </Col>
+                  </Row>
+                  <div>
+                    Remarks:
+                    {(o?.days || [])
+                      .filter(
+                        (o) =>
+                          o.status && o.status !== "Present" && !o.is_rest_day
+                      )
+                      .map((day, i) => {
+                        return `${day.status} - ${moment(day.date).format(
+                          "MM/DD/YYYY"
+                        )}`;
+                      })
+                      .join("; ")}{" "}
+                    {days_leave.length > 0 &&
+                      `; Leaves Availed : ${days_leave.join(", ")}`}
+                    {/* ; {o.remarks} */}
+                  </div>
+                  <hr className="b-t-1" />
+                  <Row>
+                    <Col span={11}>
+                      <div className="is-flex">
+                        <div>Prepared by: </div>
+                        <div className="flex-1 b-b-1">{auth?.user?.name}</div>
+                      </div>
+                      <div className="is-flex">
+                        <div>Checked by: </div>
+                        <div className="flex-1 b-b-1">
+                          {o.employee?.branch?.payroll_checked_by || ""}
+                        </div>
+                      </div>
+                      <div className="is-flex">
+                        <div>Approved by: </div>
+                        <div className="flex-1 b-b-1">
+                          {o.employee?.branch?.payroll_approved_by || ""}
+                        </div>
+                      </div>
+                    </Col>
+                    <Col span={2}></Col>
+                    <Col span={11}>
+                      <div className="is-flex">
+                        <div>Received From: </div>
+                        <div className="flex-1 b-b-1 has-text-weight-bold">
+                          {o?.employee?.branch?.company?.name}-
+                          {o?.employee?.branch?.name}
+                        </div>
+                      </div>
+                      <div className="is-flex">
+                        <div>the sum of pesos: </div>
+                        <div className="flex-1 "></div>
+                      </div>
+                      <div className="is-flex">
+                        <div className="flex-1 b-b-1 ">
+                          **
+                          {converter
+                            .toWords(o.net_salary_pay || 0)
+                            .toUpperCase()}{" "}
+                          AND{" "}
+                          {parseInt(
+                            (round(o.net_salary_pay) -
+                              parseInt(o.net_salary_pay)) *
+                              100
+                          )}
+                          /100 PESOS ONLY **
+                        </div>
+                      </div>
+                      <div className="is-flex">
+                        <div className="flex-1 b-b-1">&nbsp;</div>
+                      </div>
+
+                      <div className=" has-text-centered">
+                        {o?.employee?.name}
+                      </div>
+                    </Col>
+                  </Row>
                 </div>
-                <hr className="b-t-1" />
-                <Row>
-                  <Col span={11}>
-                    <div className="is-flex">
-                      <div>Prepared by: </div>
-                      <div className="flex-1 b-b-1">{auth?.user?.name}</div>
-                    </div>
-                    <div className="is-flex">
-                      <div>Checked by: </div>
-                      <div className="flex-1 b-b-1">
-                        {o.employee?.branch?.payroll_checked_by || ""}
-                      </div>
-                    </div>
-                    <div className="is-flex">
-                      <div>Approved by: </div>
-                      <div className="flex-1 b-b-1">
-                        {o.employee?.branch?.payroll_approved_by || ""}
-                      </div>
-                    </div>
-                  </Col>
-                  <Col span={2}></Col>
-                  <Col span={11}>
-                    <div className="is-flex">
-                      <div>Received From: </div>
-                      <div className="flex-1 b-b-1 has-text-weight-bold">
-                        {o?.employee?.branch?.company?.name}-
-                        {o?.employee?.branch?.name}
-                      </div>
-                    </div>
-                    <div className="is-flex">
-                      <div>the sum of pesos: </div>
-                      <div className="flex-1 "></div>
-                    </div>
-                    <div className="is-flex">
-                      <div className="flex-1 b-b-1 ">
-                        **
-                        {converter
-                          .toWords(o.net_salary_pay || 0)
-                          .toUpperCase()}{" "}
-                        AND{" "}
-                        {parseInt(
-                          (round(o.net_salary_pay) -
-                            parseInt(o.net_salary_pay)) *
-                            100
-                        )}
-                        /100 PESOS ONLY **
-                      </div>
-                    </div>
-                    <div className="is-flex">
-                      <div className="flex-1 b-b-1">&nbsp;</div>
-                    </div>
-
-                    <div className=" has-text-centered">
-                      {o?.employee?.name}
-                    </div>
-                  </Col>
-                </Row>
-              </div>
-            ));
+              )
+            );
           })}
         </div>
       </div>

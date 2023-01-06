@@ -889,3 +889,8 @@ table.payroll-table tbody input {
 .payroll-table label span {
   font-size: 8px;
 }
+.payroll-check-voucher-1 {
+  border-top: 1px dashed #000;
+  margin-top: 32px;
+  padding-top: 32px;
+}

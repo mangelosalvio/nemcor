@@ -1,6 +1,7 @@
 const mongoose = require("mongoose");
 const mongoose_paginate = require("mongoose-paginate");
 const EmployeeModel = require("./EmployeeModel");
+const UserSchema = require("./UserSchema");
 const Schema = mongoose.Schema;
 
 const TransactionSchema = new Schema({
@@ -33,7 +34,12 @@ const TransactionSchema = new Schema({
       log: String,
     },
   ],
-  status: String, //PAID
+  status: {
+    approval_status: String,
+    datetime: Date,
+    user: UserSchema,
+  },
+  // status: String, //PAID
 });
 TransactionSchema.plugin(mongoose_paginate);
 module.exports = mongoose.model("scheduled_deductions", TransactionSchema);

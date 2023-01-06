@@ -2,14 +2,27 @@ import React, { useEffect, useState } from "react";
 import TextFieldGroup from "../../commons/TextFieldGroup";
 import Searchbar from "../../commons/Searchbar";
 
-import { Layout, Breadcrumb, Form, Table, Divider, Row, Col } from "antd";
+import {
+  Layout,
+  Breadcrumb,
+  Form,
+  Table,
+  Divider,
+  Row,
+  Col,
+  Collapse,
+  PageHeader,
+  Button,
+  Input,
+  message,
+} from "antd";
 
 import {
   formItemLayout,
   smallFormItemLayout,
   tailFormItemLayout,
 } from "./../../utils/Layouts";
-import { EditOutlined, CloseOutlined } from "@ant-design/icons";
+import { EditOutlined, CloseOutlined, SearchOutlined } from "@ant-design/icons";
 import isEmpty from "../../validation/is-empty";
 import { useSelector } from "react-redux";
 import {
@@ -25,8 +38,11 @@ import numberFormat from "../../utils/numberFormat";
 import { authenticateAdmin } from "../../utils/authentications";
 import { onBranchSearch } from "../../utils/utilities";
 import SelectFieldGroup from "../../commons/SelectFieldGroup";
+import RangeDatePickerFieldGroup from "../../commons/RangeDatePickerFieldGroup";
+import axios from "axios";
 
 const { Content } = Layout;
+const { Panel } = Collapse;
 
 const url = "/api/employees/";
 const title = "Employee Form";
@@ -51,6 +67,9 @@ export default function EmployeeForm({ history }) {
   const [search_keyword, setSearchKeyword] = useState("");
   const auth = useSelector((state) => state.auth);
   const [options, setOptions] = useState({});
+  const [search_state, setSearchState] = useState({
+    branch: null,
+  });
 
   const [state, setState] = useState(initialValues);
 
@@ -69,6 +88,84 @@ export default function EmployeeForm({ history }) {
       dataIndex: "daily_rate",
       align: "right",
       render: (value) => numberFormat(value),
+    },
+    {
+      title: "SSS Contr.",
+      dataIndex: "weekly_sss_contribution",
+      align: "right",
+      width: 100,
+      render: (value, record) => (
+        <Input
+          name="weekly_sss_contribution"
+          defaultValue={value}
+          onBlur={(e) => {
+            const target = e.target;
+
+            axios
+              .post(`/api/employees/${record._id}/contribution`, {
+                amount: target.value,
+                contribution: target.name,
+              })
+              .catch((err) => {
+                return message.error(
+                  "There was an error processing your request"
+                );
+              });
+          }}
+        />
+      ),
+    },
+    {
+      title: "Philhealth Contr.",
+      dataIndex: "weekly_philhealth_contribution",
+      align: "right",
+      width: 100,
+      render: (value, record) => (
+        <Input
+          name="weekly_philhealth_contribution"
+          defaultValue={value}
+          onBlur={(e) => {
+            const target = e.target;
+
+            axios
+              .post(`/api/employees/${record._id}/contribution`, {
+                amount: target.value,
+                contribution: target.name,
+              })
+              .catch((err) => {
+                return message.error(
+                  "There was an error processing your request"
+                );
+              });
+          }}
+        />
+      ),
+    },
+    {
+      title: "HDMF Contr.",
+      dataIndex: "weekly_hdmf_contribution",
+      align: "right",
+      width: 100,
+      render: (value, record) => (
+        <Input
+          name="weekly_hdmf_contribution"
+          defaultValue={value}
+          onBlur={(e) => {
+            const target = e.target;
+
+            axios
+              .post(`/api/employees/${record._id}/contribution`, {
+                amount: target.value,
+                contribution: target.name,
+              })
+              .catch((err) => {
+                return message.error(
+                  "There was an error processing your request"
+                );
+              });
+          }}
+        />
+      ),
     },
 
     {
@@ -123,6 +220,7 @@ export default function EmployeeForm({ history }) {
                 setTotalRecords,
                 setCurrentPage,
                 setErrors,
+                advance_search: search_state,
               });
             }}
             onChange={(e) => setSearchKeyword(e.target.value)}
@@ -134,6 +232,83 @@ export default function EmployeeForm({ history }) {
           />
         </div>
       </div>
+
+      {/* Start of Advance Search */}
+      <Row>
+        <Col span={24} className="m-b-1">
+          <Collapse>
+            <Panel header="Advance Search">
+              <PageHeader
+                backIcon={false}
+                style={{
+                  border: "1px solid rgb(235, 237, 240)",
+                }}
+                onBack={() => null}
+                title="Advance Filter"
+                subTitle="Enter appropriate data to filter records"
+              >
+                <div className="or-slip-form">
+                  <Row>
+                    <Col span={8}>
+                      <SelectFieldGroup
+                        label="Branch"
+                        value={
+                          search_state.branch &&
+                          `${search_state.branch?.company?.name}-${state.branch?.name}`
+                        }
+                        onSearch={(value) =>
+                          onBranchSearch({ value, options, setOptions })
+                        }
+                        onChange={(index) => {
+                          const branch = options.branches?.[index] || null;
+                          setSearchState((prevState) => ({
+                            ...prevState,
+                            branch,
+                          }));
+                        }}
+                        formItemLayout={smallFormItemLayout}
+                        data={options.branches}
+                        column="display_name"
+                      />
+                    </Col>
+                  </Row>
+
+                  <Row>
+                    <Col span={8}>
+                      <Row>
+                        <Col offset={8} span={12}>
+                          <Button
+                            type="info"
+                            size="small"
+                            icon={<SearchOutlined />}
+                            onClick={() => {
+                              onSearch({
+                                page: 1,
+                                search_keyword,
+                                url,
+                                setRecords,
+                                setTotalRecords,
+                                setCurrentPage,
+                                setErrors,
+                                advance_search: search_state,
+                              });
+                            }}
+                          >
+                            Search
+                          </Button>
+                        </Col>
+                      </Row>
+                    </Col>
+                    <Col span={8}></Col>
+                    <Col span={8}></Col>
+                  </Row>
+                </div>
+              </PageHeader>
+            </Panel>
+          </Collapse>
+        </Col>
+      </Row>
+      {/* End of Advanced Search */}
 
       <div style={{ background: "#fff", padding: 24, minHeight: 280 }}>
         <span className="module-title">{title}</span>
@@ -432,7 +607,7 @@ export default function EmployeeForm({ history }) {
                 </div>
                 {!isEmpty(state._id) ? (
                   <span
-                    className="button is-danger is-outlined is-small"
+                    className="button control is-danger is-outlined is-small"
                     onClick={() => {
                       onDelete({
                         id: state._id,
@@ -447,6 +622,23 @@ export default function EmployeeForm({ history }) {
                     </span>
                   </span>
                 ) : null}
+                <span
+                  className="button is-outlined is-small control"
+                  onClick={() => {
+                    onSearch({
+                      page: current_page,
+                      search_keyword,
+                      url,
+                      setRecords,
+                      setTotalRecords,
+                      setCurrentPage,
+                      setErrors,
+                      advance_search: search_state,
+                    });
+                  }}
+                >
+                  <span>Exit</span>
+                </span>
               </div>
             </Form.Item>
           </Form>
@@ -467,6 +659,7 @@ export default function EmployeeForm({ history }) {
                   setTotalRecords,
                   setCurrentPage,
                   setErrors,
+                  advance_search: search_state,
                 }),
               total: total_records,
               pageSize: 10,

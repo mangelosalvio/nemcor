@@ -8,6 +8,7 @@ const validateInput = require("./../../validators/scheduled-deductions");
 const moment = require("moment-timezone");
 const mongoose = require("mongoose");
 const async = require("async");
+const constants = require("../../config/constants");
 
 const Model = ScheduledDeduction;
 const ObjectId = mongoose.Types.ObjectId;
@@ -300,6 +301,11 @@ router.delete("/:id", (req, res) => {
     req.params.id,
     {
       $set: {
+        status: {
+          approval_status: constants.CANCELLED,
+          datetime: moment().toDate(),
+          user: req.body.user,
+        },
         deleted: {
           date: moment.tz(moment(), process.env.TIMEZONE),
           user: req.body.user,

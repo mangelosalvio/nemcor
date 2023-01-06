@@ -49,6 +49,7 @@ import {
   onWarehouseSearch,
   onEmployeeSearch,
   onDeductionSearch,
+  onBranchSearch,
 } from "../../utils/utilities";
 import DatePickerFieldGroup from "../../commons/DatePickerFieldGroup";
 import TextAreaGroup from "../../commons/TextAreaGroup";
@@ -149,6 +150,11 @@ export default function ScheduledDeductionForm() {
       dataIndex: ["employee", "name"],
     },
     {
+      title: "Branch",
+      dataIndex: ["employee", "branch"],
+      render: (branch) => `${branch?.company?.name} - ${branch?.name}`,
+    },
+    {
       title: "Deduction",
       dataIndex: ["deduction", "name"],
     },
@@ -169,16 +175,6 @@ export default function ScheduledDeductionForm() {
       dataIndex: ["deduction_amount"],
       align: "center",
       render: (value) => numberFormat(value),
-    },
-
-    {
-      title: "Log",
-      dataIndex: "logs",
-      render: (logs) => (
-        <span className="log-desc">
-          {!isEmpty(logs) && logs[logs.length - 1].log}
-        </span>
-      ),
     },
 
     {
@@ -220,6 +216,17 @@ export default function ScheduledDeductionForm() {
   const computeDeduction = useCallback(({ total_amount, no_of_pay_days }) => {
     return round(total_amount / parseFloat(no_of_pay_days || 1));
   }, []);
+
+  const computeNumberOfPayDays = useCallback(
+    ({ total_amount, deduction_amount }) => {
+      const no_of_pay_days = round(
+        total_amount / parseFloat(deduction_amount || 1)
+      );
+
+      return no_of_pay_days;
+    },
+    []
+  );
 
   return (
     <Content className="content-padding">
@@ -288,21 +295,24 @@ export default function ScheduledDeductionForm() {
                     </Col>
                     <Col span={8}>
                       <SelectFieldGroup
-                        label="From Branch"
-                        value={search_state.warehouse?.name}
+                        label="Branch"
+                        value={
+                          search_state.branch &&
+                          `${search_state.branch?.company?.name}-${state.branch?.name}`
+                        }
                         onSearch={(value) =>
-                          onWarehouseSearch({ value, options, setOptions })
+                          onBranchSearch({ value, options, setOptions })
                         }
                         onChange={(index) => {
-                          const warehouse = options.warehouses[index];
+                          const branch = options.branches?.[index] || null;
                           setSearchState((prevState) => ({
                             ...prevState,
-                            warehouse,
+                            branch,
                           }));
                         }}
-                        formItemLayout={smallFormItemLayout}
-                        data={options.warehouses}
-                        column="name"
+                        formItemLayout={formItemLayout}
+                        data={options.branches}
+                        column="display_name"
                       />
                     </Col>
                     <Col span={8}>
@@ -444,6 +454,12 @@ export default function ScheduledDeductionForm() {
             <SelectFieldGroup
               label="Employee"
               value={state.employee?.name}
+              onFocus={() => {
+                onEmployeeSearch({
+                  value: "",
+                  setOptions,
+                });
+              }}
               onSearch={(value) => onEmployeeSearch({ value, setOptions })}
               onChange={(index) => {
                 const employee = options.employees?.[index] || null;
@@ -461,6 +477,12 @@ export default function ScheduledDeductionForm() {
             <SelectFieldGroup
               label="Deduction"
               value={state.deduction?.name}
+              onFocus={() =>
+                onDeductionSearch({
+                  value: "",
+                  setOptions,
+                })
+              }
               onSearch={(value) => onDeductionSearch({ value, setOptions })}
               onChange={(index) => {
                 const deduction = options.deductions?.[index] || null;
@@ -478,7 +500,7 @@ export default function ScheduledDeductionForm() {
             <Row>
               <Col span={12}>
                 <TextFieldGroup
-                  label="Total Amount"
+                  label="Total Amount/Balance"
                   name="total_amount"
                   value={state.total_amount}
                   error={errors.total_amount}
@@ -520,16 +542,23 @@ export default function ScheduledDeductionForm() {
             <Row>
               <Col span={12}>
                 <TextFieldGroup
-                  readOnly
                   label="Deduction Amount"
                   name="deduction_amount"
                   value={state.deduction_amount}
                   error={errors.deduction_amount}
                   onChange={(e) => {
-                    onChange({
-                      key: e.target.name,
-                      value: e.target.value,
-                      setState,
+                    const target = e.target;
+                    const no_of_pay_days = computeNumberOfPayDays({
+                      total_amount: state.total_amount,
+                      deduction_amount: target.value,
+                    });
+
+                    setState((prevState) => {
+                      return {
+                        ...prevState,
+                        [target.name]: target.value,
+                        no_of_pay_days,
+                      };
                     });
                   }}
                   formItemLayout={smallFormItemLayout}
@@ -580,7 +609,29 @@ export default function ScheduledDeductionForm() {
                   loading={loading}
                   url={url}
                   transaction="scheduled-deductions"
-                  onDelete={onDelete}
+                  onDelete={
+                    isEmpty(state?._id)
+                      ? null
+                      : () => {
+                          onDelete({
+                            id: state._id,
+                            url,
+                            user: auth.user,
+                            cb: () => {
+                              onSearch({
+                                page: current_page,
+                                search_keyword,
+                                url,
+                                setRecords,
+                                setTotalRecords,
+                                setCurrentPage,
+                                setErrors,
+                                advance_search: search_state,
+                              });
+                            },
+                          });
+                        }
+                  }
                   initialValues={initialValues}
                   initialItemValues={initialItemValues}
                   setState={setState}

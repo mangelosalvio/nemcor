@@ -1106,8 +1106,8 @@ router.post("/period-report", async (req, res) => {
                 $in: req.body.employees,
               },
             }),
-          ...(!isEmpty(req.body?.company?._id) && {
-            "employee.company._id": ObjectId(req.body.company._id),
+          ...(!isEmpty(branch?._id) && {
+            "employee.branch._id": ObjectId(branch._id),
           }),
         })
           .sort({
