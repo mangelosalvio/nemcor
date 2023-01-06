@@ -87,7 +87,27 @@ export default function EmployeeForm({ history }) {
       title: "Daily Rate",
       dataIndex: "daily_rate",
       align: "right",
-      render: (value) => numberFormat(value),
+      width: 100,
+      render: (value, record) => (
+        <Input
+          name="daily_rate"
+          defaultValue={value}
+          onBlur={(e) => {
+            const target = e.target;
+
+            axios
+              .post(`/api/employees/${record._id}/contribution`, {
+                amount: target.value,
+                contribution: target.name,
+              })
+              .catch((err) => {
+                return message.error(
+                  "There was an error processing your request"
+                );
+              });
+          }}
+        />
+      ),
     },
     {
       title: "SSS Contr.",
@@ -254,7 +274,7 @@ export default function EmployeeForm({ history }) {
                         label="Branch"
                         value={
                           search_state.branch &&
-                          `${search_state.branch?.company?.name}-${state.branch?.name}`
+                          `${search_state.branch?.company?.name}-${search_state.branch?.name}`
                         }
                         onSearch={(value) =>
                           onBranchSearch({ value, options, setOptions })

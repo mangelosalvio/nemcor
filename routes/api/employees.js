@@ -152,6 +152,7 @@ router.post("/:id/contribution", async (req, res) => {
     "weekly_sss_contribution",
     "weekly_philhealth_contribution",
     "weekly_hdmf_contribution",
+    "daily_rate",
   ];
   const { contribution, amount } = req.body;
 
