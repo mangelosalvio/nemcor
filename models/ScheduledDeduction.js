@@ -27,6 +27,8 @@ const TransactionSchema = new Schema({
     },
   ],
 
+  remarks: String,
+
   logs: [
     {
       user: Object,
