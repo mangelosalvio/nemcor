@@ -1085,8 +1085,6 @@ router.post("/period-report", async (req, res) => {
 
   if (is_cv_form) {
     await updateCheckVoucherRefefence({ period_covered, branch });
-  } else if (is_fa_cv_form) {
-    await updateCheckVoucherFinancialAssistanceRefefence({ period_covered });
   }
 
   async.parallel(
@@ -1097,15 +1095,6 @@ router.post("/period-report", async (req, res) => {
             period_covered[0].clone().toDate(),
             period_covered[1].clone().toDate(),
           ],
-          ...(req.body.employee_status && {
-            "employee.employee_status": req.body.employee_status,
-          }),
-          ...(!isEmpty(req.body.employees) &&
-            req.body.employees?.length > 0 && {
-              "employee.name": {
-                $in: req.body.employees,
-              },
-            }),
           ...(!isEmpty(branch?._id) && {
             "employee.branch._id": ObjectId(branch._id),
           }),

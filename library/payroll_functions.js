@@ -49,7 +49,9 @@ module.exports.updateCheckVoucherRefefence = ({ period_covered, branch }) => {
         period_covered[0].clone().toDate(),
         period_covered[1].clone().toDate(),
       ],
-      "branch._id": ObjectId(branch._id),
+      ...(!isEmpty(branch?._id) && {
+        "employee.branch._id": ObjectId(branch._id),
+      }),
     })
       .sort({
         "employee.name": 1,

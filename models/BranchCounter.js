@@ -2,7 +2,7 @@ const mongoose = require("mongoose");
 const Schema = mongoose.Schema;
 
 const BranchCounterSchema = new Schema({
-  _id: String,
+  counter_key: String,
   branch_id: mongoose.Schema.Types.ObjectId,
   next: {
     type: Number,
@@ -13,7 +13,7 @@ const BranchCounterSchema = new Schema({
 BranchCounterSchema.statics.increment = function (counter, branch, callback) {
   return this.findOneAndUpdate(
     {
-      _id: counter,
+      counter_key: counter,
       branch_id: mongoose.Types.ObjectId(branch._id),
     },
     { $inc: { next: 1 } },
