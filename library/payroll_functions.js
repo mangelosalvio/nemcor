@@ -20,7 +20,7 @@ const Attendance = require("../models/Attendance");
 
 const util = require("util");
 const ScheduledDeduction = require("../models/ScheduledDeduction");
-const { STATUS_PAID } = require("../config/constants");
+const { STATUS_PAID, CANCELLED } = require("../config/constants");
 const BranchCounter = require("../models/BranchCounter");
 
 const ObjectId = mongoose.Types.ObjectId;
@@ -638,6 +638,9 @@ module.exports.getPayrollDeductions = ({ records, period_covered }) => {
               $lte: moment(period_covered[1]).endOf("day").toDate(),
             },
             "employee._id": ObjectId(record.employee?._id),
+            "status.approval_status": {
+              $ne: CANCELLED,
+            },
           },
         },
       ]);

@@ -312,6 +312,9 @@ export default function AttendanceForm({ history }) {
                 state.branch &&
                 `${state.branch?.company?.name}-${state.branch?.name}`
               }
+              onFocus={() => {
+                onBranchSearch({ value: "", options, setOptions });
+              }}
               onSearch={(value) =>
                 onBranchSearch({ value, options, setOptions })
               }
