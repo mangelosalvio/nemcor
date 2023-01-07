@@ -845,9 +845,7 @@ export default function PayrollCheckVoucherForm({ history }) {
                       </div>
                       <div className="is-flex">
                         <div>Approved by: </div>
-                        <div className="flex-1 b-b-1">
-                          {o.employee?.branch?.payroll_approved_by || ""}
-                        </div>
+                        <div className="flex-1 b-b-1">&nbsp;</div>
                       </div>
                     </Col>
                     <Col span={2}></Col>
@@ -873,7 +871,7 @@ export default function PayrollCheckVoucherForm({ history }) {
                           /100 PESOS ONLY **
                         </div>
                       </div>
-                      <div className="is-flex">
+                      <div className="is-flex m-t-3">
                         <div className="flex-1 b-b-1">&nbsp;</div>
                       </div>
 

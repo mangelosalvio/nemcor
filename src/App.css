@@ -894,3 +894,11 @@ table.payroll-table tbody input {
   margin-top: 32px;
   padding-top: 32px;
 }
+
+.b-b-1 {
+  border-bottom: 1px solid #000;
+}
+
+.m-t-3 {
+  margin-top: 24px;
+}
