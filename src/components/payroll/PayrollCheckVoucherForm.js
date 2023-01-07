@@ -333,7 +333,9 @@ export default function PayrollCheckVoucherForm({ history }) {
                 <div
                   key={`${copy} ${index}`}
                   className={classnames(
-                    `report-heading payroll-check-voucher-${copy_index % 2}`,
+                    `report-heading payroll-check-voucher payroll-check-voucher-${
+                      copy_index % 2
+                    }`,
                     {
                       "page-break-after m-t-5 ": copy === "Employee's Copy",
                       "bottom-border-dashed": copy === "Original Copy",

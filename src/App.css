@@ -892,7 +892,10 @@ table.payroll-table tbody input {
 }
 .payroll-check-voucher-1 {
   border-top: 1px dashed #000;
-  margin-top: 32px;
+}
+
+.payroll-check-voucher {
+  height: 5in !important;
   padding-top: 32px;
 }
 
