@@ -689,6 +689,10 @@ router.post("/period", (req, res) => {
                 } else if (is_regular_holiday) {
                   //100%
                   regular_holiday_hours = reg_hours;
+                } else if (day.leave_availed) {
+                  //possibility of half day
+                  reg_hours = 8;
+                  reg_days = 1;
                 }
 
                 /* else if (is_rest_day) {

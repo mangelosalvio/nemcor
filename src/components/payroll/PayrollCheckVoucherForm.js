@@ -852,7 +852,7 @@ export default function PayrollCheckVoucherForm({ history }) {
                     <Col span={11}>
                       <div className="is-flex">
                         <div>Received From: </div>
-                        <div className="flex-1 b-b-1 has-text-weight-bold">
+                        <div className="flex-1 b-b-1 has-text-weight-bold has-text-centered">
                           {o?.employee?.branch?.company?.name}-
                           {o?.employee?.branch?.name}
                         </div>
@@ -862,7 +862,7 @@ export default function PayrollCheckVoucherForm({ history }) {
                         <div className="flex-1 "></div>
                       </div>
                       <div className="is-flex">
-                        <div className="flex-1 b-b-1 ">
+                        <div className="flex-1 b-b-1 has-text-centered">
                           **
                           {converter
                             .toWords(net_salary_pay || 0)

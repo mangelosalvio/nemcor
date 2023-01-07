@@ -84,7 +84,8 @@ form {
   background-color: #fff;
 }
 
-.full-width {
+.full-width,
+.is-full-width {
   width: 100% !important;
 }
 
