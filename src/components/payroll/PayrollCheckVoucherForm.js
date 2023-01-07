@@ -841,9 +841,9 @@ export default function PayrollCheckVoucherForm({ history }) {
                     <Col span={11}>
                       <div className="is-flex">
                         <div>Prepared by: </div>
-                        <div className="flex-1 b-b-1">{auth?.user?.name}</div>
+                        <div className="flex-1 b-b-1">&nbsp;</div>
                       </div>
-                      <div className="is-flex">
+                      <div className="is-flex m-t-3">
                         <div>Approved by: </div>
                         <div className="flex-1 b-b-1">&nbsp;</div>
                       </div>
