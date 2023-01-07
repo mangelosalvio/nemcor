@@ -840,12 +840,6 @@ export default function PayrollCheckVoucherForm({ history }) {
                         <div className="flex-1 b-b-1">{auth?.user?.name}</div>
                       </div>
                       <div className="is-flex">
-                        <div>Checked by: </div>
-                        <div className="flex-1 b-b-1">
-                          {o.employee?.branch?.payroll_checked_by || ""}
-                        </div>
-                      </div>
-                      <div className="is-flex">
                         <div>Approved by: </div>
                         <div className="flex-1 b-b-1">
                           {o.employee?.branch?.payroll_approved_by || ""}
@@ -873,7 +867,7 @@ export default function PayrollCheckVoucherForm({ history }) {
                             .toUpperCase()}{" "}
                           AND{" "}
                           {parseInt(
-                            (round(o.net_salary_pay) -
+                            (parseInt(o.net_salary_pay) -
                               parseInt(o.net_salary_pay)) *
                               100
                           )}
