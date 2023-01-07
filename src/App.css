@@ -245,6 +245,10 @@ div.m-b-0 {
   background-color: #fff !important;
 }
 
+.print-no-margin {
+  background-color: #fff !important;
+}
+
 .print * {
   color: #000 !important;
   border-color: #000 !important;
@@ -703,15 +707,6 @@ div.ant-select-item-option-content,
   line-height: 30px !important;
 }
 
-@media print {
-  .report-container {
-    padding: 1rem 3rem;
-  }
-  .print {
-    padding: 1rem;
-  }
-}
-
 .field-button-padding {
   margin-top: 29px;
 }
@@ -891,11 +886,11 @@ table.payroll-table tbody input {
   font-size: 8px;
 }
 .payroll-check-voucher-1 {
-  border-top: 1px dashed #000;
+  border-top: 1px dashed #000 !important;
 }
 
 .payroll-check-voucher {
-  height: 5in !important;
+  height: 5.5in !important;
   padding-top: 32px;
 }
 
@@ -905,4 +900,27 @@ table.payroll-table tbody input {
 
 .m-t-3 {
   margin-top: 24px;
+}
+
+div.first-page.payroll-check-voucher {
+  /* padding-top: 16px; */
+}
+.payroll-check-voucher {
+  height: 5.4in !important;
+  padding-top: 32px;
+  padding-left: 0.25in;
+  padding-right: 0.25in;
+}
+
+@media print {
+  div {
+    background-color: #fff !important;
+  }
+  .report-container {
+    padding: 1rem 3rem;
+  }
+  .print {
+    padding: 1rem;
+    background-color: #fff !important;
+  }
 }

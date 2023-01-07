@@ -306,18 +306,18 @@ export default function PayrollCheckVoucherForm({ history }) {
                       type="primary"
                       icon={<PrinterOutlined />}
                       className="m-l-1"
+                      bodyClass="print-no-margin"
                     >
                       Print
                     </Button>
                   )}
-                  bodyClass="print"
                   content={() => report.current}
                 />
               </Space>
             </Form.Item>
           </Col>
         </Row>
-        <div className="voucher" ref={report}>
+        <div ref={report}>
           {records.map((o, index) => {
             const days_leave = (o?.days || [])
               .filter((o) => o.leave_availed)
@@ -337,7 +337,8 @@ export default function PayrollCheckVoucherForm({ history }) {
                       copy_index % 2
                     }`,
                     {
-                      "page-break-after m-t-5 ": copy === "Employee's Copy",
+                      "first-page": index === 0 && copy_index === 0,
+                      "page-break-after": copy === "Employee's Copy",
                       "bottom-border-dashed": copy === "Original Copy",
                     }
                   )}
@@ -377,7 +378,7 @@ export default function PayrollCheckVoucherForm({ history }) {
                               {o?.employee?.name}
                             </td>
                           </tr>
-                          <tr>
+                          {/*                           <tr>
                             <td>SSS No.</td>
                             <td className="b-b-1">{o?.employee?.sss_no}</td>
                           </tr>
@@ -386,7 +387,7 @@ export default function PayrollCheckVoucherForm({ history }) {
                             <td className="b-b-1">
                               {o?.employee?.philhealth_no}
                             </td>
-                          </tr>
+                          </tr> */}
                         </tbody>
                       </table>
                     </Col>
@@ -400,14 +401,14 @@ export default function PayrollCheckVoucherForm({ history }) {
                               {o?.employee?.branch?.name || ""}
                             </td>
                           </tr>
-                          <tr>
+                          {/* <tr>
                             <td style={{ width: "150px" }}>HDMF No.</td>
                             <td className="b-b-1">{o?.employee?.hdmf_no}</td>
                           </tr>
                           <tr>
                             <td>TIN</td>
                             <td className="b-b-1"> {o?.employee?.tin}</td>
-                          </tr>
+                          </tr> */}
                         </tbody>
                       </table>
                     </Col>
