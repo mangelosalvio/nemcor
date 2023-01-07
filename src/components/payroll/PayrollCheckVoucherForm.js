@@ -324,6 +324,10 @@ export default function PayrollCheckVoucherForm({ history }) {
               .map((day, i) => {
                 return `${moment(day.date).format("MM/DD/YYYY")}`;
               });
+
+            const net_salary_pay = round(o.net_salary_pay);
+            const cents = net_salary_pay?.toString().split(".")?.[1] || 0;
+
             return ["Original Copy", "Employee's Copy"].map(
               (copy, copy_index) => (
                 <div
@@ -809,7 +813,7 @@ export default function PayrollCheckVoucherForm({ history }) {
                           className="has-text-weight-bold has-text-right"
                         >
                           <span className="underline">
-                            ₱{numberFormat(o.net_salary_pay)}
+                            ₱{numberFormat(net_salary_pay)}
                           </span>
                         </Col>
                       </Row>
@@ -863,14 +867,9 @@ export default function PayrollCheckVoucherForm({ history }) {
                         <div className="flex-1 b-b-1 ">
                           **
                           {converter
-                            .toWords(o.net_salary_pay || 0)
+                            .toWords(net_salary_pay || 0)
                             .toUpperCase()}{" "}
-                          AND{" "}
-                          {parseInt(
-                            (parseInt(o.net_salary_pay) -
-                              parseInt(o.net_salary_pay)) *
-                              100
-                          )}
+                          AND {cents}
                           /100 PESOS ONLY **
                         </div>
                       </div>
