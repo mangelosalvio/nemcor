@@ -104,3 +104,4 @@ export const permission_options = [
   "Advance Search",
   "Audit",
 ];
+export const product_type_options = ["Inventory", "Non-Inventory"];

@@ -21,23 +21,24 @@ mongoose
 
 const ObjectId = mongoose.Types.ObjectId;
 importData = async () => {
-  var workbook = xlsx.readFile("./PRICE-LIST-2-increase.xlsx");
+  var workbook = xlsx.readFile("./new-energy-products.xlsx");
 
-  const ws = workbook.Sheets["OVERALL"];
+  const ws = workbook.Sheets["Sheet1"];
   const json = xlsx.utils.sheet_to_json(ws, { raw: false });
 
   console.log("processing...");
 
   await asyncForeach(json, async (o, index) => {
-    const supplier_name = o["SUPPLIER NAME"];
+    const product_name = o["NAME"].trim();
+    const category_name = o["CATEGORY"].trim();
 
-    const supplier = await Supplier.findOneAndUpdate(
+    const category = await Category.findOneAndUpdate(
       {
-        name: supplier_name,
+        name: category_name,
       },
       {
         $set: {
-          name: supplier_name,
+          name: category_name,
         },
       },
       {
@@ -46,31 +47,16 @@ importData = async () => {
       }
     );
 
-    const product_name = o["PRODUCT NAME"].toUpperCase().trim();
-
-    const sku = o["SKU"]?.toUpperCase().trim();
-    let price = o["RETAIL"];
-    let wholesale_price = o["WHOLESALE"];
-    let oot_price = !isEmpty(o["OOT"]) ? o["OOT"] : wholesale_price;
-    let retail_price = !isEmpty(o["RETAIL"]) ? o["RETAIL"] : wholesale_price;
-
     await Product.findOneAndUpdate(
       {
         name: product_name,
-        sku,
-        "supplier._id": ObjectId(supplier._id),
       },
       {
         $set: {
-          supplier,
-          sku,
           name: product_name,
-          price: !isEmpty(price) ? price : wholesale_price,
-          wholesale_price,
-          retail_price,
-          oot_price,
-          taxable: true,
-          type_of_senior_discount: "N/A",
+          category,
+          product_type: "Inventory",
+          unit_of_measure: "PC",
         },
       },
       {

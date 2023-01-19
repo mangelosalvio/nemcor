@@ -181,6 +181,52 @@ router.put("/", (req, res) => {
   });
 });
 
+router.post("/:id/branch-price", async (req, res) => {
+  const branch = req.body.branch;
+  const price = req.body.price;
+
+  const count = await Product.countDocuments({
+    _id: ObjectId(req.params.id),
+    "branch_pricing.branch._id": ObjectId(branch._id),
+  });
+
+  // console.log(count);
+
+  if (count <= 0) {
+    await Product.updateOne(
+      {
+        _id: ObjectId(req.params.id),
+      },
+      {
+        $push: {
+          branch_pricing: {
+            branch,
+            price,
+          },
+        },
+      }
+    );
+  } else {
+    await Product.updateOne(
+      {
+        _id: ObjectId(req.params.id),
+        "branch_pricing.branch._id": ObjectId(branch._id),
+      },
+      {
+        $set: {
+          "branch_pricing.$.price": price,
+        },
+      }
+    );
+  }
+
+  const _product = await Product.findOne({
+    _id: ObjectId(req.params.id),
+  });
+
+  return res.json(true);
+});
+
 router.post("/:id/price", async (req, res) => {
   try {
     await Product.updateOne(
@@ -379,8 +425,8 @@ router.post("/paginate", (req, res) => {
         },
       },
     ],
-    ...(advance_search.supplier && {
-      "supplier._id": ObjectId(advance_search.supplier._id),
+    ...(advance_search.category && {
+      "category._id": ObjectId(advance_search.category._id),
     }),
   };
 

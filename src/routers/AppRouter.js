@@ -4,7 +4,7 @@ import { BrowserRouter, Route, Routes } from "react-router-dom";
 import LoginForm from "../components/LoginForm";
 import RegistrationForm from "../components/RegistrationForm";
 import PrivateRoute from "../components/PrivateRoute";
-import Products from "../components/products/Products";
+import StockForm from "../components/products/StockForm";
 import MenuComponent from "../components/MenuComponent";
 
 import AccountSettingsForm from "../components/accounting/AccountSettingsForm";
@@ -39,6 +39,8 @@ import PayrollForm from "../components/payroll/PayrollForm";
 import DeductionForm from "../components/payroll/DeductionForm";
 import ScheduledDeductionForm from "../components/payroll/ScheduledDeductionForm";
 import PayrollCheckVoucherForm from "../components/payroll/PayrollCheckVoucherForm";
+import CategoryForm from "../components/inventory/CategoryForm";
+import StockBranchPricingForm from "../components/products/StockBranchPricingForm";
 
 const AppRouter = () => (
   <div className="is-full-height">
@@ -58,6 +60,29 @@ const AppRouter = () => (
           <Route
             path=""
             element={<MenuComponent component={AreaForm} />}
+          ></Route>
+        </Route>
+
+        <Route path="/products" element={<PrivateRoute />} exact={true}>
+          <Route
+            path=""
+            element={<MenuComponent component={StockForm} />}
+          ></Route>
+        </Route>
+        <Route
+          path="/stock-branch-pricing"
+          element={<PrivateRoute />}
+          exact={true}
+        >
+          <Route
+            path=""
+            element={<MenuComponent component={StockBranchPricingForm} />}
+          ></Route>
+        </Route>
+        <Route path="/categories" element={<PrivateRoute />} exact={true}>
+          <Route
+            path=""
+            element={<MenuComponent component={CategoryForm} />}
           ></Route>
         </Route>
 

@@ -23,7 +23,7 @@ import {
   smallFormItemLayout,
   tailFormItemLayout,
   threeColumnFormItemLayout,
-} from "./../../utils/Layouts";
+} from "../../utils/Layouts";
 
 import isEmpty from "../../validation/is-empty";
 import { useSelector } from "react-redux";
@@ -50,12 +50,13 @@ import CategoryFormModal from "../modals/CategoryFormModal";
 import SimpleSelectFieldGroup from "../../commons/SimpleSelectFieldGroup";
 import {
   item_type_options,
+  product_type_options,
   senior_discount_options,
 } from "../../utils/Options";
 import CheckboxFieldGroup from "../../commons/CheckboxFieldGroup";
 import { authenticateAdmin } from "../../utils/authentications";
 import RadioGroupFieldGroup from "../../commons/RadioGroupFieldGroup";
-import { SENIOR_DISC_RATIO } from "./../../utils/constants";
+import { SENIOR_DISC_RATIO } from "../../utils/constants";
 import axios from "axios";
 
 import numberFormat from "../../utils/numberFormat";
@@ -103,6 +104,7 @@ export default function StockForm({ stock_type }) {
   const [raw_material, setRawMaterial] = useState(null);
   const [loading, setLoading] = useState(false);
   const [page_size, setPageSize] = useState(10);
+  const [branches, setBranches] = useState([]);
   const [options, setOptions] = useState({
     categories: [],
     subcategories: [],
@@ -120,103 +122,6 @@ export default function StockForm({ stock_type }) {
 
   const categoryFormModal = useRef(null);
 
-  const unit_of_measures_column = [
-    {
-      title: "Is Default",
-      dataIndex: "is_default",
-      width: 100,
-      align: "center",
-      render: (value, record, index) => {
-        return (
-          <Checkbox
-            checked={value}
-            onChange={(e) => {
-              let unit_of_measures = [...state.unit_of_measures];
-              unit_of_measures = unit_of_measures.map((o) => ({
-                ...o,
-                is_default: false,
-              }));
-
-              unit_of_measures[index] = {
-                ...unit_of_measures[index],
-                is_default: e.target.checked,
-              };
-
-              setState((prevState) => ({
-                ...prevState,
-                unit_of_measures,
-              }));
-            }}
-          />
-        );
-      },
-    },
-    {
-      title: "Description",
-      dataIndex: "name",
-    },
-    {
-      title: "Packaging",
-      dataIndex: "packaging",
-    },
-    {
-      title: "Unit",
-      dataIndex: "unit",
-    },
-
-    {
-      title: "",
-      key: "action",
-      width: 100,
-      render: (text, record, index) => (
-        <span>
-          {isEmpty(state.status) && isEmpty(state.deleted) && (
-            <i
-              className="fas fa-trash-alt"
-              onClick={() =>
-                onDeleteItem({
-                  field: "unit_of_measures",
-                  index,
-                  setState,
-                })
-              }
-            ></i>
-          )}
-        </span>
-      ),
-    },
-  ];
-
-  const tieup_column = [
-    {
-      title: "Tieup",
-      dataIndex: ["tieup", "name"],
-    },
-
-    {
-      title: "Price",
-      dataIndex: "price",
-      width: 200,
-      render: (price, record, index) => {
-        return (
-          <Input
-            value={price}
-            onChange={(e) => {
-              let tieup_prices = [...state.tieup_prices];
-              tieup_prices[index] = {
-                ...tieup_prices[index],
-                price: e.target.value,
-              };
-
-              setState((prevState) => ({ ...prevState, tieup_prices }));
-            }}
-            className="has-text-right"
-          />
-        );
-      },
-    },
-  ];
-
   const records_column = [
     {
       title: "Name",
@@ -228,71 +133,47 @@ export default function StockForm({ stock_type }) {
     },
     {
       title: "UOM",
-      dataIndex: ["unit_of_measures"],
-      render: (unit_of_measures) =>
-        unit_of_measures?.filter((o) => o.is_default)?.[0]?.unit,
-    },
-    {
-      title: "Price",
-      dataIndex: "price",
-      align: "right",
-      width: 100,
-      render: (value, record) => (
-        <Input
-          className="input-price"
-          defaultValue={value}
-          name="price"
-          onBlur={(e) => {
-            const target = e.target;
-            onUpdatePrice({
-              _id: record._id,
-              price: target.value,
-              price_key: target.name,
-            });
-          }}
-        />
-      ),
-      width: 120,
-    },
-
-    {
-      title: "",
-      key: "action",
-      align: "center",
-      width: 50,
-      render: (text, record) => (
-        <i
-          className="fa-solid fa-pen-to-square"
-          onClick={() =>
-            edit({
-              record,
-              setErrors,
-              setRecords,
-              url,
-              setState,
-            })
-          }
-        ></i>
-      ),
+      dataIndex: ["unit_of_measure"],
     },
   ];
 
-  const onUpdatePrice = useCallback(({ _id, price, price_key = "price" }) => {
-    axios
-      .post(`/api/products/${_id}/price`, {
-        price,
-        price_key,
-      })
-      .then(() => {
-        message.success("Price Updated");
-      })
-      .catch((err) =>
-        message.error("There was an error processing your requrest")
-      );
-  }, []);
+  //setup branch pricing
+  useEffect(() => {
+    setState((prevState) => {
+      //check branch pricing and add branches that are not found
+      let branch_pricing = [...(prevState.branch_pricing || [])];
+      const branches_not_found = branches.filter((o) => {
+        return !branch_pricing.map((_o) => _o.branch?._id).includes(o._id);
+      });
+
+      branch_pricing = [
+        ...branch_pricing,
+        ...branches_not_found.map((o) => {
+          return {
+            branch: o,
+            price: "",
+            wholesale_price: "",
+          };
+        }),
+      ];
+
+      return {
+        ...prevState,
+        branch_pricing,
+      };
+    });
+
+    return () => {};
+  }, [state._id, branches]);
 
   useEffect(() => {
     onCategorySearch({ value: "", options, setOptions, stock_type });
+
+    //get branches
+    axios.get("/api/branches/listings").then((response) => {
+      setBranches([...response.data]);
+    });
+
     onSearch({
       page: 1,
       page_size,
@@ -304,26 +185,9 @@ export default function StockForm({ stock_type }) {
       setErrors,
       advance_search: search_state,
     });
-    if (!isEmpty(search_state.category)) {
-      onSearch({
-        page: 1,
-        page_size,
-        search_keyword,
-        url,
-        setRecords,
-        setTotalRecords,
-        setCurrentPage,
-        setErrors,
-        advance_search: search_state,
-      });
-    }
 
     return () => {};
   }, [search_state.category]);
-
-  useEffect(() => {
-    return () => {};
-  }, []);
 
   useEffect(() => {
     authenticateAdmin({
@@ -355,17 +219,17 @@ export default function StockForm({ stock_type }) {
           <div className="is-flex flex-direction-row stock-category-search">
             <div style={{ width: "200px" }}>
               <SelectFieldGroup
-                value={search_state.supplier?.name}
-                onSearch={(value) => onSupplierSearch({ value, setOptions })}
+                value={search_state.category?.name}
+                onSearch={(value) => onCategorySearch({ value, setOptions })}
                 onChange={(index) => {
-                  const supplier = options.suppliers?.[index] || null;
+                  const category = options.categories?.[index] || null;
                   setSearchState((prevState) => ({
                     ...prevState,
-                    supplier,
+                    category,
                   }));
                 }}
                 formItemLayout={null}
-                data={options.suppliers}
+                data={options.categories}
                 column="name"
               />
             </div>
@@ -392,6 +256,15 @@ export default function StockForm({ stock_type }) {
                 setState({
                   ...initialValues,
                   category: { ...search_state.category },
+                  branch_pricing: [
+                    ...branches.map((o) => {
+                      return {
+                        branch: o,
+                        price: "",
+                        wholesale_price: "",
+                      };
+                    }),
+                  ],
                 });
                 setRecords([]);
               }}
@@ -453,75 +326,115 @@ export default function StockForm({ stock_type }) {
             }
             initialValues={initialValues}
           >
-            <TextFieldGroup
-              label="Name"
-              name="name"
-              error={errors.name}
-              formItemLayout={formItemLayout}
-              value={state.name}
-              onChange={(e) => {
-                onChange({
-                  key: e.target.name,
-                  value: e.target.value?.toUpperCase(),
-                  setState,
-                });
-              }}
-              autoComplete="off"
-            />
-
-            <SelectFieldGroup
-              label="Category"
-              value={state.category?.name}
-              onSearch={(value) =>
-                onCategorySearch({ value, options, setOptions })
-              }
-              onChange={(index) => {
-                const category = options.categories[index];
-                setState((prevState) => ({
-                  ...prevState,
-                  category,
-                }));
-              }}
-              formItemLayout={formItemLayout}
-              data={options.categories}
-              column="name"
-            />
-            <Row key="form" gutter={4}>
-              <Col span={24}>
+            <Row>
+              <Col span={12}>
+                <TextFieldGroup
+                  label="Name"
+                  name="name"
+                  error={errors.name}
+                  formItemLayout={smallFormItemLayout}
+                  value={state.name}
+                  onChange={(e) => {
+                    onChange({
+                      key: e.target.name,
+                      value: e.target.value?.toUpperCase(),
+                      setState,
+                    });
+                  }}
+                  autoComplete="off"
+                />
+              </Col>
+              <Col span={12}>
                 <SelectFieldGroup
-                  label="Unit of Measures"
-                  value={null}
+                  label="Category"
+                  value={state.category?.name}
                   onSearch={(value) =>
-                    onUnitOfMeasureSearch({ value, options, setOptions })
+                    onCategorySearch({ value, options, setOptions })
                   }
                   onChange={(index) => {
-                    if (index >= 0) {
-                      setState((prevState) => {
-                        return {
-                          ...prevState,
-                          unit_of_measures: [
-                            ...(prevState?.unit_of_measures || []),
-                            options.unit_of_measures?.[index] || null,
-                          ],
-                        };
-                      });
-                    }
+                    const category = options.categories?.[index] || null;
+                    setState((prevState) => ({
+                      ...prevState,
+                      category,
+                    }));
                   }}
-                  error={errors.unit_of_measure}
-                  formItemLayout={formItemLayout}
-                  data={options.unit_of_measures}
-                  column="unit"
-                  onAddItem={() => {
-                    unitOfMeasureFormModal.current.open();
-                  }}
+                  formItemLayout={smallFormItemLayout}
+                  data={options.categories}
+                  column="name"
                 />
               </Col>
             </Row>
+
             <Row>
               <Col offset={4} span={20}>
                 <Table
-                  dataSource={addKeysToArray(state.unit_of_measures || [])}
-                  columns={unit_of_measures_column}
+                  dataSource={addKeysToArray([...(state.branch_pricing || [])])}
+                  columns={[
+                    {
+                      title: "Company",
+                      dataIndex: ["branch", "company", "name"],
+                    },
+                    {
+                      title: "Branch",
+                      dataIndex: ["branch", "name"],
+                    },
+                    {
+                      title: "Retail",
+                      dataIndex: "price",
+                      render: (price, record, index) => {
+                        return (
+                          <Input
+                            name="price"
+                            step={0.01}
+                            type="number"
+                            value={price}
+                            onChange={(e) => {
+                              const target = e.target;
+                              const branch_pricing = [...state.branch_pricing];
+
+                              branch_pricing[index] = {
+                                ...branch_pricing[index],
+                                [target.name]: target.value,
+                              };
+
+                              setState((prevState) => ({
+                                ...prevState,
+                                branch_pricing,
+                              }));
+                            }}
+                          />
+                        );
+                      },
+                    },
+                    // {
+                    //   title: "Wholesale",
+                    //   dataIndex: "wholesale_price",
+                    //   render: (wholesale_price, record, index) => {
+                    //     return (
+                    //       <Input
+                    //         name="wholesale_price"
+                    //         step={0.01}
+                    //         type="number"
+                    //         value={wholesale_price}
+                    //         onChange={(e) => {
+                    //           const target = e.target;
+                    //           const branch_pricing = [...state.branch_pricing];
+
+                    //           branch_pricing[index] = {
+                    //             ...branch_pricing[index],
+                    //             [target.name]: target.value,
+                    //           };
+
+                    //           setState((prevState) => ({
+                    //             ...prevState,
+                    //             branch_pricing,
+                    //           }));
+                    //         }}
+                    //       />
+                    //     );
+                    //   },
+                    // },
+                  ]}
                   pagination={false}
                 />
               </Col>
@@ -530,18 +443,36 @@ export default function StockForm({ stock_type }) {
             <Row>
               <Col span={12}>
                 <TextFieldGroup
-                  label="Price"
-                  name="price"
-                  error={errors.price}
+                  label="Unit of Measure"
+                  name="unit_of_measure"
+                  error={errors.unit_of_measure}
                   formItemLayout={smallFormItemLayout}
-                  value={state.price}
+                  value={state.unit_of_measure}
                   onChange={(e) => {
                     onChange({
                       key: e.target.name,
-                      value: e.target.value,
+                      value: e.target.value?.toUpperCase(),
                       setState,
                     });
                   }}
+                  autoComplete="off"
+                />
+              </Col>
+              <Col span={12}>
+                <SimpleSelectFieldGroup
+                  label="Type"
+                  name="product_type"
+                  value={state.product_type}
+                  onChange={(value) => {
+                    onChange({
+                      key: "product_type",
+                      value: value,
+                      setState,
+                    });
+                  }}
+                  error={errors?.approval_status}
+                  formItemLayout={smallFormItemLayout}
+                  options={product_type_options}
                 />
               </Col>
             </Row>
@@ -610,6 +541,20 @@ export default function StockForm({ stock_type }) {
             dataSource={records}
             columns={records_column}
             rowKey={(record) => record._id}
+            onRow={(record, index) => {
+              return {
+                onDoubleClick: (e) => {
+                  edit({
+                    record,
+                    setState,
+                    setErrors,
+                    setRecords,
+                    url,
+                    date_fields,
+                  });
+                },
+              };
+            }}
             pagination={{
               current: current_page,
               defaultCurrent: current_page,

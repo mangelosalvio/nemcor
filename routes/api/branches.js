@@ -14,7 +14,7 @@ const Model = Branch;
 const ObjectId = mongoose.Types.ObjectId;
 
 router.get("/listings", (req, res) => {
-  const string = req.query.s
+  const string = (req.query.s || "")
     .replace(/[-[\]{}()*+?.,\\^$|#]/g, "\\$&")
     .replace(/\s+/g, "\\s+");
 
