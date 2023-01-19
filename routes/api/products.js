@@ -227,6 +227,52 @@ router.post("/:id/branch-price", async (req, res) => {
   return res.json(true);
 });
 
+router.post("/:id/branch-wholesale-price", async (req, res) => {
+  const branch = req.body.branch;
+  const price = req.body.price;
+
+  const count = await Product.countDocuments({
+    _id: ObjectId(req.params.id),
+    "branch_pricing.branch._id": ObjectId(branch._id),
+  });
+
+  // console.log(count);
+
+  if (count <= 0) {
+    await Product.updateOne(
+      {
+        _id: ObjectId(req.params.id),
+      },
+      {
+        $push: {
+          branch_pricing: {
+            branch,
+            wholesale_price: price,
+          },
+        },
+      }
+    );
+  } else {
+    await Product.updateOne(
+      {
+        _id: ObjectId(req.params.id),
+        "branch_pricing.branch._id": ObjectId(branch._id),
+      },
+      {
+        $set: {
+          "branch_pricing.$.wholesale_price": price,
+        },
+      }
+    );
+  }
+
+  const _product = await Product.findOne({
+    _id: ObjectId(req.params.id),
+  });
+
+  return res.json(true);
+});
+
 router.post("/:id/price", async (req, res) => {
   try {
     await Product.updateOne(
@@ -430,13 +476,16 @@ router.post("/paginate", (req, res) => {
     }),
   };
 
-  Model.paginate(form_data, {
-    sort: {
-      name: 1,
-    },
-    page,
-    limit: req.body?.page_size || 10,
-  })
+  Model.paginate(
+    { ...form_data, "deleted.date": { $exists: false } },
+    {
+      sort: {
+        name: 1,
+      },
+      page,
+      limit: req.body?.page_size || 10,
+    }
+  )
     .then((records) => {
       return res.json(records);
     })
@@ -477,8 +526,23 @@ router.post("/:id", (req, res) => {
 });
 
 router.delete("/:id", (req, res) => {
-  Product.findByIdAndRemove(req.params.id)
-    .then((response) => res.json({ success: 1 }))
+  Model.findByIdAndUpdate(
+    req.params.id,
+    {
+      $set: {
+        deleted: {
+          date: moment.tz(moment(), process.env.TIMEZONE),
+          user: req.body.user,
+        },
+      },
+    },
+    {
+      new: true,
+    }
+  )
+    .then(async (record) => {
+      return res.json({ success: 1 });
+    })
     .catch((err) => console.log(err));
 });
 

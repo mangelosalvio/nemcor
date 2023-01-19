@@ -67,7 +67,7 @@ const { Content } = Layout;
 const { Panel } = Collapse;
 
 const url = "/api/products/";
-const title = "Retail Pricing Form";
+const title = "Wholesale Pricing Form";
 
 const initialValues = {
   _id: null,
@@ -93,7 +93,7 @@ const initialValues = {
 
 const date_fields = [];
 
-export default function StockBranchPricingForm({ stock_type }) {
+export default function WholesaleStockBranchPricingForm({ stock_type }) {
   const history = useNavigate();
   const [errors, setErrors] = useState({});
   const [records, setRecords] = useState([]);
@@ -138,7 +138,7 @@ export default function StockBranchPricingForm({ stock_type }) {
             const branch_price =
               (record.branch_pricing || [])?.filter((o) => {
                 return o.branch?._id === branch?._id;
-              })?.[0]?.price || "";
+              })?.[0]?.wholesale_price || "";
 
             return (
               <span>
@@ -147,10 +147,13 @@ export default function StockBranchPricingForm({ stock_type }) {
                   className="table-input-price"
                   onBlur={(e) => {
                     axios
-                      .post(`/api/products/${record._id}/branch-price`, {
-                        price: e.target.value,
-                        branch,
-                      })
+                      .post(
+                        `/api/products/${record._id}/branch-wholesale-price`,
+                        {
+                          price: e.target.value,
+                          branch,
+                        }
+                      )
                       .then(() =>
                         message.success(
                           `${record.name} ${branch.name} price updated`

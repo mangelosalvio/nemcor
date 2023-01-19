@@ -71,7 +71,11 @@ const MenuComponent = ({ component: Component, auth, logoutUser, ...rest }) => {
               <MenuPermission to="/products" label="Products" />
               <MenuPermission
                 to="/stock-branch-pricing"
-                label="Branch Pricing"
+                label="Retail Pricing"
+              />
+              <MenuPermission
+                to="/wholesale-stock-branch-pricing"
+                label="Dealers Pricing"
               />
 
               {/* <MenuPermission to="/departments" label="Departments" />

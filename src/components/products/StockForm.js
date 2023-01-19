@@ -406,34 +406,34 @@ export default function StockForm({ stock_type }) {
                         );
                       },
                     },
-                    // {
-                    //   title: "Wholesale",
-                    //   dataIndex: "wholesale_price",
-                    //   render: (wholesale_price, record, index) => {
-                    //     return (
-                    //       <Input
-                    //         name="wholesale_price"
-                    //         step={0.01}
-                    //         type="number"
-                    //         value={wholesale_price}
-                    //         onChange={(e) => {
-                    //           const target = e.target;
-                    //           const branch_pricing = [...state.branch_pricing];
+                    {
+                      title: "Wholesale",
+                      dataIndex: "wholesale_price",
+                      render: (wholesale_price, record, index) => {
+                        return (
+                          <Input
+                            name="wholesale_price"
+                            step={0.01}
+                            type="number"
+                            value={wholesale_price}
+                            onChange={(e) => {
+                              const target = e.target;
+                              const branch_pricing = [...state.branch_pricing];
 
-                    //           branch_pricing[index] = {
-                    //             ...branch_pricing[index],
-                    //             [target.name]: target.value,
-                    //           };
+                              branch_pricing[index] = {
+                                ...branch_pricing[index],
+                                [target.name]: target.value,
+                              };
 
-                    //           setState((prevState) => ({
-                    //             ...prevState,
-                    //             branch_pricing,
-                    //           }));
-                    //         }}
-                    //       />
-                    //     );
-                    //   },
-                    // },
+                              setState((prevState) => ({
+                                ...prevState,
+                                branch_pricing,
+                              }));
+                            }}
+                          />
+                        );
+                      },
+                    },
                   ]}
                   pagination={false}
                 />

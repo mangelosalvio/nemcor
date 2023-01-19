@@ -83,13 +83,16 @@ router.post("/paginate", (req, res) => {
     }),
   };
 
-  Model.paginate(form_data, {
-    sort: {
-      name: 1,
-    },
-    page,
-    limit: 10,
-  })
+  Model.paginate(
+    { ...form_data, "deleted.date": { $exists: false } },
+    {
+      sort: {
+        name: 1,
+      },
+      page,
+      limit: 10,
+    }
+  )
     .then((records) => {
       return res.json(records);
     })
@@ -142,8 +145,23 @@ router.post("/:id", (req, res) => {
 });
 
 router.delete("/:id", (req, res) => {
-  Model.findByIdAndRemove(req.params.id)
-    .then((response) => res.json({ success: 1 }))
+  Model.findByIdAndUpdate(
+    req.params.id,
+    {
+      $set: {
+        deleted: {
+          date: moment.tz(moment(), process.env.TIMEZONE),
+          user: req.body.user,
+        },
+      },
+    },
+    {
+      new: true,
+    }
+  )
+    .then(async (record) => {
+      return res.json({ success: 1 });
+    })
     .catch((err) => console.log(err));
 });
 

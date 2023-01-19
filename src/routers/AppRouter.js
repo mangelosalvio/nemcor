@@ -41,6 +41,7 @@ import ScheduledDeductionForm from "../components/payroll/ScheduledDeductionForm
 import PayrollCheckVoucherForm from "../components/payroll/PayrollCheckVoucherForm";
 import CategoryForm from "../components/inventory/CategoryForm";
 import StockBranchPricingForm from "../components/products/StockBranchPricingForm";
+import WholesaleStockBranchPricingForm from "../components/products/WholesaleStockBranchPricingForm";
 
 const AppRouter = () => (
   <div className="is-full-height">
@@ -77,6 +78,18 @@ const AppRouter = () => (
           <Route
             path=""
             element={<MenuComponent component={StockBranchPricingForm} />}
+          ></Route>
+        </Route>
+        <Route
+          path="/wholesale-stock-branch-pricing"
+          element={<PrivateRoute />}
+          exact={true}
+        >
+          <Route
+            path=""
+            element={
+              <MenuComponent component={WholesaleStockBranchPricingForm} />
+            }
           ></Route>
         </Route>
         <Route path="/categories" element={<PrivateRoute />} exact={true}>
