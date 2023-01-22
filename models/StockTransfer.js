@@ -1,64 +1,81 @@
 const mongoose = require("mongoose");
 const mongooose_paginate = require("mongoose-paginate");
+const BranchModel = require("./BranchModel");
 const ProductModel = require("./ProductModel");
 const Schema = mongoose.Schema;
 
-const StockTransferSchema = new Schema({
-  stock_transfer_no: Number,
-  date: Date,
-  remarks: String,
-  from_warehouse: {
-    _id: mongoose.Schema.Types.ObjectId,
-    name: String,
-    address: String,
-  },
-  to_warehouse: {
-    _id: mongoose.Schema.Types.ObjectId,
-    name: String,
-    address: String,
-  },
-  items: [
-    {
-      stock: {
-        _id: mongoose.Schema.Types.ObjectId,
-        ...ProductModel,
-      },
-      case_quantity: Number,
-      quantity: Number,
-
-      approved_case_quantity: Number,
-      approved_quantity: Number,
-
-      total_released_case_quantity: Number,
-      total_released_quantity: Number,
-
-      total_received_case_quantity: Number,
-      total_received_quantity: Number,
+const StockTransferSchema = new Schema(
+  {
+    stock_transfer_no: Number,
+    branch_reference: String,
+    date: Date,
+    remarks: String,
+    reference: String,
+    branch: {
+      ...BranchModel,
+      _id: mongoose.Schema.Types.ObjectId,
     },
-  ],
+    to_branch: {
+      ...BranchModel,
+      _id: mongoose.Schema.Types.ObjectId,
+    },
 
-  total_amount: Number,
-  logs: [
-    {
+    driver: String,
+    plate_no: String,
+
+    items: [
+      {
+        stock: {
+          _id: mongoose.Schema.Types.ObjectId,
+          ...ProductModel,
+        },
+        case_quantity: Number,
+        quantity: Number,
+        case_price: Number,
+        price: Number,
+        amount: Number,
+      },
+    ],
+
+    total_amount: Number,
+    logs: [
+      {
+        user: Object,
+        datetime: Date,
+        log: String,
+      },
+    ],
+    deleted: {
+      date: Date,
+      user: Object,
+    },
+    status: {
+      approval_status: String,
+      datetime: Date,
+      user: Object,
+    },
+    printed: {
       user: Object,
       datetime: Date,
-      log: String,
     },
-  ],
-  deleted: {
-    date: Date,
-    user: Object,
+    created_at: Date,
+    updated_at: Date,
+    created_by: {
+      id: mongoose.Schema.Types.ObjectId,
+      name: String,
+    },
+    updated_by: {
+      id: mongoose.Schema.Types.ObjectId,
+      name: String,
+    },
   },
-  status: {
-    approval_status: String,
-    datetime: Date,
-    user: Object,
-  },
-  printed: {
-    user: Object,
-    datetime: Date,
-  },
-});
+  {
+    timestamps: {
+      createdAt: "created_at",
+      updatedAt: "updated_at",
+    },
+  }
+);
 
 StockTransferSchema.plugin(mongooose_paginate);
 module.exports = mongoose.model("stock_transfers", StockTransferSchema);

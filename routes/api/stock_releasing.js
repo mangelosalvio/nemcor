@@ -13,6 +13,7 @@ const validateInput = require("./../../validators/stock_releasing");
 const moment = require("moment-timezone");
 const mongoose = require("mongoose");
 const async = require("async");
+const BranchCounter = require("../../models/BranchCounter");
 
 const Model = StockReleasing;
 
@@ -120,13 +121,8 @@ router.put("/stocks-receiving", (req, res) => {
     _id: ObjectId(req.body._id),
   })
     .then((record) => {
-      const {
-        date,
-        warehouse,
-        customer,
-        items,
-        total_amount,
-      } = record.toObject();
+      const { date, warehouse, customer, items, total_amount } =
+        record.toObject();
 
       const body = {
         date,
@@ -205,10 +201,16 @@ router.put("/", (req, res) => {
       log,
     },
   ];
+  const branch = req.body.branch;
 
-  Counter.increment(seq_key).then((result) => {
+  BranchCounter.increment(seq_key, branch._id).then((result) => {
+    const branch_reference = `WR-${branch?.company?.company_code}-${
+      branch.name
+    }-${result.next.toString().padStart(6, "0")}`;
+
     const newRecord = new Model({
       ...body,
+      branch_reference,
       [seq_key]: result.next,
       logs,
     });
@@ -347,18 +349,13 @@ router.post("/liquidation", (req, res) => {
     async.map(
       records,
       async (record) => {
-        const {
-          releases,
-          customer_collections,
-          sales_returns,
-        } = await update_inventory.getStockReleasesAndCollectionsFromDeliveries(
-          {
+        const { releases, customer_collections, sales_returns } =
+          await update_inventory.getStockReleasesAndCollectionsFromDeliveries({
             sale: {
               ...record.sale,
               _id: ObjectId(record.sale._id),
             },
-          }
-        );
+          });
 
         return {
           ...record,

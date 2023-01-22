@@ -1,33 +1,32 @@
 const express = require("express");
 const router = express.Router();
-const StockReceiving = require("./../../models/StockReceiving");
-const SalesReturn = require("./../../models/SalesReturns");
-const StockReleasing = require("./../../models/StockReleasing");
+
 const Counter = require("./../../models/Counter");
 const isEmpty = require("./../../validators/is-empty");
 const filterId = require("./../../utils/filterId");
 const round = require("./../../utils/round");
 const update_inventory = require("./../../library/inventory");
-const validateInput = require("./../../validators/stocks_receiving");
+const validateInput = require("./../../validators/stock-transfers");
 const moment = require("moment-timezone");
 const mongoose = require("mongoose");
+const validator = require("validator");
 const async = require("async");
 const StockTransfer = require("../../models/StockTransfer");
-const PurchaseOrder = require("../../models/PurchaseOrder");
+
 const printing_functions = require("../../utils/printing_functions");
 const {
   CANCELLED,
   OPEN,
-  MODULE_WAREHOUSE_RECEIPT,
   ACTION_UPDATE,
   ACTION_SAVE,
   ACTION_CANCEL,
+  MODULE_STOCK_TRANSFER,
 } = require("../../config/constants");
 const BranchCounter = require("../../models/BranchCounter");
 const { saveTransactionAuditTrail } = require("../../library/update_functions");
 
-const Model = StockReceiving;
-const seq_key = "rr_no";
+const Model = StockTransfer;
+const seq_key = "stock_transfer_no";
 const ObjectId = mongoose.Types.ObjectId;
 
 router.get("/listing", (req, res) => {
@@ -107,9 +106,9 @@ router.put("/", (req, res) => {
     },
   ];
 
-  const branch = req.body.branch;
-  BranchCounter.increment(seq_key, branch._id).then((result) => {
-    const branch_reference = `WR-${branch?.company?.company_code}-${
+  BranchCounter.increment(seq_key, req.body.branch._id).then((result) => {
+    const branch = req.body.branch;
+    const branch_reference = `ST-${branch?.company?.company_code}-${
       branch.name
     }-${result.next.toString().padStart(6, "0")}`;
 
@@ -132,7 +131,7 @@ router.put("/", (req, res) => {
       .then((record) => {
         saveTransactionAuditTrail({
           user,
-          module_name: MODULE_WAREHOUSE_RECEIPT,
+          module_name: MODULE_STOCK_TRANSFER,
           reference: record[seq_key],
           action: ACTION_SAVE,
         }).catch((err) => console.log(err));
@@ -191,7 +190,7 @@ router.post("/:id/update-status", (req, res) => {
         .then((record) => {
           saveTransactionAuditTrail({
             user,
-            module_name: MODULE_WAREHOUSE_RECEIPT,
+            module_name: MODULE_STOCK_TRANSFER,
             reference: record[seq_key],
             action: record.status?.approval_status,
           }).catch((err) => console.log(err));
@@ -279,7 +278,7 @@ router.post("/history", (req, res) => {
     },
     {
       $sort: {
-        rr_no: 1,
+        [seq_key]: 1,
       },
     },
   ]).then((records) => {
@@ -320,30 +319,10 @@ router.post("/paginate", (req, res) => {
   let advance_search = req.body.advance_search || {};
 
   const form_data = {
-    ...(!isEmpty(req.body.s) && {
-      $or: [
-        {
-          "supplier.name": {
-            $regex: new RegExp(req.body.s, "i"),
-          },
-        },
-
-        {
-          invoice_no: req.body.s,
-        },
-
-        ...(validator.isNumeric(req.body.s)
-          ? [
-              {
-                [seq_key]: parseInt(req.body.s),
-              },
-              {
-                "purchase_order.po_no": parseInt(req.body.s),
-              },
-            ]
-          : []),
-      ],
-    }),
+    ...(advance_search[seq_key] &&
+      validator.isNumeric(advance_search[seq_key]) && {
+        [seq_key]: parseInt(advance_search[seq_key], 10),
+      }),
 
     ...(advance_search.period_covered &&
       advance_search.period_covered[0] &&
@@ -382,7 +361,7 @@ router.post("/paginate", (req, res) => {
 
   Model.paginate(form_data, {
     sort: {
-      [seq_key]: -1,
+      _id: -1,
     },
     page,
     limit: req.body?.page_size || 10,
@@ -433,7 +412,7 @@ router.post("/:id", (req, res) => {
         .then((record) => {
           saveTransactionAuditTrail({
             user,
-            module_name: MODULE_WAREHOUSE_RECEIPT,
+            module_name: MODULE_STOCK_TRANSFER,
             reference: record[seq_key],
             action: ACTION_UPDATE,
           }).catch((err) => console.log(err));
@@ -471,7 +450,7 @@ router.delete("/:id", (req, res) => {
     .then((record) => {
       saveTransactionAuditTrail({
         user,
-        module_name: MODULE_WAREHOUSE_RECEIPT,
+        module_name: MODULE_STOCK_TRANSFER,
         reference: record[seq_key],
         action: ACTION_CANCEL,
       }).catch((err) => console.log(err));

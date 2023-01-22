@@ -88,6 +88,7 @@ const MenuComponent = ({ component: Component, auth, logoutUser, ...rest }) => {
               <MenuPermission to="/employees" label="Employees" />
               {/* <MenuPermission to="/customers" label="Customers" /> */}
               <MenuPermission to="/branches" label="Branches" />
+              <MenuPermission to="/accounts" label="Accounts" />
             </SubMenu>
 
             <SubMenu
@@ -100,7 +101,17 @@ const MenuComponent = ({ component: Component, auth, logoutUser, ...rest }) => {
                   Inventory
                 </span>
               }
-            ></SubMenu>
+            >
+              <MenuPermission
+                to="/stocks-receiving"
+                label="Warehouse Receipt"
+              />
+              <MenuPermission to="/stock-transfers" label="Stock Transfers" />
+              <MenuPermission
+                to="/display-delivery-receipts"
+                label="Display Delivery Receipts"
+              />
+            </SubMenu>
             <SubMenu
               key="payroll"
               title={

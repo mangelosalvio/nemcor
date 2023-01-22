@@ -19,7 +19,13 @@ import {
   STATUS_CLOSED,
   CANCELLED,
   STATUS_PAID,
+  ACCESS_CANCEL,
+  ACCESS_APPROVE,
+  ACCESS_PRINT,
+  ACCESS_ADD,
+  ACCESS_UPDATE,
 } from "../utils/constants";
+import { hasAccess } from "../utils/form_utilities";
 
 import isEmpty from "../validation/is-empty";
 
@@ -49,14 +55,26 @@ export default function FormButtons({
   onPrint,
   finalize_label,
 }) {
-  const params = useLocation();
+  const location = useLocation();
 
   return (
     <Form.Item className="m-t-1">
       <div className="field is-grouped">
         {([OPEN, ...save_statuses].includes(state.status?.approval_status) ||
           isEmpty(state.status?.approval_status)) &&
-          has_save && (
+          has_save &&
+          ((isEmpty(state._id) &&
+            hasAccess({
+              auth,
+              access: ACCESS_ADD,
+              location,
+            })) ||
+            (!isEmpty(state._id) &&
+              hasAccess({
+                auth,
+                access: ACCESS_UPDATE,
+                location,
+              }))) && (
             <div className="control">
               <button className="button is-primary" disabled={loading}>
                 Save
@@ -75,21 +93,27 @@ export default function FormButtons({
           </span>
         )}
 
-        {has_print && state.status?.approval_status !== CANCELLED && (
-          <div className="control">
-            <button
-              onClick={(e) => {
-                e.preventDefault();
-                onPrint();
-              }}
-              className="button is-info is-outlined"
-              disabled={loading}
-            >
-              <i className="fas fa-print pad-right-8" />
-              Print
-            </button>
-          </div>
-        )}
+        {has_print &&
+          state.status?.approval_status !== CANCELLED &&
+          hasAccess({
+            auth,
+            access: ACCESS_PRINT,
+            location,
+          }) && (
+            <div className="control">
+              <button
+                onClick={(e) => {
+                  e.preventDefault();
+                  onPrint();
+                }}
+                className="button is-info is-outlined"
+                disabled={loading}
+              >
+                <i className="fas fa-print pad-right-8" />
+                Print
+              </button>
+            </div>
+          )}
         {!isEmpty(state?._id) &&
           additional_buttons.map((Component) => Component)}
 
@@ -97,7 +121,12 @@ export default function FormButtons({
           !isEmpty(state?._id) &&
           ![STATUS_CLOSED, CANCELLED, STATUS_PAID].includes(
             state.status?.approval_status
-          ) && (
+          ) &&
+          hasAccess({
+            auth,
+            access: ACCESS_APPROVE,
+            location,
+          }) && (
             <div className="control">
               <button
                 className="button is-info"
@@ -122,7 +151,12 @@ export default function FormButtons({
           )}
         {has_cancel &&
           ![CANCELLED].includes(state.status?.approval_status) &&
-          !isEmpty(state?._id) && (
+          !isEmpty(state?._id) &&
+          hasAccess({
+            auth,
+            access: ACCESS_CANCEL,
+            location,
+          }) && (
             <div className="control">
               <button
                 className="button is-danger"

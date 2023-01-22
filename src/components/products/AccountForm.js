@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import TextFieldGroup from "../../commons/TextFieldGroup";
 import Searchbar from "../../commons/Searchbar";
 
@@ -8,22 +8,21 @@ import {
   Form,
   Table,
   Divider,
-  Button,
-  PageHeader,
-  Collapse,
   Row,
   Col,
-  message,
+  Collapse,
+  PageHeader,
+  Button,
   Input,
+  message,
 } from "antd";
 
 import {
   formItemLayout,
   smallFormItemLayout,
   tailFormItemLayout,
-  threeColumnFormItemLayout,
 } from "./../../utils/Layouts";
-
+import { EditOutlined, CloseOutlined, SearchOutlined } from "@ant-design/icons";
 import isEmpty from "../../validation/is-empty";
 import { useSelector } from "react-redux";
 import {
@@ -32,222 +31,75 @@ import {
   onSubmit,
   onSearch,
   onChange,
-  onDeleteItem,
 } from "../../utils/form_utilities";
+import moment from "moment";
+import DatePickerFieldGroup from "../../commons/DatePickerFieldGroup";
+import numberFormat from "../../utils/numberFormat";
+import { authenticateAdmin } from "../../utils/authentications";
+import { onBranchSearch } from "../../utils/utilities";
 import SelectFieldGroup from "../../commons/SelectFieldGroup";
+import RangeDatePickerFieldGroup from "../../commons/RangeDatePickerFieldGroup";
+import axios from "axios";
 import {
-  addKeysToArray,
-  onCategorySearch,
-  onStationSearch,
-  onStockInventorySearch,
-  onStockSearch,
-  onSupplierSearch,
-} from "../../utils/utilities";
-import CategoryFormModal from "../modals/CategoryFormModal";
-
+  account_type_options,
+  customer_pricing_options,
+} from "../../utils/Options";
 import SimpleSelectFieldGroup from "../../commons/SimpleSelectFieldGroup";
 import {
-  item_type_options,
-  senior_discount_options,
-} from "../../utils/Options";
-import CheckboxFieldGroup from "../../commons/CheckboxFieldGroup";
-import { authenticateAdmin } from "../../utils/authentications";
-import RadioGroupFieldGroup from "../../commons/RadioGroupFieldGroup";
-import { SENIOR_DISC_RATIO } from "./../../utils/constants";
-import axios from "axios";
-
-import numberFormat from "../../utils/numberFormat";
-import CheckboxGroupFieldGroup from "../../commons/CheckboxGroupFieldGroup";
-import { useNavigate } from "react-router-dom";
+  ACCOUNT_TYPE_CONSIGNEE,
+  ACCOUNT_TYPE_CUSTOMER,
+} from "../../utils/constants";
 
 const { Content } = Layout;
 const { Panel } = Collapse;
 
 const url = "/api/accounts/";
-const title = "Customer Form";
+const title = "Account Form";
 
 const initialValues = {
   _id: null,
   name: "",
-  sku: "",
-  category: null,
-  meat_type: null,
-  price: "",
-  price: "",
-  uom: "",
-  description: "",
-  taxable: true,
-  type_of_senior_discount: SENIOR_DISC_RATIO,
-  reorder_level: "",
-  pieces_in_case: "",
-  disabled: false,
-  raw_materials: [],
-  specific_category: "",
-  cost: "",
-  is_open_item: false,
-  track_inventory: false,
+  address: "",
+  owner: "",
+  contact_no: "",
+  terms: "",
+  opening_balance: 0,
+  opening_balance_date: moment(),
+  terms_in_days: null,
 };
-
-const date_fields = [];
-
-export default function AccountForm({ stock_type }) {
-  const history = useNavigate();
+const date_fields = ["date_of_birth", "date_hired", "date_released"];
+export default function AccountForm({ history }) {
   const [errors, setErrors] = useState({});
   const [records, setRecords] = useState([]);
   const [total_records, setTotalRecords] = useState(null);
   const [current_page, setCurrentPage] = useState(1);
   const [search_keyword, setSearchKeyword] = useState("");
   const auth = useSelector((state) => state.auth);
-  const [raw_material, setRawMaterial] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [options, setOptions] = useState({
-    categories: [],
-    subcategories: [],
-    stocks: [],
-    suppliers: [],
-    brands: [],
-  });
-
+  const [options, setOptions] = useState({});
   const [search_state, setSearchState] = useState({
-    category: null,
-    stock_type,
+    branch: null,
   });
 
   const [state, setState] = useState(initialValues);
 
-  const categoryFormModal = useRef(null);
-
-  const raw_materials_column = [
-    {
-      title: "Name",
-      dataIndex: ["raw_material", "name"],
-    },
-    {
-      title: "Quantity",
-      dataIndex: ["raw_material_quantity"],
-    },
-    {
-      title: "",
-      key: "action",
-      width: 100,
-      render: (text, record, index) => (
-        <span>
-          {isEmpty(state.deleted) && (
-            <DeleteOutlined
-              onClick={() =>
-                onDeleteItem({
-                  field: "raw_materials",
-                  index,
-                  setState,
-                })
-              }
-            />
-          )}
-        </span>
-      ),
-    },
-  ];
-
-  const tieup_column = [
-    {
-      title: "Tieup",
-      dataIndex: ["tieup", "name"],
-    },
-
-    {
-      title: "Price",
-      dataIndex: "price",
-      width: 200,
-      render: (price, record, index) => {
-        return (
-          <Input
-            value={price}
-            onChange={(e) => {
-              let tieup_prices = [...state.tieup_prices];
-              tieup_prices[index] = {
-                ...tieup_prices[index],
-                price: e.target.value,
-              };
-
-              setState((prevState) => ({ ...prevState, tieup_prices }));
-            }}
-            className="has-text-right"
-          />
-        );
-      },
-    },
-  ];
-
   const records_column = [
-    {
-      title: "",
-      key: "action",
-      width: 50,
-      render: (text, record) => (
-        <i
-          className="fa-solid fa-pen-to-square"
-          onClick={() =>
-            edit({
-              record,
-              setErrors,
-              setRecords,
-              url,
-              setState,
-            })
-          }
-        ></i>
-      ),
-    },
-
     {
       title: "Name",
       dataIndex: "name",
     },
     {
-      title: "Store",
-      dataIndex: "store",
+      title: "Address",
+      dataIndex: "address",
     },
     {
-      title: "Location",
-      dataIndex: ["location"],
+      title: "Contact No.",
+      dataIndex: "contact_no",
     },
     {
-      title: "Sales Rep.",
-      dataIndex: ["sales_rep", "name"],
+      title: "Account Type",
+      dataIndex: "account_type",
     },
   ];
-
-  useEffect(() => {
-    onCategorySearch({ value: "", options, setOptions, stock_type });
-    onSearch({
-      page: 1,
-      search_keyword,
-      url,
-      setRecords,
-      setTotalRecords,
-      setCurrentPage,
-      setErrors,
-      advance_search: search_state,
-    });
-    if (!isEmpty(search_state.category)) {
-      onSearch({
-        page: 1,
-        search_keyword,
-        url,
-        setRecords,
-        setTotalRecords,
-        setCurrentPage,
-        setErrors,
-        advance_search: search_state,
-      });
-    }
-
-    return () => {};
-  }, [search_state.category]);
-
-  useEffect(() => {
-    return () => {};
-  }, []);
 
   useEffect(() => {
     authenticateAdmin({
@@ -259,119 +111,125 @@ export default function AccountForm({ stock_type }) {
 
   return (
     <Content className="content-padding">
-      <CategoryFormModal
-        setField={(category) => {
-          setState((prevState) => ({
-            ...prevState,
-            category,
-          }));
-        }}
-        ref={categoryFormModal}
-      />
-      <Row>
-        <Col span={8}>
+      <div className="columns is-marginless">
+        <div className="column">
           <Breadcrumb style={{ margin: "16px 0" }}>
             <Breadcrumb.Item>Home</Breadcrumb.Item>
             <Breadcrumb.Item>{title}</Breadcrumb.Item>
           </Breadcrumb>
-        </Col>
-        <Col span={16}>
-          <div className="is-flex flex-direction-row stock-category-search">
-            <div style={{ width: "200px" }}>
-              <SelectFieldGroup
-                value={search_state.supplier?.name}
-                onSearch={(value) => onSupplierSearch({ value, setOptions })}
-                onChange={(index) => {
-                  const supplier = options.suppliers?.[index] || null;
-                  setSearchState((prevState) => ({
-                    ...prevState,
-                    supplier,
-                  }));
-                }}
-                formItemLayout={null}
-                data={options.suppliers}
-                column="name"
-              />
-            </div>
+        </div>
+        <div className="column">
+          <Searchbar
+            name="search_keyword"
+            onSearch={(value, e) => {
+              e.preventDefault();
+              onSearch({
+                page: 1,
+                search_keyword,
+                url,
+                setRecords,
+                setTotalRecords,
+                setCurrentPage,
+                setErrors,
+                advance_search: search_state,
+              });
+            }}
+            onChange={(e) => setSearchKeyword(e.target.value)}
+            value={search_keyword}
+            onNew={() => {
+              setRecords([]);
+              setState(initialValues);
+            }}
+          />
+        </div>
+      </div>
 
-            <Searchbar
-              name="search_keyword"
-              onSearch={(value, e) => {
-                e.preventDefault();
-                onSearch({
-                  page: 1,
-                  search_keyword,
-                  url,
-                  setRecords,
-                  setTotalRecords,
-                  setCurrentPage,
-                  setErrors,
-                  advance_search: search_state,
-                });
-              }}
-              onChange={(e) => setSearchKeyword(e.target.value)}
-              value={search_keyword}
-              onNew={() => {
-                setState({
-                  ...initialValues,
-                  category: { ...search_state.category },
-                });
-                setRecords([]);
-              }}
-            />
-          </div>
+      {/* Start of Advance Search */}
+      <Row>
+        <Col span={24} className="m-b-1">
+          <Collapse>
+            <Panel header="Advance Search">
+              <PageHeader
+                backIcon={false}
+                style={{
+                  border: "1px solid rgb(235, 237, 240)",
+                }}
+                onBack={() => null}
+                title="Advance Filter"
+                subTitle="Enter appropriate data to filter records"
+              >
+                <div className="or-slip-form">
+                  <Row>
+                    <Col span={8}>
+                      <SimpleSelectFieldGroup
+                        label="Account Type"
+                        name="account_type"
+                        value={search_state.account_type}
+                        onChange={(value) => {
+                          onChange({
+                            key: "account_type",
+                            value: value,
+                            setState: setSearchState,
+                          });
+                        }}
+                        formItemLayout={smallFormItemLayout}
+                        options={account_type_options}
+                      />
+                    </Col>
+                  </Row>
+
+                  <Row>
+                    <Col span={8}>
+                      <Row>
+                        <Col offset={8} span={12}>
+                          <Button
+                            type="info"
+                            size="small"
+                            icon={<SearchOutlined />}
+                            onClick={() => {
+                              onSearch({
+                                page: 1,
+                                search_keyword,
+                                url,
+                                setRecords,
+                                setTotalRecords,
+                                setCurrentPage,
+                                setErrors,
+                                advance_search: search_state,
+                              });
+                            }}
+                          >
+                            Search
+                          </Button>
+                        </Col>
+                      </Row>
+                    </Col>
+                    <Col span={8}></Col>
+                    <Col span={8}></Col>
+                  </Row>
+                </div>
+              </PageHeader>
+            </Panel>
+          </Collapse>
         </Col>
       </Row>
+      {/* End of Advanced Search */}
 
       <div style={{ background: "#fff", padding: 24, minHeight: 280 }}>
-        <span className="module-title">
-          {isEmpty(records) && (
-            <i
-              className="fas fa-chevron-left title-back-button"
-              onClick={() => {
-                onSearch({
-                  page: current_page,
-                  search_keyword,
-                  url,
-                  setRecords,
-                  setTotalRecords,
-                  setCurrentPage,
-                  setErrors,
-                  advance_search: search_state,
-                });
-              }}
-            ></i>
-          )}
-          {title}
-        </span>
+        <span className="module-title">{title}</span>
         <Divider />
         {isEmpty(records) ? (
           <Form
-            onFinish={() =>
+            onFinish={() => {
               onSubmit({
-                values: {
-                  ...state,
-                },
+                values: state,
                 auth,
                 url,
                 setErrors,
                 setState,
                 date_fields,
-                setLoading,
-                cb: () => {
-                  onSearch({
-                    page: current_page,
-                    search_keyword,
-                    url,
-                    setRecords,
-                    setTotalRecords,
-                    setCurrentPage,
-                    setErrors,
-                    advance_search: search_state,
-                  });
-                },
-              })
-            }
+              });
+            }}
             initialValues={initialValues}
           >
             <TextFieldGroup
@@ -387,15 +245,13 @@ export default function AccountForm({ stock_type }) {
                   setState,
                 });
               }}
-              autoComplete="off"
             />
-
             <TextFieldGroup
-              label="Store"
-              name="store"
-              error={errors.store}
+              label="Address"
+              name="address"
+              error={errors.address}
               formItemLayout={formItemLayout}
-              value={state.store}
+              value={state.address}
               onChange={(e) => {
                 onChange({
                   key: e.target.name,
@@ -404,13 +260,12 @@ export default function AccountForm({ stock_type }) {
                 });
               }}
             />
-
             <TextFieldGroup
-              label="Location"
-              name="location"
-              error={errors.location}
+              label="Contact No."
+              name="contact_no"
+              error={errors.contact_no}
               formItemLayout={formItemLayout}
-              value={state.location}
+              value={state.contact_no}
               onChange={(e) => {
                 onChange({
                   key: e.target.name,
@@ -419,63 +274,109 @@ export default function AccountForm({ stock_type }) {
                 });
               }}
             />
-
-            <SelectFieldGroup
-              label="Sales Rep."
-              value={state.supplier?.name}
-              onSearch={(value) => onSupplierSearch({ value, setOptions })}
-              onChange={(index) => {
-                const supplier = options.suppliers?.[index] || null;
-                setState((prevState) => ({
-                  ...prevState,
-                  supplier,
-                }));
-              }}
+            <TextFieldGroup
+              label="Business Style"
+              name="business_style"
+              error={errors.business_style}
               formItemLayout={formItemLayout}
-              data={options.suppliers}
-              column="name"
+              value={state.business_style}
+              onChange={(e) => {
+                onChange({
+                  key: e.target.name,
+                  value: e.target.value,
+                  setState,
+                });
+              }}
             />
+            <TextFieldGroup
+              label="TIN"
+              name="tin"
+              error={errors.tin}
+              formItemLayout={formItemLayout}
+              value={state.tin}
+              onChange={(e) => {
+                onChange({
+                  key: e.target.name,
+                  value: e.target.value,
+                  setState,
+                });
+              }}
+            />
+            <SimpleSelectFieldGroup
+              label="Account Type"
+              name="account_type"
+              value={state.account_type}
+              onChange={(value) => {
+                onChange({
+                  key: "account_type",
+                  value: value,
+                  setState,
+                });
+              }}
+              error={errors?.account_type}
+              formItemLayout={formItemLayout}
+              options={account_type_options}
+            />
+
+            {[ACCOUNT_TYPE_CONSIGNEE, ACCOUNT_TYPE_CUSTOMER].includes(
+              state.account_type
+            ) && (
+              <SimpleSelectFieldGroup
+                label="Pricing Type"
+                name="pricing_type"
+                value={state.pricing_type}
+                onChange={(value) => {
+                  onChange({
+                    key: "pricing_type",
+                    value: value,
+                    setState,
+                  });
+                }}
+                error={errors?.pricing_type}
+                formItemLayout={formItemLayout}
+                options={customer_pricing_options}
+              />
+            )}
 
             <Form.Item className="m-t-1" {...tailFormItemLayout}>
               <div className="field is-grouped">
-                <div className="control">
-                  <button
-                    className="button is-small"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      onSearch({
-                        page: current_page,
-                        search_keyword,
-                        url,
-                        setRecords,
-                        setTotalRecords,
-                        setCurrentPage,
-                        setErrors,
-                        advance_search: search_state,
-                      });
-                    }}
-                  >
-                    Back
-                  </button>
-                </div>
                 <div className="control">
                   <button className="button is-small is-primary">Save</button>
                 </div>
                 {!isEmpty(state._id) ? (
                   <span
-                    className="button is-danger is-outlined is-small"
+                    className="button control is-danger is-outlined is-small"
                     onClick={() => {
                       onDelete({
                         id: state._id,
                         url,
                       });
-                      setState({ ...initialValues });
+                      setState(initialValues);
                     }}
                   >
                     <span>Delete</span>
-                    <i className="fa-solid fa-xmark"></i>
+                    <span>
+                      <i className="fas fa-times"></i>
+                    </span>
                   </span>
                 ) : null}
+                <span
+                  className="button is-outlined is-small control"
+                  onClick={() => {
+                    onSearch({
+                      page: current_page,
+                      search_keyword,
+                      url,
+                      setRecords,
+                      setTotalRecords,
+                      setCurrentPage,
+                      setErrors,
+                      advance_search: search_state,
+                    });
+                  }}
+                >
+                  <span>Exit</span>
+                </span>
               </div>
             </Form.Item>
           </Form>
@@ -484,6 +385,20 @@ export default function AccountForm({ stock_type }) {
             dataSource={records}
             columns={records_column}
             rowKey={(record) => record._id}
+            onRow={(record, index) => {
+              return {
+                onDoubleClick: (e) => {
+                  edit({
+                    record,
+                    setState,
+                    setErrors,
+                    setRecords,
+                    url,
+                    date_fields,
+                  });
+                },
+              };
+            }}
             pagination={{
               current: current_page,
               defaultCurrent: current_page,
@@ -499,7 +414,7 @@ export default function AccountForm({ stock_type }) {
                   advance_search: search_state,
                 }),
               total: total_records,
-              pageSize: 60,
+              pageSize: 10,
             }}
           />
         )}

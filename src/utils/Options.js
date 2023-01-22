@@ -102,6 +102,14 @@ export const permission_options = [
   "Add",
   "Update",
   "Advance Search",
-  "Audit",
+  "Price Change",
 ];
 export const product_type_options = ["Inventory", "Non-Inventory"];
+export const account_type_options = [
+  "Customer",
+  "Consignee",
+  "Supplier",
+  "Branch",
+];
+
+export const customer_pricing_options = ["Retail", "Dealer"];

@@ -1,7 +1,10 @@
 const mongoose = require("mongoose");
 const mongoose_paginate = require("mongoose-paginate");
+const AccountModel = require("./AccountModel");
+const BranchModel = require("./BranchModel");
 const ProductModel = require("./ProductModel");
 const SupplierModel = require("./SupplierModel");
+const UserLogSchema = require("./UserLogSchema");
 const UserSchema = require("./UserSchema");
 const WarehouseModel = require("./WarehouseModel");
 const Schema = mongoose.Schema;
@@ -10,16 +13,16 @@ const TableSchema = new Schema(
   {
     rr_no: Number,
     date: Date,
-    warehouse: {
-      _id: mongoose.Schema.Types.ObjectId,
-      ...WarehouseModel,
-    },
-
-    supplier: {
-      ...SupplierModel,
+    branch_reference: String,
+    branch: {
+      ...BranchModel,
       _id: mongoose.Schema.Types.ObjectId,
     },
-
+    account: {
+      ...AccountModel,
+      _id: mongoose.Schema.Types.ObjectId,
+    },
+    reference: String,
     remarks: String,
 
     items: [
@@ -37,26 +40,26 @@ const TableSchema = new Schema(
     ],
     logs: [
       {
-        user: Object,
+        user: UserLogSchema,
         datetime: Date,
         log: String,
       },
     ],
     deleted: {
       date: Date,
-      user: Object,
+      user: UserLogSchema,
     },
     status: {
       approval_status: String,
       datetime: Date,
-      user: Object,
+      user: UserLogSchema,
     },
     total_amount: Number,
     total_discount_amount: Number,
     gross_amount: Number,
 
     printed: {
-      user: Object,
+      user: UserLogSchema,
       datetime: Date,
     },
 

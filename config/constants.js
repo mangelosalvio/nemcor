@@ -49,4 +49,14 @@ module.exports = {
   CREDIT_MEMO_PARTIALLY_CLAIMED: "Partially Claimed",
   STATUS_ALLOW_PRICE_EDIT: "Allow Price Edit",
   STATUS_PAID: "PAID",
+  MODULE_WAREHOUSE_RECEIPT: "Warehouse Receipt",
+  MODULE_STOCK_TRANSFER: "Stock Transfer",
+
+  ACTION_SAVE: "Save",
+  ACTION_UPDATE: "Update",
+  ACTION_APPROVE: "Approve",
+  ACTION_CANCEL: "Cancel",
+  ACTION_PRINT: "Print",
+  ACTION_BACKUP: "Backup",
+  ACTION_BACKUP_RESTORE: "Backup Restore",
 };

@@ -1,19 +1,17 @@
 const express = require("express");
 const router = express.Router();
-const StockReceiving = require("./../../models/StockReceiving");
-const SalesReturn = require("./../../models/SalesReturns");
-const StockReleasing = require("./../../models/StockReleasing");
+const DisplayDeliveryReceipt = require("./../../models/DisplayDeliveryReceipt");
+
 const Counter = require("./../../models/Counter");
 const isEmpty = require("./../../validators/is-empty");
 const filterId = require("./../../utils/filterId");
 const round = require("./../../utils/round");
 const update_inventory = require("./../../library/inventory");
-const validateInput = require("./../../validators/stocks_receiving");
+const validateInput = require("./../../validators/display-delivery-receipts");
 const moment = require("moment-timezone");
 const mongoose = require("mongoose");
 const async = require("async");
-const StockTransfer = require("../../models/StockTransfer");
-const PurchaseOrder = require("../../models/PurchaseOrder");
+
 const printing_functions = require("../../utils/printing_functions");
 const {
   CANCELLED,
@@ -26,9 +24,11 @@ const {
 const BranchCounter = require("../../models/BranchCounter");
 const { saveTransactionAuditTrail } = require("../../library/update_functions");
 
-const Model = StockReceiving;
-const seq_key = "rr_no";
+const Model = DisplayDeliveryReceipt;
 const ObjectId = mongoose.Types.ObjectId;
+
+const seq_key = "display_dr_no";
+const branch_reference_prefix = "DS";
 
 router.get("/listing", (req, res) => {
   const form_data = isEmpty(req.query)
@@ -109,9 +109,9 @@ router.put("/", (req, res) => {
 
   const branch = req.body.branch;
   BranchCounter.increment(seq_key, branch._id).then((result) => {
-    const branch_reference = `WR-${branch?.company?.company_code}-${
-      branch.name
-    }-${result.next.toString().padStart(6, "0")}`;
+    const branch_reference = `${branch_reference_prefix}-${
+      branch?.company?.company_code
+    }-${branch.name}-${result.next.toString().padStart(6, "0")}`;
 
     const newRecord = new Model({
       ...body,

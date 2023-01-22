@@ -9,8 +9,8 @@ module.exports = function validateInput(data) {
   if (isEmpty(data.branch)) {
     errors.branch = "Branch is required";
   }
-  if (isEmpty(data.account)) {
-    errors.account = "Account is required";
+  if (isEmpty(data.to_branch)) {
+    errors.to_branch = "To Branch is required";
   }
 
   /* if (

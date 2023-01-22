@@ -5,7 +5,11 @@ import validator from "validator";
 
 import StockModalForm from "../components/modals/StockModalForm";
 
-import { DISCOUNT_PERCENT } from "../utils/constants";
+import {
+  ACCESS_PRICE_CHANGE,
+  CUSTOMER_PRICING_DEALER,
+  DISCOUNT_PERCENT,
+} from "../utils/constants";
 import { discount_options } from "../utils/Options";
 import round from "../utils/round";
 import {
@@ -21,7 +25,7 @@ import TextFieldGroup from "./TextFieldGroup";
 import axios from "axios";
 import moment from "moment";
 import CheckboxFieldGroup from "./CheckboxFieldGroup";
-import { onChange } from "../utils/form_utilities";
+import { hasAccess, onChange } from "../utils/form_utilities";
 import UnitFormModal from "../components/modals/UnitFormModal";
 
 export default function ItemsField({
@@ -38,6 +42,7 @@ export default function ItemsField({
   has_freight = false,
   has_open_quantity = true,
   has_unit = true,
+  auth,
 }) {
   const caseQuantityField = useRef(null);
   const quanttiyField = useRef(null);
@@ -72,10 +77,8 @@ export default function ItemsField({
       parseFloat(gross_amount) -
         parseFloat(discount_amount) +
         parseFloat(item.freight || 0),
-      6
+      2
     );
-
-    console.log(amount);
 
     setItem((prevState) => {
       return {
@@ -108,41 +111,41 @@ export default function ItemsField({
         }}
         ref={stockFormModal}
       />
-      <UnitFormModal
-        setField={({ unit }) => {
-          setItem((prevState) => ({
-            ...prevState,
-            unit,
-          }));
-        }}
-        ref={unitFormModal}
-      />
 
       <Divider orientation="left" key="divider">
         Items
       </Divider>
       <Row key="form" className="ant-form-vertical" gutter="4">
-        <Col span={5}>
+        <Col span={8}>
           <SelectFieldGroup
-            key="1"
+            disabled={isEmpty(state.branch?._id)}
             inputRef={stockField}
             label="Item"
             value={item.stock?.name}
             onSearch={(value) => onStockSearch({ value, options, setOptions })}
             onChange={(index) => {
               const stock = options.stocks?.[index] || null;
-              let unit_of_measure = null;
+              let price = 0;
+
+              //get price of branc
+
               if (stock) {
-                unit_of_measure =
-                  stock.unit_of_measures.filter((o) => o.is_default)?.[0] ||
-                  null;
+                const branch_pricing =
+                  stock.branch_pricing?.filter(
+                    (o) => o?.branch?._id === state.branch?._id
+                  )?.[0] || null;
+
+                price = branch_pricing?.price || 0;
+
+                if (state.account?.pricing_type === CUSTOMER_PRICING_DEALER) {
+                  price = branch_pricing?.wholesale_price || 0;
+                }
               }
 
               setItem({
                 ...item,
                 stock: options.stocks[index],
-                unit_of_measure,
-                discount_rate: state?.supplier?.discount_rate || 0,
+                price,
               });
               quanttiyField.current.focus();
             }}
@@ -156,6 +159,8 @@ export default function ItemsField({
 
         <Col span={2}>
           <TextFieldGroup
+            type="number"
+            step={0.01}
             label="Qty"
             value={item.quantity}
             onChange={(e) => {
@@ -170,42 +175,20 @@ export default function ItemsField({
             inputRef={quanttiyField}
             onPressEnter={(e) => {
               e.preventDefault();
-              unitOfMeasureRef.current.focus();
-              //addItemButton.current.click();
+              addItemButton.current.click();
             }}
-          />
-        </Col>
-        <Col span={4}>
-          <SelectFieldGroup
-            label="UOM"
-            inputRef={unitOfMeasureRef}
-            value={item.unit_of_measure?.unit}
-            onChange={(index) => {
-              const unit_of_measure = item.stock?.unit_of_measures?.[index];
-
-              setItem((prevState) => ({
-                ...prevState,
-                unit_of_measure,
-              }));
-            }}
-            error={errors.unit_of_measure}
-            formItemLayout={null}
-            data={item.stock?.unit_of_measures || []}
-            column="unit"
-            onAddItem={
-              !isEmpty(item.stock)
-                ? () => {
-                    associateUnitOfMeasureStockModalRef.current.open(
-                      item.stock
-                    );
-                  }
-                : null
-            }
           />
         </Col>
 
         <Col span={2}>
           <TextFieldGroup
+            disabled={
+              !hasAccess({
+                auth,
+                access: ACCESS_PRICE_CHANGE,
+                location,
+              })
+            }
             label="Price"
             value={item.price}
             onChange={(e) => {
@@ -304,39 +287,6 @@ export default function ItemsField({
           </Col>
         )}
 
-        {has_unit && (
-          <Col span={3}>
-            <SelectFieldGroup
-              disabled={isEmpty(state.customer)}
-              label="Unit"
-              inputRef={unitsField}
-              value={item.unit?.name}
-              onSearch={(value) =>
-                onUnitSearch({
-                  value,
-                  customer: state.customer,
-                  options,
-                  setOptions,
-                })
-              }
-              onChange={(index) => {
-                const unit = options.units[index];
-                setItem((prevState) => ({
-                  ...prevState,
-                  unit,
-                }));
-              }}
-              error={errors.unit}
-              formItemLayout={null}
-              data={options.units}
-              column="name"
-              onAddItem={() =>
-                unitFormModal.current.open({ customer: state.customer })
-              }
-            />
-          </Col>
-        )}
-
         <Col className="is-flex field-button-padding">
           <input
             type="button"
@@ -348,10 +298,7 @@ export default function ItemsField({
               }
 
               if (isEmpty(item.quantity)) {
-                return message.error("Quanttiy is required");
-              }
-              if (isEmpty(item.unit_of_measure?._id)) {
-                return message.error("UOM is required");
+                return message.error("Quantity is required");
               }
 
               setState((prevState) => ({
@@ -360,21 +307,8 @@ export default function ItemsField({
                   ...prevState[items_key],
                   {
                     ...item,
-                    quantity:
-                      !isEmpty(item.quantity) &&
-                      validator.isNumeric(item.quantity.toString())
-                        ? parseFloat(item.quantity)
-                        : 0,
-                    old_quantity:
-                      !isEmpty(item.old_quantity) &&
-                      validator.isNumeric(item.old_quantity.toString())
-                        ? parseFloat(item.old_quantity)
-                        : 0,
-                    price:
-                      !isEmpty(item.price) &&
-                      validator.isNumeric(item.price.toString())
-                        ? parseFloat(item.price)
-                        : 0,
+                    quantity: item.quantity,
+                    price: item.price,
                   },
                 ],
               }));

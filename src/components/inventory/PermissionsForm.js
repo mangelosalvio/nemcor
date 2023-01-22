@@ -33,6 +33,7 @@ import { permission_options, roles_options } from "../../utils/Options";
 import async from "async";
 import { onRoleSearch } from "../../utils/utilities";
 import { logoutUser } from "../../actions/authActions";
+import { useNavigate } from "react-router-dom";
 
 const CheckboxGroup = Checkbox.Group;
 
@@ -64,7 +65,7 @@ const onChangeAccess = ({ role, name, route, access, parent_menu }) => {
     });
 };
 
-export default function PermissionsForm({ navigate }) {
+export default function PermissionsForm({}) {
   const [errors, setErrors] = useState({});
   const [records, setRecords] = useState([]);
   const [state, setState] = useState(initialValues);
@@ -73,6 +74,7 @@ export default function PermissionsForm({ navigate }) {
     roles: [],
   });
 
+  const navigate = useNavigate();
   const dispatch = useDispatch();
 
   const [total_records, setTotalRecords] = useState(null);
@@ -292,7 +294,6 @@ export default function PermissionsForm({ navigate }) {
             <Button
               size="large"
               onClick={() => {
-                console.log(navigate);
                 navigate("/dashboard");
               }}
             >

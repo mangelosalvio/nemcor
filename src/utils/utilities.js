@@ -431,16 +431,18 @@ export const getCategories = (value) => {
   });
 };
 
-export const onSupplierSearch = ({ value, setOptions }) => {
+export const onSupplierSearch = debounce(({ value, setOptions }) => {
   getSuppliers(value).then((records) => {
-    setOptions((prevState) => ({ ...prevState, suppliers: records }));
+    setOptions((prevState) => ({ ...prevState, accounts: records }));
   });
-};
+}, 300);
 
 export const getSuppliers = (value) => {
   return new Promise((resolve, reject) => {
     axios
-      .get(`/api/suppliers/?s=${value}`)
+      .get(
+        `/api/accounts/?s=${value}&account_type=Supplier&account_type=Branch`
+      )
       .then((response) => {
         resolve(response.data);
       })
@@ -470,11 +472,11 @@ export const getAccounts = (value) => {
   });
 };
 
-export const onStockSearch = ({ value, setOptions }) => {
+export const onStockSearch = debounce(({ value, setOptions }) => {
   getStocks(value).then((records) => {
     setOptions((prevState) => ({ ...prevState, stocks: records }));
   });
-};
+}, 300);
 
 export const getStocks = (value) => {
   return new Promise((resolve, reject) => {
@@ -567,16 +569,18 @@ export const getAgents = (value) => {
   });
 };
 
-export const onCustomerSearch = ({ value, setOptions }) => {
+export const onCustomerSearch = debounce(({ value, setOptions }) => {
   getCustomers(value).then((records) => {
-    setOptions((prevState) => ({ ...prevState, customers: records }));
+    setOptions((prevState) => ({ ...prevState, accounts: records }));
   });
-};
+}, 300);
 
 export const getCustomers = (value) => {
   return new Promise((resolve, reject) => {
     axios
-      .get(`/api/customers/listing/?s=${value}`)
+      .get(
+        `/api/accounts/?s=${value}&account_type=Customer&account_type=Consignee`
+      )
       .then((response) => {
         resolve(response.data);
       })

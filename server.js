@@ -110,7 +110,14 @@ app.use(
   require("./routes/api/supplier-withdrawals")
 );
 app.use("/api/vessel-arrivals", require("./routes/api/vessel-arrivals"));
+
 app.use("/api/stocks-receiving", require("./routes/api/stocks_receiving"));
+app.use("/api/stock-transfers", require("./routes/api/stock-transfers"));
+app.use(
+  "/api/display-delivery-receipts",
+  require("./routes/api/display-delivery-receipts")
+);
+
 app.use("/api/daily-time-records", require("./routes/api/daily-time-records"));
 app.use(
   "/api/warehouse-transfers",

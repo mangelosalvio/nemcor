@@ -10,11 +10,15 @@ const BranchCounterSchema = new Schema({
   },
 });
 
-BranchCounterSchema.statics.increment = function (counter, branch, callback) {
+BranchCounterSchema.statics.increment = function (
+  counter,
+  branch_id,
+  callback
+) {
   return this.findOneAndUpdate(
     {
       counter_key: counter,
-      branch_id: mongoose.Types.ObjectId(branch._id),
+      branch_id: mongoose.Types.ObjectId(branch_id),
     },
     { $inc: { next: 1 } },
     { new: true, upsert: true, select: { next: 1 } },

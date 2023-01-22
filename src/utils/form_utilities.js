@@ -297,7 +297,7 @@ export const onUpdateStatus = ({
 };
 
 export const hasAccess = ({ auth, access, location }) => {
-  const length = (auth.user?.permissions || [])
+  const length = (auth?.user?.permissions || [])
     .filter((o) => {
       /* if (location?.pathname?.startsWith(o.route)) {
         console.log(o);

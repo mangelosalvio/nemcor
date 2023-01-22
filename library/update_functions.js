@@ -54,6 +54,7 @@ const DebitMemo = require("../models/DebitMemo");
 const CompanyCounter = require("../models/CompanyCounter");
 const CheckVoucher = require("../models/CheckVoucher");
 const SalesOrderCement = require("../models/SalesOrderCement");
+const TransactionAuditTrail = require("../models/TransactionAuditTrail");
 
 const ObjectId = mongoose.Types.ObjectId;
 
@@ -1689,5 +1690,28 @@ module.exports.updateSupplierWithdrawalsFromPurchaseOrder = ({ _id }) => {
 
       return resolve(true);
     });
+  });
+};
+
+module.exports.saveTransactionAuditTrail = ({
+  user,
+  module_name,
+  reference,
+  action = constants.ACTION_SAVE,
+}) => {
+  return new Promise((resolve, reject) => {
+    const date = moment();
+
+    new TransactionAuditTrail({
+      date,
+      user,
+      module_name,
+      reference,
+      action,
+    })
+      .save()
+      .then(() => {
+        resolve(true);
+      });
   });
 };

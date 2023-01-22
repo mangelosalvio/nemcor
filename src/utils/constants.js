@@ -96,6 +96,7 @@ export const ACCESS_PRINT = "Print";
 export const ACCESS_ADD = "Add";
 export const ACCESS_UPDATE = "Update";
 export const ACCESS_ADVANCE_SEARCH = "Advance Search";
+export const ACCESS_PRICE_CHANGE = "Price Change";
 
 export const PAYROLL_REGULAR = "Regular";
 export const PAYROLL_OVERTIME = "Overtime";
@@ -105,3 +106,8 @@ export const PAYROLL_REGULAR_HOLIDAY = "Regular Holiday";
 export const PAYROLL_SUMMARY = "Summary";
 export const PAYROLL_DEDUCTIONS = "Deductions";
 export const PAYROLL_FINANCIAL_ASSISTANCE = "Financial Assistance";
+
+export const ACCOUNT_TYPE_CONSIGNEE = "Consignee";
+export const ACCOUNT_TYPE_CUSTOMER = "Customer";
+export const CUSTOMER_PRICING_RETAIL = "Retail";
+export const CUSTOMER_PRICING_DEALER = "Dealer";

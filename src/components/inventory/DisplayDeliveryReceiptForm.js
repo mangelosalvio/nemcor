@@ -40,7 +40,7 @@ import moment from "moment";
 import SelectFieldGroup from "../../commons/SelectFieldGroup";
 import SupplierFormModal from "../modals/SupplierFormModal";
 import {
-  onSupplierSearch,
+  onCustomerSearch,
   onStockSearch,
   addKeysToArray,
   onWarehouseSearch,
@@ -63,6 +63,7 @@ import {
   ACCESS_ADD,
   ACCESS_ADVANCE_SEARCH,
   ACCESS_OPEN,
+  ACCESS_PRICE_CHANGE,
   CANCELLED,
   OPEN,
   STATUS_CLOSED,
@@ -70,10 +71,12 @@ import {
 import RangeDatePickerFieldGroup from "../../commons/RangeDatePickerFieldGroup";
 import SimpleSelectFieldGroup from "../../commons/SimpleSelectFieldGroup";
 import AccountFormModal from "../modals/AccountFormModal";
+import ItemsField from "../../commons/ItemsField";
+import computeItemDetails from "../../utils/computeItemDetails";
 const { Content } = Layout;
 const { Panel } = Collapse;
-const url = "/api/stock-transfers/";
-const title = "Stock Transfers";
+const url = "/api/display-delivery-receipts/";
+const title = "Display Delivery Receipts";
 
 const initialItemValues = {
   stock: null,
@@ -85,43 +88,13 @@ const initialItemValues = {
 };
 
 const transaction_counter = {
-  label: "ST #",
-  key: "stock_transfer_no",
+  label: "DS #",
+  key: "display_dr_no",
 };
 
 const date_fields = ["date"];
 
-const onGenerateStockRelease = ({
-  state,
-  user,
-  history,
-  setProcessing,
-  processing,
-}) => {
-  if (processing) return;
-
-  const form_data = {
-    _id: state._id,
-    user,
-  };
-
-  const loading = message.loading("Processing....");
-  setProcessing(true);
-  axios
-    .put(`${url}stock-releasing`, form_data)
-    .then((response) => {
-      setProcessing(false);
-      loading();
-      navigate(`/stock-releasing/${response.data._id}`);
-    })
-    .catch((err) => {
-      loading();
-      setProcessing(false);
-      message.error("There was an error processing your request");
-    });
-};
-
-export default function StockTransferForm({}) {
+export default function DisplayDeliveryReceiptForm({}) {
   const params = useParams();
   const [errors, setErrors] = useState({});
   const [records, setRecords] = useState([]);
@@ -177,8 +150,8 @@ export default function StockTransferForm({}) {
 
   const records_column = [
     {
-      title: "ST #",
-      dataIndex: "stock_transfer_no",
+      title: "DS #",
+      dataIndex: "display_dr_no",
     },
     {
       title: "Date",
@@ -186,26 +159,36 @@ export default function StockTransferForm({}) {
       render: (date) => moment(date).format("MM/DD/YYYY"),
     },
     {
-      title: "Branch Ref",
-      dataIndex: "branch_reference",
-    },
-    {
-      title: "From Branch",
+      title: "Branch",
       dataIndex: "branch",
-      render: (branch) => `${branch?.company?.company_code}-${branch?.name}`,
+      render: (branch) => `${branch?.company?.name}-${branch?.name}`,
     },
     {
-      title: "To Branch",
-      dataIndex: "to_branch",
-      render: (branch) => `${branch?.company?.company_code}-${branch?.name}`,
+      title: "Account",
+      dataIndex: ["account", "name"],
+    },
+    /*{
+      title: "PO#",
+      dataIndex: ["purchase_order", "po_no"],
     },
     {
-      title: "Driver",
-      dataIndex: ["driver"],
-    },
+      title: "Supplier",
+      dataIndex: ["supplier"],
+      render: (value, record) => (
+        <span>
+          {record.customer?.name}
+          {record.supplier?.name}
+        </span>
+      ),
+    }, */
+    /* {
+      title: "Remarks",
+      dataIndex: "remarks",
+    }, */
+
     {
-      title: "Plate No.",
-      dataIndex: ["plate_no"],
+      title: "Reference",
+      dataIndex: ["reference"],
     },
     {
       title: "Items",
@@ -250,8 +233,7 @@ export default function StockTransferForm({}) {
       render: (value, record, index) => (
         <span>
           {record.footer !== 1 &&
-          [undefined, null, OPEN].includes(state.status?.approval_status) &&
-          isEmpty(state.deleted) ? (
+          [undefined, null, OPEN].includes(state.status?.approval_status) ? (
             <Row gutter={8}>
               <Col span={24}>
                 <Input
@@ -265,12 +247,13 @@ export default function StockTransferForm({}) {
                       let items = [...state.items];
                       let item = items[index];
                       const quantity = value;
-                      const amount = round(quantity * item.price);
 
                       items[index] = {
                         ...items[index],
-                        quantity,
-                        amount,
+                        ...computeItemDetails({
+                          ...items[index],
+                          quantity,
+                        }),
                       };
 
                       return {
@@ -290,14 +273,82 @@ export default function StockTransferForm({}) {
       ),
     },
     {
+      title: "Price",
+      dataIndex: "price",
+      align: "right",
+      width: 200,
+      render: (value, record, index) => (
+        <span>
+          {record.footer !== 1 &&
+          [undefined, null, OPEN].includes(state.status?.approval_status) &&
+          hasAccess({
+            auth,
+            access: ACCESS_PRICE_CHANGE,
+            location,
+          }) ? (
+            <Row gutter={8}>
+              <Col span={24}>
+                <Input
+                  disabled={
+                    !hasAccess({
+                      auth,
+                      access: ACCESS_PRICE_CHANGE,
+                      location,
+                    })
+                  }
+                  type="number"
+                  step={0.01}
+                  className="has-text-right"
+                  value={record.price}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    setState((prevState) => {
+                      let items = [...state.items];
+                      let item = items[index];
+                      const price = value;
+
+                      items[index] = {
+                        ...items[index],
+                        ...computeItemDetails({
+                          ...items[index],
+                          price,
+                        }),
+                      };
+
+                      return {
+                        ...prevState,
+                        items,
+                      };
+                    });
+                  }}
+                  align="right"
+                />
+              </Col>
+            </Row>
+          ) : (
+            record.footer !== 1 && `${numberFormat(record.price)}`
+          )}
+        </span>
+      ),
+    },
+    {
+      title: "Amount",
+      dataIndex: "amount",
+      align: "right",
+      width: 200,
+      render: (value, record, index) => (
+        <span>{`${numberFormat(record.amount)}`}</span>
+      ),
+    },
+    {
       title: "",
       key: "action",
-      align: "center",
       width: 100,
       render: (text, record, index) => (
         <span>
           {record.footer !== 1 &&
-            [undefined, null, OPEN].includes(state.status?.approval_status) && (
+            isEmpty(state.status) &&
+            isEmpty(state.deleted) && (
               <span
                 onClick={() =>
                   onDeleteItem({
@@ -404,22 +455,6 @@ export default function StockTransferForm({}) {
     return () => {};
   }, []);
 
-  useEffect(() => {
-    const amount = round(
-      round(round(item.case_quantity) * round(item.case_price)) +
-        round(round(item.quantity) * round(item.price))
-    );
-
-    setItem((prevState) => {
-      return {
-        ...prevState,
-        amount,
-      };
-    });
-
-    return () => {};
-  }, [item.case_quantity, item.quantity, item.case_price, item.price]);
-
   const can_edit =
     isEmpty(state.status) || [OPEN].includes(state.status?.approval_status);
 
@@ -508,7 +543,7 @@ export default function StockTransferForm({}) {
                       </Col>
                       <Col span={8}>
                         <SelectFieldGroup
-                          label="From Branch"
+                          label="Branch"
                           value={
                             search_state.branch &&
                             `${search_state.branch?.company?.name}-${search_state.branch?.name}`
@@ -532,27 +567,24 @@ export default function StockTransferForm({}) {
                       </Col>
                       <Col span={8}>
                         <SelectFieldGroup
-                          label="To Branch"
-                          value={
-                            search_state.to_branch &&
-                            `${search_state.to_branch?.company?.name}-${search_state.to_branch?.name}`
-                          }
-                          onFocus={(value) =>
-                            onBranchSearch({ value: "", options, setOptions })
-                          }
+                          label="Account"
+                          value={search_state.account?.name}
+                          onFocus={() => {
+                            onCustomerSearch({ value: "", setOptions });
+                          }}
                           onSearch={(value) =>
-                            onBranchSearch({ value, options, setOptions })
+                            onCustomerSearch({ value, setOptions })
                           }
                           onChange={(index) => {
-                            const branch = options.branches?.[index] || null;
+                            const account = options.accounts?.[index] || null;
                             setSearchState((prevState) => ({
                               ...prevState,
-                              to_branch: branch,
+                              account,
                             }));
                           }}
                           formItemLayout={smallFormItemLayout}
-                          data={options.branches}
-                          column="display_name"
+                          data={options.accounts}
+                          column="name"
                         />
                       </Col>
                     </Row>
@@ -595,10 +627,10 @@ export default function StockTransferForm({}) {
                       </Col>
                       <Col span={8}>
                         <TextFieldGroup
-                          label={transaction_counter.label}
-                          name={transaction_counter.key}
+                          label="RR #"
+                          name="rr_no"
                           formItemLayout={smallFormItemLayout}
-                          value={search_state[transaction_counter.key]}
+                          value={search_state.rr_no}
                           onChange={(e) => {
                             onChange({
                               key: e.target.name,
@@ -671,10 +703,6 @@ export default function StockTransferForm({}) {
         {isEmpty(records) ? (
           <Form
             onFinish={() => {
-              if ((state.items || []).length <= 0) {
-                return message.error("Item(s) is/are required");
-              }
-
               onSubmit({
                 values: state,
                 auth,
@@ -746,67 +774,29 @@ export default function StockTransferForm({}) {
                     };
                   })}
                   column="display_name"
+                  error={errors.branch}
                 />
               </Col>
               <Col span={12}>
                 <SelectFieldGroup
-                  disabled={(state.items || []).length > 0}
-                  label="To Branch"
-                  value={
-                    state.to_branch &&
-                    `${state.to_branch?.company?.name}-${state.to_branch?.name}`
-                  }
-                  onFocus={(value) =>
-                    onBranchSearch({ value: "", options, setOptions })
-                  }
-                  onSearch={(value) =>
-                    onBranchSearch({ value, options, setOptions })
-                  }
+                  label="Account"
+                  value={state.account?.name}
+                  onFocus={() => {
+                    onCustomerSearch({ value: "", setOptions });
+                  }}
+                  onSearch={(value) => onCustomerSearch({ value, setOptions })}
                   onChange={(index) => {
-                    const branch = options.branches?.[index] || null;
+                    const account = options.accounts?.[index] || null;
                     setState((prevState) => ({
                       ...prevState,
-                      to_branch: branch,
+                      account,
                     }));
                   }}
                   formItemLayout={smallFormItemLayout}
-                  data={options.branches}
-                  column="display_name"
-                />
-              </Col>
-            </Row>
-
-            <Row>
-              <Col span={12}>
-                <TextFieldGroup
-                  label="Driver"
-                  name="driver"
-                  value={state.driver}
-                  error={errors.driver}
-                  onChange={(e) => {
-                    onChange({
-                      key: e.target.name,
-                      value: e.target.value,
-                      setState,
-                    });
-                  }}
-                  formItemLayout={smallFormItemLayout}
-                />
-              </Col>
-              <Col span={12}>
-                <TextFieldGroup
-                  label="Plate No."
-                  name="plate_no"
-                  value={state.plate_no}
-                  error={errors.plate_no}
-                  onChange={(e) => {
-                    onChange({
-                      key: e.target.name,
-                      value: e.target.value,
-                      setState,
-                    });
-                  }}
-                  formItemLayout={smallFormItemLayout}
+                  data={options.accounts}
+                  column="name"
+                  error={errors.account}
+                  onAddItem={() => accountFormModal.current.open()}
                 />
               </Col>
             </Row>
@@ -862,104 +852,31 @@ export default function StockTransferForm({}) {
                 readOnly
               />
             )}
-            {isEmpty(state.status) &&
-              isEmpty(state.deleted) && [
-                <Divider orientation="left" key="divider">
-                  Items
-                </Divider>,
-                <Row key="form" className="ant-form-vertical" gutter="4">
-                  <Col span={12}>
-                    <SelectFieldGroup
-                      key="1"
-                      inputRef={stockField}
-                      label="Item"
-                      value={item.stock?.name}
-                      onSearch={(value) =>
-                        onStockSearch({ value, options, setOptions })
-                      }
-                      onChange={(index) => {
-                        const stock = options.stocks?.[index] || null;
-                        setItem({
-                          ...item,
-                          stock,
-                          price: stock?.price || "",
-                        });
-                        quanttiyField.current.focus();
-                      }}
-                      error={errors.stock?.name}
-                      formItemLayout={null}
-                      data={options.stocks}
-                      column="display_name"
-                    />
-                  </Col>
-                  <Col span={4}>
-                    <TextFieldGroup
-                      type="number"
-                      label="Qty"
-                      value={item.quantity}
-                      onChange={(e) => {
-                        setItem({
-                          ...item,
-                          quantity: parseFloat(e.target.value),
-                        });
-                      }}
-                      error={errors.item && errors.item.quantity}
-                      formItemLayout={null}
-                      inputRef={quanttiyField}
-                      onPressEnter={(e) => {
-                        e.preventDefault();
-                        addItemButton.current.click();
-                      }}
-                    />
-                  </Col>
-
-                  <Col
-                    span={2}
-                    className="is-flex align-items-center add-button-height"
-                  >
-                    <input
-                      type="button"
-                      ref={addItemButton}
-                      className="button is-primary "
-                      onClick={() => {
-                        setState((prevState) => ({
-                          ...prevState,
-                          items: [
-                            ...prevState.items,
-                            {
-                              ...item,
-                              quantity: !isEmpty(item.quantity)
-                                ? parseFloat(item.quantity)
-                                : 0,
-                              case_quantity: !isEmpty(item.case_quantity)
-                                ? parseFloat(item.case_quantity)
-                                : 0,
-                              price: !isEmpty(item.price)
-                                ? parseFloat(item.price)
-                                : 0,
-                              case_price: !isEmpty(item.case_price)
-                                ? parseFloat(item.case_price)
-                                : 0,
-                            },
-                          ],
-                        }));
-                        setItem(initialItemValues);
-                        stockField.current.focus();
-                      }}
-                      value="Add"
-                    />
-                  </Col>
-                </Row>,
-              ]}
+            {[undefined, null, OPEN].includes(
+              state.status?.approval_status
+            ) && (
+              <ItemsField
+                item={item}
+                setItem={setItem}
+                state={state}
+                setState={setState}
+                items_key="items"
+                options={options}
+                setOptions={setOptions}
+                errors={errors}
+                initialItemValues={initialItemValues}
+                has_discount={false}
+                has_open_quantity={false}
+                auth={auth}
+              />
+            )}
             <Table
               dataSource={addKeysToArray([
                 ...state.items,
                 {
                   footer: 1,
                   quantity: sumBy(state.items, (o) => round(o.quantity)),
-                  case_quantity: sumBy(state.items, (o) =>
-                    round(o.case_quantity)
-                  ),
+
                   amount: sumBy(state.items, (o) => round(o.amount)),
                 },
               ])}

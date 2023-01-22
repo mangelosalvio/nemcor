@@ -42,6 +42,9 @@ import PayrollCheckVoucherForm from "../components/payroll/PayrollCheckVoucherFo
 import CategoryForm from "../components/inventory/CategoryForm";
 import StockBranchPricingForm from "../components/products/StockBranchPricingForm";
 import WholesaleStockBranchPricingForm from "../components/products/WholesaleStockBranchPricingForm";
+import StocksReceiving from "../components/inventory/StocksReceiving";
+import StockTransferForm from "../components/inventory/StockTransferForm";
+import DisplayDeliveryReceiptForm from "../components/inventory/DisplayDeliveryReceiptForm";
 
 const AppRouter = () => (
   <div className="is-full-height">
@@ -181,6 +184,32 @@ const AppRouter = () => (
             element={<MenuComponent component={CompanyForm} />}
           ></Route>
         </Route>
+
+        {/* INVENTORY */}
+        <Route path="/stocks-receiving" element={<PrivateRoute />} exact={true}>
+          <Route
+            path=""
+            element={<MenuComponent component={StocksReceiving} />}
+          ></Route>
+        </Route>
+        <Route path="/stock-transfers" element={<PrivateRoute />} exact={true}>
+          <Route
+            path=""
+            element={<MenuComponent component={StockTransferForm} />}
+          ></Route>
+        </Route>
+        <Route
+          path="/display-delivery-receipts"
+          element={<PrivateRoute />}
+          exact={true}
+        >
+          <Route
+            path=""
+            element={<MenuComponent component={DisplayDeliveryReceiptForm} />}
+          ></Route>
+        </Route>
+
+        {/* END OF INVENTORY */}
 
         {/* PAYROLL */}
 

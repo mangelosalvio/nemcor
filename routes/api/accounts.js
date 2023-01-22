@@ -108,10 +108,9 @@ router.get("/:id", (req, res) => {
 
 router.get("/", (req, res) => {
   let has_no_category = false;
+  const account_type = req.query.account_type;
 
-  if (req.query.has_no_category) {
-    has_no_category = req.query.has_no_category === "1" ? true : false;
-  }
+  // console.log(req.query.account_type);
 
   const form_data = {
     $or: [
@@ -120,16 +119,17 @@ router.get("/", (req, res) => {
           $regex: new RegExp(req.query.s, "i"),
         },
       },
-      {
-        sku: {
-          $regex: new RegExp(req.query.s, "i"),
-        },
-      },
     ],
+    ...(account_type && {
+      account_type: {
+        $in: account_type,
+      },
+    }),
   };
 
-  Product.find(form_data)
+  Account.find(form_data)
     .sort({ name: 1 })
+    .lean(true)
     .then((records) => {
       return res.json(records);
     })
@@ -166,12 +166,16 @@ router.put("/", (req, res) => {
 
 router.post("/paginate", (req, res) => {
   let page = req.body.page || 1;
+  let advance_search = req.body.advance_search || {};
 
   const form_data = {
     ...(!isEmpty(req.body.s) && {
       account: {
         $regex: new RegExp(req.body.s, "i"),
       },
+    }),
+    ...(advance_search.account_type && {
+      account_type: advance_search.account_type,
     }),
   };
 
@@ -222,8 +226,23 @@ router.post("/:id", (req, res) => {
 });
 
 router.delete("/:id", (req, res) => {
-  Product.findByIdAndRemove(req.params.id)
-    .then((response) => res.json({ success: 1 }))
+  Model.findByIdAndUpdate(
+    req.params.id,
+    {
+      $set: {
+        deleted: {
+          date: moment.tz(moment(), process.env.TIMEZONE),
+          user: req.body.user,
+        },
+      },
+    },
+    {
+      new: true,
+    }
+  )
+    .then((record) => {
+      return res.json({ success: 1 });
+    })
     .catch((err) => console.log(err));
 });
 
