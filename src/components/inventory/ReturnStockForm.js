@@ -73,10 +73,12 @@ import SimpleSelectFieldGroup from "../../commons/SimpleSelectFieldGroup";
 import AccountFormModal from "../modals/AccountFormModal";
 import ItemsField from "../../commons/ItemsField";
 import computeItemDetails from "../../utils/computeItemDetails";
+import { return_stock_options } from "../../utils/Options";
 const { Content } = Layout;
 const { Panel } = Collapse;
-const url = "/api/display-delivery-receipts/";
-const title = "Display Delivery Receipts";
+
+const url = "/api/sales-returns/";
+const title = "Return Stock";
 
 const initialItemValues = {
   stock: null,
@@ -88,13 +90,13 @@ const initialItemValues = {
 };
 
 const transaction_counter = {
-  label: "DS #",
-  key: "display_dr_no",
+  label: "RET #",
+  key: "return_no",
 };
 
 const date_fields = ["date"];
 
-export default function DisplayDeliveryReceiptForm({}) {
+export default function ReturnStockForm({}) {
   const params = useParams();
   const [errors, setErrors] = useState({});
   const [records, setRecords] = useState([]);
@@ -167,28 +169,9 @@ export default function DisplayDeliveryReceiptForm({}) {
       title: "Account",
       dataIndex: ["account", "name"],
     },
-    /*{
-      title: "PO#",
-      dataIndex: ["purchase_order", "po_no"],
-    },
     {
-      title: "Supplier",
-      dataIndex: ["supplier"],
-      render: (value, record) => (
-        <span>
-          {record.customer?.name}
-          {record.supplier?.name}
-        </span>
-      ),
-    }, */
-    /* {
-      title: "Remarks",
-      dataIndex: "remarks",
-    }, */
-
-    {
-      title: "Reference",
-      dataIndex: ["reference"],
+      title: "Return Option",
+      dataIndex: ["return_stock_option"],
     },
     {
       title: "Items",
@@ -707,6 +690,9 @@ export default function DisplayDeliveryReceiptForm({}) {
         {isEmpty(records) ? (
           <Form
             onFinish={() => {
+              if ((state.items || []).length <= 0) {
+                return message.error("Item(s) is/are required");
+              }
               onSubmit({
                 values: state,
                 auth,
@@ -818,6 +804,22 @@ export default function DisplayDeliveryReceiptForm({}) {
                 });
               }}
               formItemLayout={formItemLayout}
+            />
+
+            <SimpleSelectFieldGroup
+              label="Return Option"
+              name="return_stock_option"
+              value={state.return_stock_option}
+              onChange={(value) => {
+                onChange({
+                  key: "return_stock_option",
+                  value: value,
+                  setState,
+                });
+              }}
+              error={errors?.return_stock_option}
+              formItemLayout={formItemLayout}
+              options={return_stock_options}
             />
 
             <TextAreaGroup

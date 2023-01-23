@@ -1,92 +1,35 @@
 const express = require("express");
 const router = express.Router();
-const PurchaseOrder = require("./../../models/PurchaseOrder");
-const SalesReturn = require("./../../models/SalesReturns");
+const PurchaseReturn = require("./../../models/PurchaseReturn");
 
 const Counter = require("./../../models/Counter");
 const isEmpty = require("./../../validators/is-empty");
 const filterId = require("./../../utils/filterId");
 const round = require("./../../utils/round");
 const update_inventory = require("./../../library/inventory");
-const validateInput = require("./../../validators/purchase_orders");
+const validateInput = require("./../../validators/stocks_receiving");
 const moment = require("moment-timezone");
 const mongoose = require("mongoose");
 const async = require("async");
-
+const StockTransfer = require("../../models/StockTransfer");
+const PurchaseOrder = require("../../models/PurchaseOrder");
 const printing_functions = require("../../utils/printing_functions");
 const {
   CANCELLED,
   OPEN,
-  CLOSED,
-  DELIVERY_TYPE_COMPANY_DELIVERED,
-  STATUS_PARTIAL,
-  STATUS_ALLOW_PRICE_EDIT,
-  PO_STATUS_CLOSED,
+  MODULE_WAREHOUSE_RECEIPT,
+  ACTION_UPDATE,
+  ACTION_SAVE,
+  ACTION_CANCEL,
 } = require("../../config/constants");
-const {
-  createDeliveryReceiptFromSalesOrder,
-  updateSuppliersWithdrawalPriceFromPurchaseOrder,
-} = require("../../library/update_functions");
-const DebitMemo = require("../../models/DebitMemo");
-const CompanyCounter = require("../../models/CompanyCounter");
-const {
-  getUnlistedPurchaseOrderReport,
-  purchaseOrderToCollectionReport,
-} = require("../../library/report_functions");
+const BranchCounter = require("../../models/BranchCounter");
+const { saveTransactionAuditTrail } = require("../../library/update_functions");
 
 const Model = PurchaseOrder;
-const seq_key = "po_no";
+const seq_key = "rr_no";
 const ObjectId = mongoose.Types.ObjectId;
-router.get("/:id/print", (req, res) => {
-  async.parallel(
-    {
-      purchase_order: (cb) => {
-        Model.findById(req.params.id).exec(cb);
-      },
-      requesters: (cb) => {
-        Model.aggregate([
-          {
-            $match: {
-              _id: mongoose.Types.ObjectId(req.params.id),
-            },
-          },
-          {
-            $unwind: {
-              path: "$items",
-            },
-          },
-          {
-            $group: {
-              _id: "$items.purchase_request.requested_by",
-              name: {
-                $first: "$items.purchase_request.requested_by",
-              },
-            },
-          },
-        ]).exec(cb);
-      },
-    },
-    (err, record) => {
-      return res.json(record);
-    }
-  );
-});
-
-router.get("/update-po-status", async (req, res) => {
-  const cursor = PurchaseOrder.find().cursor();
-
-  for (let doc = await cursor.next(); doc !== null; doc = await cursor.next()) {
-    await update_inventory.updatePoStatus({
-      _id: doc._id,
-    });
-  }
-
-  return res.json(true);
-});
 
 router.get("/listing", (req, res) => {
-  const department_id = req.query.department_id;
-
   const form_data = isEmpty(req.query)
     ? {}
     : {
@@ -94,27 +37,17 @@ router.get("/listing", (req, res) => {
           {
             [seq_key]: parseInt(req.query.s),
           },
+          {
+            po_ref: req.query.s,
+          },
         ],
       };
 
-  Model.find({
-    ...form_data,
-    ...(!isEmpty(department_id) && {
-      "department._id": ObjectId(department_id),
-    }),
-  })
+  Model.find(form_data)
     .sort({ [seq_key]: 1 })
     .limit(100)
-    .lean(true)
     .then((records) => {
-      const _records = records.map((record) => {
-        return {
-          ...record,
-          display_name: `PO#${record.po_no} - ${record.supplier?.name}`,
-        };
-      });
-
-      return res.json(_records);
+      return res.json(records);
     })
     .catch((err) => console.log(err));
 });
@@ -173,17 +106,15 @@ router.put("/", (req, res) => {
     },
   ];
 
-  let counter_promise;
-  if (user?.department?._id) {
-    counter_promise = CompanyCounter.increment(seq_key, user?.department?._id);
-  } else {
-    counter_promise = Counter.increment(seq_key);
-  }
+  const branch = req.body.branch;
+  BranchCounter.increment(seq_key, branch._id).then((result) => {
+    const branch_reference = `WR-${branch?.company?.company_code}-${
+      branch.name
+    }-${result.next.toString().padStart(6, "0")}`;
 
-  counter_promise.then((result) => {
     const newRecord = new Model({
       ...body,
-      department: user?.department,
+      branch_reference,
       total_payment_amount: 0,
       [seq_key]: result.next,
       logs,
@@ -198,47 +129,26 @@ router.put("/", (req, res) => {
     newRecord
       .save()
       .then((record) => {
+        saveTransactionAuditTrail({
+          user,
+          module_name: MODULE_WAREHOUSE_RECEIPT,
+          reference: record[seq_key],
+          action: ACTION_SAVE,
+        }).catch((err) => console.log(err));
+
         return res.json(record);
       })
       .catch((err) => console.log(err));
   });
 });
 
-router.post("/:po_no/po-no", (req, res) => {
-  const { department } = req.body;
-  PurchaseOrder.findOne({
-    po_no: parseInt(req.params.po_no),
-    ...(department?._id && {
-      "department._id": ObjectId(department._id),
-    }),
-  })
-    .then((record) => {
-      return res.json(record);
-    })
-    .catch((err) => res.status(401).json(err));
-});
-
+/**
+ * for raw printing
+ */
 router.post("/:id/print", async (req, res) => {
   await printing_functions.printReceivingReport({
     _id: req.params.id,
   });
-  return res.json(true);
-});
-
-router.post("/:id/invoice-no", async (req, res) => {
-  const { invoice_no } = req.body;
-
-  await PurchaseOrder.updateOne(
-    {
-      _id: ObjectId(req.params.id),
-    },
-    {
-      $set: {
-        invoice_no,
-      },
-    }
-  ).exec();
-
   return res.json(true);
 });
 
@@ -278,7 +188,12 @@ router.post("/:id/update-status", (req, res) => {
       record
         .save()
         .then((record) => {
-          //create DR if not COMPANY DELIVERED
+          saveTransactionAuditTrail({
+            user,
+            module_name: MODULE_WAREHOUSE_RECEIPT,
+            reference: record[seq_key],
+            action: record.status?.approval_status,
+          }).catch((err) => console.log(err));
 
           return res.json(record);
         })
@@ -315,191 +230,6 @@ router.post("/:id/print-status", (req, res) => {
       console.log("ID not found");
     }
   });
-});
-
-router.post("/unlisted-purchase-order-report", async (req, res) => {
-  const records = await getUnlistedPurchaseOrderReport({
-    period_covered: req.body.period_covered,
-    supplier: req.body.supplier,
-  });
-
-  return res.json(records);
-});
-
-router.post("/purchase-order-to-collection-report", async (req, res) => {
-  const records = await purchaseOrderToCollectionReport({
-    period_covered: req.body.period_covered,
-    supplier: req.body.supplier,
-  });
-
-  return res.json(records);
-});
-
-router.post("/supplier-accounts", (req, res) => {
-  const { supplier, department } = req.body;
-
-  async.parallel(
-    {
-      purchase_orders: (cb) =>
-        PurchaseOrder.aggregate([
-          {
-            $match: {
-              "deleted.date": {
-                $exists: false,
-              },
-              "status.approval_status": {
-                $ne: CANCELLED,
-              },
-              "supplier._id": ObjectId(supplier._id),
-              ...(department?._id && {
-                "department._id": ObjectId(department._id),
-              }),
-            },
-          },
-          {
-            $addFields: {
-              total_amount: {
-                $reduce: {
-                  input: "$items",
-                  initialValue: 0,
-                  in: {
-                    $add: ["$$this.amount", "$$value"],
-                  },
-                },
-              },
-            },
-          },
-          {
-            $addFields: {
-              balance: {
-                $subtract: [
-                  "$total_amount",
-                  {
-                    $ifNull: ["$total_payment_amount", 0],
-                  },
-                ],
-              },
-            },
-          },
-          {
-            $match: {
-              balance: {
-                $ne: 0,
-              },
-            },
-          },
-        ]).exec(cb),
-      debit_memos: (cb) =>
-        DebitMemo.aggregate([
-          {
-            $match: {
-              deleted: {
-                $exists: false,
-              },
-              "status.approval_status": {
-                $ne: CANCELLED,
-              },
-              "supplier._id": ObjectId(supplier._id),
-              ...(department?._id && {
-                "department._id": ObjectId(company._id),
-              }),
-            },
-          },
-          {
-            $addFields: {
-              total_amount: {
-                $reduce: {
-                  input: "$items",
-                  initialValue: 0,
-                  in: {
-                    $add: ["$$this.amount", "$$value"],
-                  },
-                },
-              },
-            },
-          },
-          {
-            $addFields: {
-              balance: {
-                $subtract: [
-                  "$total_amount",
-                  {
-                    $ifNull: ["$total_debit_amount", 0],
-                  },
-                ],
-              },
-            },
-          },
-          {
-            $match: {
-              balance: {
-                $ne: 0,
-              },
-            },
-          },
-        ]).exec(cb),
-    },
-
-    (err, results) => {
-      if (err) {
-        console.log(err);
-        return res.status(401).json(err);
-      }
-
-      return res.json(results);
-    }
-  );
-});
-
-router.post("/for-bundling", (req, res) => {
-  const { period_covered } = req.body;
-
-  if (isEmpty(period_covered?.[0]) || isEmpty(period_covered?.[1])) {
-    return res.status(401).json({
-      period_covered: "Period covered required",
-    });
-  }
-
-  Model.aggregate([
-    {
-      $match: {
-        date_needed: {
-          $gte: moment(period_covered[0]).startOf("day").toDate(),
-          $lte: moment(period_covered[0]).endOf("day").toDate(),
-        },
-        "status.approval_status": {
-          $in: [OPEN, CLOSED, STATUS_PARTIAL],
-        },
-        delivery_type: DELIVERY_TYPE_COMPANY_DELIVERED,
-      },
-    },
-    {
-      $unwind: "$items",
-    },
-    {
-      $project: {
-        _id: 1,
-        so_no: 1,
-        so_id: "$_id",
-        so_item_id: "$items._id",
-        customer: 1,
-        stock: "$items.stock",
-        unit_of_measure: "$items.unit_of_measure",
-        quantity: "$items.quantity",
-        price: "$items.price",
-        balance: {
-          $subtract: [
-            "$items.quantity",
-            {
-              $ifNull: ["$items.confirmed_quantity", 0],
-            },
-          ],
-        },
-      },
-    },
-  ])
-    .then((records) => res.json(records))
-    .catch((err) => res.status(401).json(err));
 });
 
 router.post("/history", (req, res) => {
@@ -625,16 +355,19 @@ router.post("/paginate", (req, res) => {
         },
       }),
 
-    ...(!isEmpty(advance_search.po_no) && {
-      po_no: parseInt(advance_search.po_no),
+    ...(!isEmpty(advance_search.rr_no) && {
+      rr_no: parseInt(advance_search.rr_no),
     }),
 
     ...(advance_search.supplier && {
       "supplier._id": ObjectId(advance_search.supplier._id),
     }),
 
-    ...(advance_search.user_department?._id && {
-      "department._id": ObjectId(advance_search.user_department._id),
+    ...(advance_search.branch && {
+      "branch._id": ObjectId(advance_search.branch._id),
+    }),
+    ...(advance_search.account && {
+      "account._id": ObjectId(advance_search.account._id),
     }),
 
     ...(advance_search.approval_status && {
@@ -648,7 +381,7 @@ router.post("/paginate", (req, res) => {
 
   Model.paginate(form_data, {
     sort: {
-      _id: -1,
+      [seq_key]: -1,
     },
     page,
     limit: req.body?.page_size || 10,
@@ -684,7 +417,6 @@ router.post("/:id", (req, res) => {
         },
       ];
 
-      delete filtered_body.__v;
       const body = {
         ...filtered_body,
         logs,
@@ -695,25 +427,15 @@ router.post("/:id", (req, res) => {
         updated_by: user,
       });
 
-      if (record.status?.approval_status === STATUS_ALLOW_PRICE_EDIT) {
-        record.set("status", {
-          ...record.status,
-          approval_status: PO_STATUS_CLOSED,
-        });
-      }
-
       record
         .save()
-        .then(async (record) => {
-          //update suppliers withdrawal with a given PO and update PRICE AND FREIGHT and recompute totals
-          await updateSuppliersWithdrawalPriceFromPurchaseOrder(record._id);
-
-          //IF OLD RECORD IS ALLOW PRICE EDIT, UPDATE SUPPLIER PRICING OF SUPPLIER WITHDRAWALS
-          if (old_record.status?.approval_status === STATUS_ALLOW_PRICE_EDIT) {
-            await updateSuppliersWithdrawalPriceFromPurchaseOrder(
-              record._id
-            ).catch((err) => console.log(err));
-          }
+        .then((record) => {
+          saveTransactionAuditTrail({
+            user,
+            module_name: MODULE_WAREHOUSE_RECEIPT,
+            reference: record[seq_key],
+            action: ACTION_UPDATE,
+          }).catch((err) => console.log(err));
 
           return res.json(record);
         })
@@ -725,6 +447,7 @@ router.post("/:id", (req, res) => {
 });
 
 router.delete("/:id", (req, res) => {
+  const user = req.body.user;
   Model.findByIdAndUpdate(
     req.params.id,
     {
@@ -745,6 +468,12 @@ router.delete("/:id", (req, res) => {
     }
   )
     .then((record) => {
+      saveTransactionAuditTrail({
+        user,
+        module_name: MODULE_WAREHOUSE_RECEIPT,
+        reference: record[seq_key],
+        action: ACTION_CANCEL,
+      }).catch((err) => console.log(err));
       return res.json({ success: 1 });
     })
     .catch((err) => console.log(err));

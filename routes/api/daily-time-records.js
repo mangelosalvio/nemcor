@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const DailyTimeRecord = require("./../../models/DailyTimeRecord");
-const SalesReturn = require("./../../models/SalesReturns");
+
 const StockReleasing = require("./../../models/StockReleasing");
 const Counter = require("./../../models/Counter");
 const isEmpty = require("./../../validators/is-empty");

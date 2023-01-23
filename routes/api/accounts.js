@@ -120,11 +120,16 @@ router.get("/", (req, res) => {
         },
       },
     ],
-    ...(account_type && {
-      account_type: {
-        $in: account_type,
-      },
-    }),
+    ...(account_type &&
+      typeof account_type === "object" && {
+        account_type: {
+          $in: account_type,
+        },
+      }),
+    ...(account_type &&
+      typeof account_type === "string" && {
+        account_type,
+      }),
   };
 
   Account.find(form_data)

@@ -1,33 +1,37 @@
 const express = require("express");
 const router = express.Router();
-const PurchaseReturn = require("./../../models/PurchaseReturn");
+const SalesReturn = require("./../../models/SalesReturn");
 
 const Counter = require("./../../models/Counter");
 const isEmpty = require("./../../validators/is-empty");
 const filterId = require("./../../utils/filterId");
 const round = require("./../../utils/round");
 const update_inventory = require("./../../library/inventory");
-const validateInput = require("./../../validators/purchase_returns");
+const validateInput = require("./../../validators/sales-returns");
 const moment = require("moment-timezone");
 const mongoose = require("mongoose");
 const async = require("async");
-const StockTransfer = require("../../models/StockTransfer");
-const PurchaseOrder = require("../../models/PurchaseOrder");
+
 const printing_functions = require("../../utils/printing_functions");
 const {
   CANCELLED,
   OPEN,
-  MODULE_PURCHASE_RETURNS,
   ACTION_UPDATE,
   ACTION_SAVE,
   ACTION_CANCEL,
+  MODULE_RETURN_STOCK,
+  CLOSED,
+  MODULE_CREDIT_MEMO,
 } = require("../../config/constants");
 const BranchCounter = require("../../models/BranchCounter");
 const { saveTransactionAuditTrail } = require("../../library/update_functions");
+const CreditMemo = require("../../models/CreditMemo");
 
-const Model = PurchaseReturn;
-const seq_key = "pr_no";
+const Model = SalesReturn;
 const ObjectId = mongoose.Types.ObjectId;
+
+const seq_key = "return_no";
+const branch_reference_prefix = "RET";
 
 router.get("/listing", (req, res) => {
   const form_data = isEmpty(req.query)
@@ -108,9 +112,9 @@ router.put("/", (req, res) => {
 
   const branch = req.body.branch;
   BranchCounter.increment(seq_key, branch._id).then((result) => {
-    const branch_reference = `PR-${branch?.company?.company_code}-${
-      branch.name
-    }-${result.next.toString().padStart(6, "0")}`;
+    const branch_reference = `${branch_reference_prefix}-${
+      branch?.company?.company_code
+    }-${branch.name}-${result.next.toString().padStart(6, "0")}`;
 
     const newRecord = new Model({
       ...body,
@@ -131,7 +135,7 @@ router.put("/", (req, res) => {
       .then((record) => {
         saveTransactionAuditTrail({
           user,
-          module_name: MODULE_PURCHASE_RETURNS,
+          module_name: MODULE_RETURN_STOCK,
           reference: record[seq_key],
           action: ACTION_SAVE,
         }).catch((err) => console.log(err));
@@ -187,10 +191,52 @@ router.post("/:id/update-status", (req, res) => {
 
       record
         .save()
-        .then((record) => {
+        .then(async (record) => {
+          if (record.status?.approval_status === CLOSED) {
+            const result = await BranchCounter.increment(
+              "cm_no",
+              record.branch._id
+            );
+            const branch = record.branch;
+
+            const branch_reference = `CM-${branch?.company?.company_code}-${
+              branch.name
+            }-${result.next.toString().padStart(6, "0")}`;
+
+            //if for credit memo, create a credit memo
+            const _record = await new CreditMemo({
+              branch,
+              cm_no: result.next,
+              date: moment().toDate(),
+              account: record.account,
+              total_amount: record.total_amount,
+              reason: record.return_stock_option,
+              sales_return: {
+                _id: record._id,
+                return_no: record.return_no,
+                date: record.date,
+                branch_reference: record.branch_reference,
+              },
+              branch_reference,
+              status: {
+                approval_status: "Closed",
+                datetime: moment().toDate(),
+                user,
+              },
+              created_by: user,
+            }).save();
+
+            saveTransactionAuditTrail({
+              user,
+              module_name: MODULE_CREDIT_MEMO,
+              reference: _record.cm_no,
+              action: ACTION_SAVE,
+            }).catch((err) => console.log(err));
+          }
+
           saveTransactionAuditTrail({
             user,
-            module_name: MODULE_PURCHASE_RETURNS,
+            module_name: MODULE_RETURN_STOCK,
             reference: record[seq_key],
             action: record.status?.approval_status,
           }).catch((err) => console.log(err));
@@ -432,7 +478,7 @@ router.post("/:id", (req, res) => {
         .then((record) => {
           saveTransactionAuditTrail({
             user,
-            module_name: MODULE_PURCHASE_RETURNS,
+            module_name: MODULE_RETURN_STOCK,
             reference: record[seq_key],
             action: ACTION_UPDATE,
           }).catch((err) => console.log(err));
@@ -470,7 +516,7 @@ router.delete("/:id", (req, res) => {
     .then((record) => {
       saveTransactionAuditTrail({
         user,
-        module_name: MODULE_PURCHASE_RETURNS,
+        module_name: MODULE_RETURN_STOCK,
         reference: record[seq_key],
         action: ACTION_CANCEL,
       }).catch((err) => console.log(err));

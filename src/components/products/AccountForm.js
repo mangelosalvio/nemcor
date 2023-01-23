@@ -288,6 +288,7 @@ export default function AccountForm({ history }) {
                 });
               }}
             />
+
             <TextFieldGroup
               label="TIN"
               name="tin"
@@ -302,6 +303,24 @@ export default function AccountForm({ history }) {
                 });
               }}
             />
+
+            <TextFieldGroup
+              type="number"
+              step={1}
+              label="Terms in Days"
+              name="terms"
+              error={errors.terms}
+              formItemLayout={formItemLayout}
+              value={state.terms}
+              onChange={(e) => {
+                onChange({
+                  key: e.target.name,
+                  value: e.target.value,
+                  setState,
+                });
+              }}
+            />
+
             <SimpleSelectFieldGroup
               label="Account Type"
               name="account_type"

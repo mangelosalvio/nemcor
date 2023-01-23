@@ -16,7 +16,7 @@ const printing_functions = require("../../utils/printing_functions");
 const {
   CANCELLED,
   OPEN,
-  MODULE_WAREHOUSE_RECEIPT,
+  MODULE_DISPLAY_DELIVERY_RECEIPTS,
   ACTION_UPDATE,
   ACTION_SAVE,
   ACTION_CANCEL,
@@ -132,7 +132,7 @@ router.put("/", (req, res) => {
       .then((record) => {
         saveTransactionAuditTrail({
           user,
-          module_name: MODULE_WAREHOUSE_RECEIPT,
+          module_name: MODULE_DISPLAY_DELIVERY_RECEIPTS,
           reference: record[seq_key],
           action: ACTION_SAVE,
         }).catch((err) => console.log(err));
@@ -191,7 +191,7 @@ router.post("/:id/update-status", (req, res) => {
         .then((record) => {
           saveTransactionAuditTrail({
             user,
-            module_name: MODULE_WAREHOUSE_RECEIPT,
+            module_name: MODULE_DISPLAY_DELIVERY_RECEIPTS,
             reference: record[seq_key],
             action: record.status?.approval_status,
           }).catch((err) => console.log(err));
@@ -433,7 +433,7 @@ router.post("/:id", (req, res) => {
         .then((record) => {
           saveTransactionAuditTrail({
             user,
-            module_name: MODULE_WAREHOUSE_RECEIPT,
+            module_name: MODULE_DISPLAY_DELIVERY_RECEIPTS,
             reference: record[seq_key],
             action: ACTION_UPDATE,
           }).catch((err) => console.log(err));
@@ -471,7 +471,7 @@ router.delete("/:id", (req, res) => {
     .then((record) => {
       saveTransactionAuditTrail({
         user,
-        module_name: MODULE_WAREHOUSE_RECEIPT,
+        module_name: MODULE_DISPLAY_DELIVERY_RECEIPTS,
         reference: record[seq_key],
         action: ACTION_CANCEL,
       }).catch((err) => console.log(err));

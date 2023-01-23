@@ -1,108 +1,74 @@
 const mongoose = require("mongoose");
 const mongoose_paginate = require("mongoose-paginate");
-const CustomerModel = require("./CustomerModel");
-const EmployeeModel = require("./EmployeeModel");
-const ItemsSchema = require("./ItemsSchema");
-const LocationModel = require("./LocationModel");
-const NameModel = require("./NameModel");
+const AccountModel = require("./AccountModel");
+const BranchModel = require("./BranchModel");
+const ProductModel = require("./ProductModel");
 const SupplierModel = require("./SupplierModel");
-const TankerModel = require("./TankerModel");
-const UnitModel = require("./UnitModel");
+const UserLogSchema = require("./UserLogSchema");
 const UserSchema = require("./UserSchema");
 const WarehouseModel = require("./WarehouseModel");
 const Schema = mongoose.Schema;
 
 const TableSchema = new Schema(
   {
-    company: {
-      ...NameModel,
-      _id: mongoose.Schema.Types.ObjectId,
-    },
-    department: {
-      ...NameModel,
-      _id: mongoose.Schema.Types.ObjectId,
-    },
-    sales_order: {
-      _id: mongoose.Schema.Types.ObjectId,
-      so_no: Number,
-    },
-    sales_order_cement: {
-      _id: mongoose.Schema.Types.ObjectId,
-      so_no: Number,
-    },
-
-    si_no: Number,
-    tanker_withdrawal: {
-      _id: mongoose.Schema.Types.ObjectId,
-      tw_no: Number,
-    },
-    tanker: {
-      ...TankerModel,
-      _id: mongoose.Schema.Types.ObjectId,
-    },
-
-    driver: {
-      ...EmployeeModel,
-      _id: mongoose.Schema.Types.ObjectId,
-    },
     dr_no: Number,
-    external_dr_ref: String,
     date: Date,
-    due_date: Date,
-    delivery_area: {
-      ...LocationModel,
+    branch_reference: String,
+    branch: {
+      ...BranchModel,
       _id: mongoose.Schema.Types.ObjectId,
     },
-    warehouse: {
-      ...WarehouseModel,
+    account: {
+      ...AccountModel,
       _id: mongoose.Schema.Types.ObjectId,
     },
-    customer: {
-      ...CustomerModel,
-      _id: mongoose.Schema.Types.ObjectId,
-    },
-    delivery_type: String, //Company delivered, Delivery by Supplier, Pickup by Customer
+    reference: String,
+    external_si_reference: String,
+    remarks: String,
+    payment_type: String,
+    cash_payment_amount: Number,
+    change: Number,
 
-    unit: {
-      ...UnitModel,
-      _id: mongoose.Schema.Types.ObjectId,
-    },
-
-    purchase_order: {
-      _id: mongoose.Schema.Types.ObjectId,
-      po_no: Number,
-      supplier: {
-        ...SupplierModel,
-        _id: mongoose.Schema.Types.ObjectId,
-      },
-    },
-
-    total_amount: Number,
     total_payment_amount: Number,
-    items: [{ ...ItemsSchema[0] }],
-    deleted: {
-      user: Object,
-      datetime: Date,
-    },
+
+    items: [
+      {
+        stock: {
+          _id: mongoose.Schema.Types.ObjectId,
+          ...ProductModel,
+        },
+        quantity: Number,
+        price: Number,
+        amount: Number,
+      },
+    ],
     logs: [
       {
-        user: Object,
+        user: UserLogSchema,
         datetime: Date,
         log: String,
       },
     ],
-
-    release_no: String,
-
+    deleted: {
+      date: Date,
+      user: UserLogSchema,
+    },
     status: {
       approval_status: String,
       datetime: Date,
-      user: Object,
+      user: UserLogSchema,
+    },
+    total_amount: Number,
+    total_discount_amount: Number,
+    gross_amount: Number,
+
+    printed: {
+      user: UserLogSchema,
+      datetime: Date,
     },
 
     created_at: Date,
     updated_at: Date,
-
     created_by: {
       id: mongoose.Schema.Types.ObjectId,
       name: String,
@@ -119,5 +85,6 @@ const TableSchema = new Schema(
     },
   }
 );
+
 TableSchema.plugin(mongoose_paginate);
 module.exports = mongoose.model("delivery_receipts", TableSchema);

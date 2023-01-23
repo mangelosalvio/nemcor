@@ -45,6 +45,11 @@ import WholesaleStockBranchPricingForm from "../components/products/WholesaleSto
 import StocksReceiving from "../components/inventory/StocksReceiving";
 import StockTransferForm from "../components/inventory/StockTransferForm";
 import DisplayDeliveryReceiptForm from "../components/inventory/DisplayDeliveryReceiptForm";
+import DeliveryReceiptForm from "../components/inventory/DeliveryReceiptForm";
+import { PAYMENT_TYPE_CASH, PAYMENT_TYPE_CHARGE } from "../utils/constants";
+import PurchaseReturnForm from "../components/inventory/PurchaseReturnForm";
+import ReturnStockForm from "../components/inventory/ReturnStockForm";
+import CreditMemoForm from "../components/inventory/CreditMemoForm";
 
 const AppRouter = () => (
   <div className="is-full-height">
@@ -206,6 +211,58 @@ const AppRouter = () => (
           <Route
             path=""
             element={<MenuComponent component={DisplayDeliveryReceiptForm} />}
+          ></Route>
+        </Route>
+        <Route path="/sales-returns" element={<PrivateRoute />} exact={true}>
+          <Route
+            path=""
+            element={<MenuComponent component={ReturnStockForm} />}
+          ></Route>
+        </Route>
+        <Route path="/credit-memos" element={<PrivateRoute />} exact={true}>
+          <Route
+            path=""
+            element={<MenuComponent component={CreditMemoForm} />}
+          ></Route>
+        </Route>
+        {/* <Route path="/cash-sales" element={<PrivateRoute />} exact={true}>
+          <Route
+            path=""
+            element={
+              <MenuComponent
+                component={<DeliveryReceiptForm  />}
+              />
+            }
+          ></Route>
+        </Route> */}
+
+        <Route path="/cash-sales" element={<PrivateRoute />} exact={true}>
+          <Route
+            path=""
+            element={
+              <MenuComponent
+                component={DeliveryReceiptForm}
+                payment_type={PAYMENT_TYPE_CASH}
+              />
+            }
+          ></Route>
+        </Route>
+        <Route path="/charge-sales" element={<PrivateRoute />} exact={true}>
+          <Route
+            path=""
+            element={
+              <MenuComponent
+                component={DeliveryReceiptForm}
+                payment_type={PAYMENT_TYPE_CHARGE}
+              />
+            }
+          ></Route>
+        </Route>
+
+        <Route path="/purchase-returns" element={<PrivateRoute />} exact={true}>
+          <Route
+            path=""
+            element={<MenuComponent component={PurchaseReturnForm} />}
           ></Route>
         </Route>
 

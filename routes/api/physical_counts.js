@@ -5,7 +5,7 @@ const StockReceiving = require("./../../models/StockReceiving");
 const StockReleasing = require("./../../models/StockReleasing");
 const StockTransfer = require("./../../models/StockTransfer");
 const Sales = require("./../../models/Sales");
-const SalesReturn = require("./../../models/SalesReturns");
+
 const Wastage = require("./../../models/Wastage");
 const Production = require("./../../models/Production");
 const PurchaseReturn = require("./../../models/PurchaseReturn");

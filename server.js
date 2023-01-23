@@ -117,6 +117,7 @@ app.use(
   "/api/display-delivery-receipts",
   require("./routes/api/display-delivery-receipts")
 );
+app.use("/api/sales-returns", require("./routes/api/sales-returns"));
 
 app.use("/api/daily-time-records", require("./routes/api/daily-time-records"));
 app.use(

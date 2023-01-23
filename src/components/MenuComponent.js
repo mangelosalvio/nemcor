@@ -106,11 +106,16 @@ const MenuComponent = ({ component: Component, auth, logoutUser, ...rest }) => {
                 to="/stocks-receiving"
                 label="Warehouse Receipt"
               />
+              <MenuPermission to="/purchase-returns" label="Purchase Returns" />
               <MenuPermission to="/stock-transfers" label="Stock Transfers" />
               <MenuPermission
                 to="/display-delivery-receipts"
                 label="Display Delivery Receipts"
               />
+              <MenuPermission to="/cash-sales" label="Cash Sales" />
+              <MenuPermission to="/charge-sales" label="Charge Sales" />
+              <MenuPermission to="/sales-returns" label="Return Stock" />
+              <MenuPermission to="/credit-memos" label="Credit Memos" />
             </SubMenu>
             <SubMenu
               key="payroll"

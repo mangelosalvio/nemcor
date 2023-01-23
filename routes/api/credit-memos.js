@@ -16,19 +16,19 @@ const printing_functions = require("../../utils/printing_functions");
 const {
   CANCELLED,
   OPEN,
-  CLOSED,
-  DELIVERY_TYPE_COMPANY_DELIVERED,
-  STATUS_PARTIAL,
+  MODULE_CREDIT_MEMO,
+  ACTION_UPDATE,
+  ACTION_SAVE,
+  ACTION_CANCEL,
 } = require("../../config/constants");
-const {
-  createDeliveryReceiptFromSalesOrder,
-} = require("../../library/update_functions");
-const DeliveryReceipt = require("../../models/DeliveryReceipt");
-const CompanyCounter = require("../../models/CompanyCounter");
+const BranchCounter = require("../../models/BranchCounter");
+const { saveTransactionAuditTrail } = require("../../library/update_functions");
 
 const Model = CreditMemo;
-const seq_key = "cm_no";
 const ObjectId = mongoose.Types.ObjectId;
+
+const seq_key = "cm_no";
+const branch_reference_prefix = "CM";
 
 router.get("/listing", (req, res) => {
   const form_data = isEmpty(req.query)
@@ -107,17 +107,15 @@ router.put("/", (req, res) => {
     },
   ];
 
-  let counter_promise;
-  if (user?.department?._id) {
-    counter_promise = CompanyCounter.increment(seq_key, user?.department?._id);
-  } else {
-    counter_promise = Counter.increment(seq_key);
-  }
+  const branch = req.body.branch;
+  BranchCounter.increment(seq_key, branch._id).then((result) => {
+    const branch_reference = `${branch_reference_prefix}-${
+      branch?.company?.company_code
+    }-${branch.name}-${result.next.toString().padStart(6, "0")}`;
 
-  counter_promise.then((result) => {
     const newRecord = new Model({
       ...body,
-      department: user?.department,
+      branch_reference,
       total_payment_amount: 0,
       [seq_key]: result.next,
       logs,
@@ -132,12 +130,22 @@ router.put("/", (req, res) => {
     newRecord
       .save()
       .then((record) => {
+        saveTransactionAuditTrail({
+          user,
+          module_name: MODULE_CREDIT_MEMO,
+          reference: record[seq_key],
+          action: ACTION_SAVE,
+        }).catch((err) => console.log(err));
+
         return res.json(record);
       })
       .catch((err) => console.log(err));
   });
 });
 
+/**
+ * for raw printing
+ */
 router.post("/:id/print", async (req, res) => {
   await printing_functions.printReceivingReport({
     _id: req.params.id,
@@ -181,6 +189,13 @@ router.post("/:id/update-status", (req, res) => {
       record
         .save()
         .then((record) => {
+          saveTransactionAuditTrail({
+            user,
+            module_name: MODULE_CREDIT_MEMO,
+            reference: record[seq_key],
+            action: record.status?.approval_status,
+          }).catch((err) => console.log(err));
+
           return res.json(record);
         })
         .catch((err) => console.log(err));
@@ -272,6 +287,34 @@ router.post("/history", (req, res) => {
   });
 });
 
+router.post("/transactions", (req, res) => {
+  const { period_covered, customer } = req.body;
+
+  Model.aggregate([
+    {
+      $match: {
+        deleted: {
+          $exists: false,
+        },
+        date: {
+          $gte: moment(period_covered[0]).startOf("day").toDate(),
+          $lte: moment(period_covered[1]).endOf("day").toDate(),
+        },
+        ...(customer && {
+          "customer._id": ObjectId(customer._id),
+        }),
+      },
+    },
+    {
+      $sort: {
+        rr_no: 1,
+      },
+    },
+  ]).then((records) => {
+    return res.json(records);
+  });
+});
+
 router.post("/paginate", (req, res) => {
   let page = req.body.page || 1;
   let advance_search = req.body.advance_search || {};
@@ -302,10 +345,6 @@ router.post("/paginate", (req, res) => {
       ],
     }),
 
-    ...(advance_search.user_department?._id && {
-      "department._id": ObjectId(advance_search.user_department._id),
-    }),
-
     ...(advance_search.period_covered &&
       advance_search.period_covered[0] &&
       advance_search.period_covered[1] && {
@@ -317,12 +356,19 @@ router.post("/paginate", (req, res) => {
         },
       }),
 
-    ...(!isEmpty(advance_search.cm_no) && {
-      cm_no: parseInt(advance_search.cm_no),
+    ...(!isEmpty(advance_search.rr_no) && {
+      rr_no: parseInt(advance_search.rr_no),
     }),
 
-    ...(advance_search.customer?._id && {
-      "customer._id": ObjectId(advance_search.customer._id),
+    ...(advance_search.supplier && {
+      "supplier._id": ObjectId(advance_search.supplier._id),
+    }),
+
+    ...(advance_search.branch && {
+      "branch._id": ObjectId(advance_search.branch._id),
+    }),
+    ...(advance_search.account && {
+      "account._id": ObjectId(advance_search.account._id),
     }),
 
     ...(advance_search.approval_status && {
@@ -336,7 +382,7 @@ router.post("/paginate", (req, res) => {
 
   Model.paginate(form_data, {
     sort: {
-      _id: -1,
+      [seq_key]: -1,
     },
     page,
     limit: req.body?.page_size || 10,
@@ -385,6 +431,13 @@ router.post("/:id", (req, res) => {
       record
         .save()
         .then((record) => {
+          saveTransactionAuditTrail({
+            user,
+            module_name: MODULE_CREDIT_MEMO,
+            reference: record[seq_key],
+            action: ACTION_UPDATE,
+          }).catch((err) => console.log(err));
+
           return res.json(record);
         })
         .catch((err) => console.log(err));
@@ -395,6 +448,7 @@ router.post("/:id", (req, res) => {
 });
 
 router.delete("/:id", (req, res) => {
+  const user = req.body.user;
   Model.findByIdAndUpdate(
     req.params.id,
     {
@@ -415,6 +469,12 @@ router.delete("/:id", (req, res) => {
     }
   )
     .then((record) => {
+      saveTransactionAuditTrail({
+        user,
+        module_name: MODULE_CREDIT_MEMO,
+        reference: record[seq_key],
+        action: ACTION_CANCEL,
+      }).catch((err) => console.log(err));
       return res.json({ success: 1 });
     })
     .catch((err) => console.log(err));

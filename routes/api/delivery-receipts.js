@@ -1,8 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const DeliveryReceipt = require("./../../models/DeliveryReceipt");
-const SalesReturn = require("./../../models/SalesReturns");
-const StockReleasing = require("./../../models/StockReleasing");
+
 const Counter = require("./../../models/Counter");
 const isEmpty = require("./../../validators/is-empty");
 const filterId = require("./../../utils/filterId");
@@ -12,62 +11,48 @@ const validateInput = require("./../../validators/delivery-receipts");
 const moment = require("moment-timezone");
 const mongoose = require("mongoose");
 const async = require("async");
-const StockTransfer = require("../../models/StockTransfer");
-const PurchaseOrder = require("../../models/PurchaseOrder");
+
 const printing_functions = require("../../utils/printing_functions");
 const {
   CANCELLED,
   OPEN,
-  CLOSED,
-  DELIVERY_TYPE_COMPANY_DELIVERED,
-  STATUS_PARTIAL,
-  STATUS_FULL,
-  STATUS_PAID,
+  MODULE_WAREHOUSE_RECEIPT,
+  ACTION_UPDATE,
+  ACTION_SAVE,
+  ACTION_CANCEL,
+  PAYMENT_TYPE_CASH,
 } = require("../../config/constants");
-const {
-  createDeliveryReceiptFromSalesOrder,
-} = require("../../library/update_functions");
-const CreditMemo = require("../../models/CreditMemo");
-const TankerWithdrawal = require("../../models/TankerWithdrawal");
-const { uniqBy, orderBy, sumBy } = require("lodash");
-const { getStatementOfAccount } = require("../../library/report_functions");
+const BranchCounter = require("../../models/BranchCounter");
+const { saveTransactionAuditTrail } = require("../../library/update_functions");
+const BranchTransactionCounter = require("../../models/BranchTransactionCounter");
 
 const Model = DeliveryReceipt;
-const seq_key = "dr_no";
 const ObjectId = mongoose.Types.ObjectId;
-router.get("/:id/print", (req, res) => {
-  async.parallel(
-    {
-      purchase_order: (cb) => {
-        Model.findById(req.params.id).exec(cb);
-      },
-      requesters: (cb) => {
-        Model.aggregate([
+
+const seq_key = "dr_no";
+const branch_reference_prefix = "DR";
+
+router.get("/listing", (req, res) => {
+  const form_data = isEmpty(req.query)
+    ? {}
+    : {
+        $or: [
           {
-            $match: {
-              _id: mongoose.Types.ObjectId(req.params.id),
-            },
+            [seq_key]: parseInt(req.query.s),
           },
           {
-            $unwind: {
-              path: "$items",
-            },
+            po_ref: req.query.s,
           },
-          {
-            $group: {
-              _id: "$items.purchase_request.requested_by",
-              name: {
-                $first: "$items.purchase_request.requested_by",
-              },
-            },
-          },
-        ]).exec(cb);
-      },
-    },
-    (err, record) => {
-      return res.json(record);
-    }
-  );
+        ],
+      };
+
+  Model.find(form_data)
+    .sort({ [seq_key]: 1 })
+    .limit(100)
+    .then((records) => {
+      return res.json(records);
+    })
+    .catch((err) => console.log(err));
 });
 
 router.get("/:id", (req, res) => {
@@ -124,9 +109,26 @@ router.put("/", (req, res) => {
     },
   ];
 
-  Counter.increment(seq_key).then((result) => {
+  const branch = req.body.branch;
+  BranchTransactionCounter.increment(
+    seq_key,
+    branch._id,
+    req.body.payment_type
+  ).then((result) => {
+    let branch_reference;
+    if (req.body.payment_type === PAYMENT_TYPE_CASH) {
+      branch_reference = `SI-${branch?.company?.company_code}-${
+        branch.name
+      }-${result.next.toString().padStart(6, "0")}`;
+    } else {
+      branch_reference = `CSI-${branch?.company?.company_code}-${
+        branch.name
+      }-${result.next.toString().padStart(6, "0")}`;
+    }
+
     const newRecord = new Model({
       ...body,
+      branch_reference,
       total_payment_amount: 0,
       [seq_key]: result.next,
       logs,
@@ -141,12 +143,26 @@ router.put("/", (req, res) => {
     newRecord
       .save()
       .then((record) => {
+        const module_name =
+          record.payment_type === PAYMENT_TYPE_CASH
+            ? "Cash Sales Invoice"
+            : "Charge Sales Invoice";
+        saveTransactionAuditTrail({
+          user,
+          module_name,
+          reference: record[seq_key],
+          action: ACTION_SAVE,
+        }).catch((err) => console.log(err));
+
         return res.json(record);
       })
       .catch((err) => console.log(err));
   });
 });
 
+/**
+ * for raw printing
+ */
 router.post("/:id/print", async (req, res) => {
   await printing_functions.printReceivingReport({
     _id: req.params.id,
@@ -189,34 +205,17 @@ router.post("/:id/update-status", (req, res) => {
 
       record
         .save()
-        .then(async (record) => {
-          //create DR if not COMPANY DELIVERED
-          if (
-            record.delivery_type !== DELIVERY_TYPE_COMPANY_DELIVERED &&
-            record.status?.approval_status === CLOSED
-          ) {
-            createDeliveryReceiptFromSalesOrder({
-              _id: record._id,
-            }).catch((err) => {
-              console.log(err);
-            });
-          }
-
-          //if status is closed and has total_payment_amount, update status
-
-          if (
-            record.status?.approval_status == CLOSED &&
-            record.total_payment_amount > 0
-          ) {
-            let updated_status = STATUS_PARTIAL;
-
-            if (record.total_payment_amount >= record.total_amount) {
-              updated_status = STATUS_PAID;
-            }
-
-            record.status.approval_status = updated_status;
-            record = await record.save();
-          }
+        .then((record) => {
+          const module_name =
+            record.payment_type === PAYMENT_TYPE_CASH
+              ? "Cash Sales Invoice"
+              : "Charge Sales Invoice";
+          saveTransactionAuditTrail({
+            user,
+            module_name,
+            reference: record[seq_key],
+            action: record.status?.approval_status,
+          }).catch((err) => console.log(err));
 
           return res.json(record);
         })
@@ -253,178 +252,6 @@ router.post("/:id/print-status", (req, res) => {
       console.log("ID not found");
     }
   });
-});
-
-router.post("/customer-aging-details", async (req, res) => {
-  const date = moment(req.body.date).endOf("day");
-  let transactions = await update_inventory.getCustomerTransactionsAsOfDate(
-    date,
-    req.body.customer
-  );
-
-  // const dates = [[0], [1, 30], [31, 60], [61, 90], [90]];
-
-  const dates = [[0], [1, 7], [8, 15], [16, 30], [31, 45], [46, 60], [60]];
-
-  let arr = [];
-  dates.forEach((aging_dates, index) => {
-    if (index === 0) {
-      //first
-      const days = aging_dates[0];
-      const aging_transactions = transactions.filter((o) => o.aging <= days);
-
-      arr = [
-        ...arr,
-        {
-          dates: aging_dates,
-          aging_transactions,
-        },
-      ];
-    } else if (index === dates.length - 1) {
-      //last
-      const days = aging_dates[0];
-      const aging_transactions = transactions.filter((o) => o.aging > days);
-
-      arr = [
-        ...arr,
-        {
-          dates: aging_dates,
-          aging_transactions,
-        },
-      ];
-    } else {
-      const starting_day = aging_dates[0];
-      const ending_day = aging_dates[1];
-
-      const aging_transactions = transactions.filter(
-        (o) => o.aging >= starting_day && o.aging <= ending_day
-      );
-
-      arr = [
-        ...arr,
-        {
-          dates: aging_dates,
-          aging_transactions,
-        },
-      ];
-    }
-  });
-
-  return res.json({
-    aging: arr,
-    total: sumBy(transactions, (o) => o.amount),
-  });
-});
-
-router.post("/statement-of-account", async (req, res) => {
-  const { date, customer } = req.body;
-
-  const records = await getStatementOfAccount({ date, customer });
-  let _records = records.map((record) => {
-    const balance = record.items.reduce((acc, item) => {
-      const _balance = round(
-        item.total_amount - (item.total_payment_amount || 0)
-      );
-
-      return acc + _balance;
-    }, 0);
-
-    return {
-      ...record,
-      balance,
-    };
-  });
-
-  return res.json(_records);
-});
-
-router.post("/customer-aging-summary", async (req, res) => {
-  const date = moment(req.body.date).endOf("day");
-  const transactions = await update_inventory.getCustomerTransactionsAsOfDate(
-    date
-  );
-
-  let accounts = uniqBy(transactions, (o) => o.customer._id.toString());
-  accounts = orderBy(accounts, (o) => o.customer.name).map((o) => o.customer);
-
-  accounts = accounts.map((customer) => {
-    const dates = [[0], [1, 7], [8, 15], [16, 30], [31, 45], [46, 60], [60]];
-    // const dates = [[0], [1, 30], [31, 60], [61, 90], [90]];
-
-    let arr = [];
-    dates.forEach((aging_dates, index) => {
-      if (index === 0) {
-        //first
-        const days = aging_dates[0];
-        const aging_transactions = transactions.filter(
-          (o) =>
-            o.aging <= days &&
-            o.customer._id.toString() === customer._id.toString()
-        );
-
-        const total = sumBy(aging_transactions, (o) => o.amount);
-
-        arr = [...arr, total];
-      } else if (index === dates.length - 1) {
-        //last
-        const days = aging_dates[0];
-        const aging_transactions = transactions.filter(
-          (o) =>
-            o.aging > days &&
-            o.customer._id.toString() === customer._id.toString()
-        );
-        const total = sumBy(aging_transactions, (o) => o.amount);
-
-        arr = [...arr, total];
-      } else {
-        const starting_day = aging_dates[0];
-        const ending_day = aging_dates[1];
-
-        const aging_transactions = transactions.filter(
-          (o) =>
-            o.aging >= starting_day &&
-            o.aging <= ending_day &&
-            o.customer._id.toString() === customer._id.toString()
-        );
-
-        const total = sumBy(aging_transactions, (o) => o.amount);
-
-        arr = [...arr, total];
-      }
-    });
-
-    // let keys = ["Current", "1-30", "31-60", "61-90", ">90"];
-
-    let keys = ["Current", "1-7", "8-15", "16-30", "31-45", "46-60", ">60"];
-
-    keys.forEach((key, index) => {
-      customer = {
-        ...customer,
-        [keys[index]]: arr[index],
-      };
-    });
-
-    return {
-      ...customer,
-    };
-  });
-
-  accounts = accounts.map((o) => {
-    return {
-      ...o,
-      total: round(
-        o["Current"] +
-          o["1-7"] +
-          o["8-15"] +
-          o["16-30"] +
-          o["31-45"] +
-          o["46-60"] +
-          o[">60"]
-      ),
-    };
-  });
-
-  return res.json(accounts);
 });
 
 router.post("/history", (req, res) => {
@@ -539,9 +366,6 @@ router.post("/paginate", (req, res) => {
       ],
     }),
 
-    ...(advance_search.user_department?._id && {
-      "department._id": ObjectId(advance_search.user_department._id),
-    }),
     ...(advance_search.period_covered &&
       advance_search.period_covered[0] &&
       advance_search.period_covered[1] && {
@@ -557,8 +381,19 @@ router.post("/paginate", (req, res) => {
       dr_no: parseInt(advance_search.dr_no),
     }),
 
-    ...(advance_search.customer && {
-      "customer._id": ObjectId(advance_search.customer._id),
+    ...(advance_search.supplier && {
+      "supplier._id": ObjectId(advance_search.supplier._id),
+    }),
+
+    ...(advance_search.payment_type && {
+      payment_type: advance_search.payment_type,
+    }),
+
+    ...(advance_search.branch && {
+      "branch._id": ObjectId(advance_search.branch._id),
+    }),
+    ...(advance_search.account && {
+      "account._id": ObjectId(advance_search.account._id),
     }),
 
     ...(advance_search.approval_status && {
@@ -572,7 +407,7 @@ router.post("/paginate", (req, res) => {
 
   Model.paginate(form_data, {
     sort: {
-      _id: -1,
+      [seq_key]: -1,
     },
     page,
     limit: req.body?.page_size || 10,
@@ -581,136 +416,6 @@ router.post("/paginate", (req, res) => {
       return res.json(records);
     })
     .catch((err) => console.log(err));
-});
-
-router.post("/customer-accounts", (req, res) => {
-  const { customer, department } = req.body;
-
-  async.parallel(
-    {
-      deliveries: (cb) =>
-        DeliveryReceipt.aggregate([
-          {
-            $match: {
-              deleted: {
-                $exists: false,
-              },
-              "status.approval_status": {
-                $ne: CANCELLED,
-              },
-              "customer._id": ObjectId(customer._id),
-              ...(department?._id && {
-                "department._id": ObjectId(department._id),
-              }),
-            },
-          },
-          {
-            $addFields: {
-              total_amount: {
-                $reduce: {
-                  input: "$items",
-                  initialValue: 0,
-                  in: {
-                    $add: ["$$this.amount", "$$value"],
-                  },
-                },
-              },
-            },
-          },
-          {
-            $addFields: {
-              balance: {
-                $subtract: [
-                  "$total_amount",
-                  {
-                    $ifNull: ["$total_payment_amount", 0],
-                  },
-                ],
-              },
-            },
-          },
-          {
-            $match: {
-              balance: {
-                $ne: 0,
-              },
-            },
-          },
-          {
-            $sort: {
-              date: 1,
-            },
-          },
-        ])
-          .allowDiskUse(true)
-          .exec(cb),
-      credit_memos: (cb) =>
-        CreditMemo.aggregate([
-          {
-            $match: {
-              deleted: {
-                $exists: false,
-              },
-              "status.approval_status": {
-                $ne: CANCELLED,
-              },
-              "customer._id": ObjectId(customer._id),
-              ...(department?._id && {
-                "department._id": ObjectId(department._id),
-              }),
-            },
-          },
-          {
-            $addFields: {
-              total_amount: {
-                $reduce: {
-                  input: "$items",
-                  initialValue: 0,
-                  in: {
-                    $add: ["$$this.amount", "$$value"],
-                  },
-                },
-              },
-            },
-          },
-          {
-            $addFields: {
-              balance: {
-                $subtract: [
-                  "$total_amount",
-                  {
-                    $ifNull: ["$total_credit_amount", 0],
-                  },
-                ],
-              },
-            },
-          },
-          {
-            $match: {
-              balance: {
-                $ne: 0,
-              },
-            },
-          },
-          {
-            $sort: {
-              date: 1,
-            },
-          },
-        ])
-          .allowDiskUse(true)
-          .exec(cb),
-    },
-
-    (err, results) => {
-      if (err) {
-        console.log(err);
-        return res.status(401).json(err);
-      }
-
-      return res.json(results);
-    }
-  );
 });
 
 router.post("/:id", (req, res) => {
@@ -743,8 +448,6 @@ router.post("/:id", (req, res) => {
         logs,
       };
 
-      delete body.__v;
-
       record.set({
         ...body,
         updated_by: user,
@@ -752,44 +455,17 @@ router.post("/:id", (req, res) => {
 
       record
         .save()
-        .then(async (record) => {
-          //if tanker withdrawal is set, update the price of the items
-
-          if (record.tanker_withdrawal?._id) {
-            await async.eachSeries(record.items, async (item) => {
-              const log = await TankerWithdrawal.updateOne(
-                {
-                  _id: ObjectId(record.tanker_withdrawal?._id),
-                  "items.customer._id": ObjectId(record.customer._id),
-                  "items.stock._id": ObjectId(item.stock._id),
-                  "items.unit_of_measure._id": ObjectId(
-                    item.unit_of_measure._id
-                  ),
-                  "items.quantity": item.quantity,
-                },
-                {
-                  $set: {
-                    "items.$[elem].price": item.price,
-                    "items.$[elem].amount": item.amount,
-                  },
-                },
-                {
-                  arrayFilters: [
-                    {
-                      "elem.customer._id": ObjectId(record.customer._id),
-                      "elem.stock._id": ObjectId(item.stock._id),
-                      "elem.unit_of_measure._id": ObjectId(
-                        item.unit_of_measure._id
-                      ),
-                      "elem.quantity": item.quantity,
-                    },
-                  ],
-                }
-              ).exec();
-
-              return null;
-            });
-          }
+        .then((record) => {
+          const module_name =
+            record.payment_type === PAYMENT_TYPE_CASH
+              ? "Cash Sales Invoice"
+              : "Charge Sales Invoice";
+          saveTransactionAuditTrail({
+            user,
+            module_name,
+            reference: record[seq_key],
+            action: ACTION_UPDATE,
+          }).catch((err) => console.log(err));
 
           return res.json(record);
         })
@@ -801,6 +477,7 @@ router.post("/:id", (req, res) => {
 });
 
 router.delete("/:id", (req, res) => {
+  const user = req.body.user;
   Model.findByIdAndUpdate(
     req.params.id,
     {
@@ -821,6 +498,16 @@ router.delete("/:id", (req, res) => {
     }
   )
     .then((record) => {
+      const module_name =
+        record.payment_type === PAYMENT_TYPE_CASH
+          ? "Cash Sales Invoice"
+          : "Charge Sales Invoice";
+      saveTransactionAuditTrail({
+        user,
+        module_name,
+        reference: record[seq_key],
+        action: ACTION_CANCEL,
+      }).catch((err) => console.log(err));
       return res.json({ success: 1 });
     })
     .catch((err) => console.log(err));

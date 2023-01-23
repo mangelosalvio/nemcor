@@ -112,6 +112,54 @@ const AccountFormModal = forwardRef((props, ref) => {
                 });
               }}
             />
+
+            <TextFieldGroup
+              label="Business Style"
+              name="business_style"
+              error={errors.business_style}
+              formItemLayout={formItemLayout}
+              value={state.business_style}
+              onChange={(e) => {
+                onChange({
+                  key: e.target.name,
+                  value: e.target.value,
+                  setState,
+                });
+              }}
+            />
+
+            <TextFieldGroup
+              label="TIN"
+              name="tin"
+              error={errors.tin}
+              formItemLayout={formItemLayout}
+              value={state.tin}
+              onChange={(e) => {
+                onChange({
+                  key: e.target.name,
+                  value: e.target.value,
+                  setState,
+                });
+              }}
+            />
+
+            <TextFieldGroup
+              type="number"
+              step={1}
+              label="Terms in Days"
+              name="terms"
+              error={errors.terms}
+              formItemLayout={formItemLayout}
+              value={state.terms}
+              onChange={(e) => {
+                onChange({
+                  key: e.target.name,
+                  value: e.target.value,
+                  setState,
+                });
+              }}
+            />
+
             <SimpleSelectFieldGroup
               label="Account Type"
               name="account_type"

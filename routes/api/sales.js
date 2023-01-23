@@ -3,7 +3,7 @@ const mongoose = require("mongoose");
 const router = express.Router();
 const Sales = require("./../../models/Sales");
 const SalesOtherSet = require("./../../models/SalesOtherSet");
-const SalesReturns = require("./../../models/SalesReturns");
+
 const SalesReturnsOtherSet = require("./../../models/SalesReturnsOtherSet");
 const AccountSetting = require("./../../models/AccountSetting");
 const Table = require("./../../models/Table");

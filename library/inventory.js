@@ -9,7 +9,7 @@ const PhysicalCount = require("./../models/PhysicalCount");
 const StockReceiving = require("./../models/StockReceiving");
 const StockTransfer = require("./../models/StockTransfer");
 const PurchaseReturn = require("./../models/PurchaseReturn");
-const SalesReturn = require("./../models/SalesReturns");
+
 const Supplier = require("./../models/Supplier");
 const Wastage = require("./../models/Wastage");
 const Production = require("./../models/Production");

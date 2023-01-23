@@ -11,6 +11,8 @@ module.exports = {
   business_style: String,
   tin: String,
 
+  terms: Number,
+
   account_type: String,
   pricing_type: String, //check if retail or dealer price
 };

@@ -6,12 +6,11 @@ module.exports = function validateInput(data) {
   if (isEmpty(data.date)) {
     errors.date = "Date is required";
   }
-
-  if (isEmpty(data.customer)) {
-    errors.customer = "Customer is required";
+  if (isEmpty(data.branch)) {
+    errors.branch = "Branch is required";
   }
-  if (isEmpty(data.delivery_type)) {
-    errors.delivery_type = "Delivery Type is required";
+  if (isEmpty(data.account)) {
+    errors.account = "Account is required";
   }
 
   return {

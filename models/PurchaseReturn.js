@@ -3,13 +3,17 @@ const mongoose_paginate = require("mongoose-paginate");
 const AccountModel = require("./AccountModel");
 const BranchModel = require("./BranchModel");
 const ProductModel = require("./ProductModel");
+const SupplierModel = require("./SupplierModel");
 const UserLogSchema = require("./UserLogSchema");
+const UserSchema = require("./UserSchema");
+const WarehouseModel = require("./WarehouseModel");
 const Schema = mongoose.Schema;
 
-const PurchaseReturnSchema = new Schema(
+const TableSchema = new Schema(
   {
     pr_no: Number,
     date: Date,
+    branch_reference: String,
     branch: {
       ...BranchModel,
       _id: mongoose.Schema.Types.ObjectId,
@@ -18,13 +22,9 @@ const PurchaseReturnSchema = new Schema(
       ...AccountModel,
       _id: mongoose.Schema.Types.ObjectId,
     },
-
+    reference: String,
     remarks: String,
-    warehouse: {
-      _id: mongoose.Schema.Types.ObjectId,
-      name: String,
-      address: String,
-    },
+
     items: [
       {
         stock: {
@@ -33,10 +33,8 @@ const PurchaseReturnSchema = new Schema(
         },
         case_quantity: Number,
         quantity: Number,
-
         case_price: Number,
         price: Number,
-
         amount: Number,
       },
     ],
@@ -56,12 +54,15 @@ const PurchaseReturnSchema = new Schema(
       datetime: Date,
       user: UserLogSchema,
     },
+    total_amount: Number,
+    total_discount_amount: Number,
+    gross_amount: Number,
+
     printed: {
       user: UserLogSchema,
       datetime: Date,
     },
-    total_amount: Number,
-    total_credit_amount: Number,
+
     created_at: Date,
     updated_at: Date,
     created_by: {
@@ -81,5 +82,5 @@ const PurchaseReturnSchema = new Schema(
   }
 );
 
-PurchaseReturnSchema.plugin(mongoose_paginate);
-module.exports = mongoose.model("purchase_returns", PurchaseReturnSchema);
+TableSchema.plugin(mongoose_paginate);
+module.exports = mongoose.model("purchase_returns", TableSchema);

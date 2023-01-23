@@ -2,10 +2,7 @@ const mongoose = require("mongoose");
 const mongoose_paginate = require("mongoose-paginate");
 const AccountModel = require("./AccountModel");
 const BranchModel = require("./BranchModel");
-const CustomerModel = require("./CustomerModel");
-const ItemsSchema = require("./ItemsSchema");
-const LocationModel = require("./LocationModel");
-const NameModel = require("./NameModel");
+const ProductModel = require("./ProductModel");
 const SupplierModel = require("./SupplierModel");
 const UserLogSchema = require("./UserLogSchema");
 const UserSchema = require("./UserSchema");
@@ -14,33 +11,50 @@ const Schema = mongoose.Schema;
 
 const TableSchema = new Schema(
   {
+    return_no: Number,
+    date: Date,
+    branch_reference: String,
     branch: {
       ...BranchModel,
       _id: mongoose.Schema.Types.ObjectId,
     },
-    cm_no: Number,
-    date: Date,
     account: {
       ...AccountModel,
       _id: mongoose.Schema.Types.ObjectId,
     },
-    total_amount: Number,
-    total_credit_amount: Number,
-    reason: String,
+    reference: String,
     remarks: String,
-    branch_reference: String,
-    sales_return: {
-      return_no: Number,
-      _id: mongoose.Schema.Types.ObjectId,
+    return_stock_option: String,
+    items: [
+      {
+        stock: {
+          _id: mongoose.Schema.Types.ObjectId,
+          ...ProductModel,
+        },
+        quantity: Number,
+        price: Number,
+        amount: Number,
+      },
+    ],
+    logs: [
+      {
+        user: UserLogSchema,
+        datetime: Date,
+        log: String,
+      },
+    ],
+    deleted: {
       date: Date,
-      branch_reference: String,
+      user: UserLogSchema,
     },
-
     status: {
       approval_status: String,
       datetime: Date,
       user: UserLogSchema,
     },
+    total_amount: Number,
+    total_discount_amount: Number,
+    gross_amount: Number,
 
     printed: {
       user: UserLogSchema,
@@ -65,5 +79,6 @@ const TableSchema = new Schema(
     },
   }
 );
+
 TableSchema.plugin(mongoose_paginate);
-module.exports = mongoose.model("credit_memos", TableSchema);
+module.exports = mongoose.model("sales_returns", TableSchema);

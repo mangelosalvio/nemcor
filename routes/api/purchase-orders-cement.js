@@ -1,7 +1,6 @@
 const express = require("express");
 const router = express.Router();
 const PurchaseOrderCement = require("./../../models/PurchaseOrderCement");
-const SalesReturn = require("./../../models/SalesReturns");
 
 const Counter = require("./../../models/Counter");
 const isEmpty = require("./../../validators/is-empty");

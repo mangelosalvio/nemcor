@@ -472,7 +472,11 @@ export default function StocksReceiving({}) {
                 location,
               })
                 ? () => {
-                    setState({ ...initialValues, date: moment() });
+                    setState({
+                      ...initialValues,
+                      date: moment(),
+                      branch: auth.user?.branches?.[0] || null,
+                    });
                     setItem(initialItemValues);
                     setRecords([]);
                   }
@@ -605,7 +609,7 @@ export default function StocksReceiving({}) {
                           label="RR #"
                           name="rr_no"
                           formItemLayout={smallFormItemLayout}
-                          value={search_state.rr_no}
+                          value={search_state[transaction_counter.key]}
                           onChange={(e) => {
                             onChange({
                               key: e.target.name,

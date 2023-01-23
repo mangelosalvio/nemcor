@@ -462,7 +462,11 @@ export default function StockTransferForm({}) {
                 location,
               })
                 ? () => {
-                    setState({ ...initialValues, date: moment() });
+                    setState({
+                      ...initialValues,
+                      date: moment(),
+                      branch: auth.user?.branches?.[0] || null,
+                    });
                     setItem(initialItemValues);
                     setRecords([]);
                   }

@@ -113,3 +113,4 @@ export const account_type_options = [
 ];
 
 export const customer_pricing_options = ["Retail", "Dealer"];
+export const return_stock_options = ["Full Refund", "For Credit Memo"];

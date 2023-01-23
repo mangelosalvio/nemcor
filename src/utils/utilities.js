@@ -430,6 +430,22 @@ export const getCategories = (value) => {
       .catch((err) => reject(err));
   });
 };
+export const onSupplierOnlySearch = debounce(({ value, setOptions }) => {
+  getSuppliersOnly(value).then((records) => {
+    setOptions((prevState) => ({ ...prevState, accounts: records }));
+  });
+}, 300);
+
+export const getSuppliersOnly = (value) => {
+  return new Promise((resolve, reject) => {
+    axios
+      .get(`/api/accounts/?s=${value}&account_type=Supplier`)
+      .then((response) => {
+        resolve(response.data);
+      })
+      .catch((err) => reject(err));
+  });
+};
 
 export const onSupplierSearch = debounce(({ value, setOptions }) => {
   getSuppliers(value).then((records) => {

@@ -36,7 +36,6 @@ export const PO_STATUS_PARTIAL = "Partial";
 export const PO_STATUS_CLOSED = "Closed";
 export const STATUS_PAID = "Paid";
 
-export const PAYMENT_TYPE_CASH = "Cash";
 export const PAYMENT_TYPE_CHECK = "Check";
 export const PAYMENT_TYPE_TELEGRAPHIC_TRANSFER = "Telegraphic Transfer";
 
@@ -111,3 +110,5 @@ export const ACCOUNT_TYPE_CONSIGNEE = "Consignee";
 export const ACCOUNT_TYPE_CUSTOMER = "Customer";
 export const CUSTOMER_PRICING_RETAIL = "Retail";
 export const CUSTOMER_PRICING_DEALER = "Dealer";
+export const PAYMENT_TYPE_CASH = "Cash";
+export const PAYMENT_TYPE_CHARGE = "Charge";
