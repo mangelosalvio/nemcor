@@ -116,6 +116,10 @@ const MenuComponent = ({ component: Component, auth, logoutUser, ...rest }) => {
               <MenuPermission to="/charge-sales" label="Charge Sales" />
               <MenuPermission to="/sales-returns" label="Return Stock" />
               <MenuPermission to="/credit-memos" label="Credit Memos" />
+              <MenuPermission
+                to="/inventory-adjustments"
+                label="Inventory Adjustments"
+              />
             </SubMenu>
             <SubMenu
               key="inventory-reports"

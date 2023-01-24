@@ -52,6 +52,7 @@ import ReturnStockForm from "../components/inventory/ReturnStockForm";
 import CreditMemoForm from "../components/inventory/CreditMemoForm";
 import BranchInventoryBalanceList from "../components/inventory/BranchInventoryBalanceList";
 import StockCardReport from "../components/inventory/StockCardReport";
+import InventoryAdjustmentForm from "../components/inventory/InventoryAdjustmentForm";
 
 const AppRouter = () => (
   <div className="is-full-height">
@@ -225,6 +226,16 @@ const AppRouter = () => (
           <Route
             path=""
             element={<MenuComponent component={CreditMemoForm} />}
+          ></Route>
+        </Route>
+        <Route
+          path="/inventory-adjustments"
+          element={<PrivateRoute />}
+          exact={true}
+        >
+          <Route
+            path=""
+            element={<MenuComponent component={InventoryAdjustmentForm} />}
           ></Route>
         </Route>
         {/* <Route path="/cash-sales" element={<PrivateRoute />} exact={true}>

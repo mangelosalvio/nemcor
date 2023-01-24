@@ -58,6 +58,7 @@ module.exports = {
   MODULE_PURCHASE_RETURNS: "Purchase Returns",
   MODULE_RETURN_STOCK: "Return Stock",
   MODULE_CREDIT_MEMO: "Credit Memo",
+  MODULE_INVENTORY_ADJUSTMENTS: "Inventory Adjustments",
 
   ACTION_SAVE: "Save",
   ACTION_UPDATE: "Update",

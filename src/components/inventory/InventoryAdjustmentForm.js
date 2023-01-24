@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import TextFieldGroup from "../../commons/TextFieldGroup";
 import Searchbar from "../../commons/Searchbar";
+import qs from "qs";
 
 import {
   Layout,
@@ -33,6 +34,7 @@ import {
   onDeleteItem,
   onChange,
   onUpdateStatus,
+  hasAccess,
 } from "../../utils/form_utilities";
 import moment from "moment";
 import SelectFieldGroup from "../../commons/SelectFieldGroup";
@@ -42,6 +44,7 @@ import {
   onStockSearch,
   addKeysToArray,
   onWarehouseSearch,
+  onBranchSearch,
 } from "../../utils/utilities";
 import DatePickerFieldGroup from "../../commons/DatePickerFieldGroup";
 import TextAreaGroup from "../../commons/TextAreaGroup";
@@ -50,20 +53,27 @@ import round from "../../utils/round";
 import axios from "axios";
 import { sumBy, uniq } from "lodash";
 import WarehouseFormModal from "../modals/WarehouseFormModal";
-import { Link, useMatch, useParams } from "react-router-dom";
+import { Link, useMatch, useNavigate, useParams } from "react-router-dom";
 import numberFormatInt from "../../utils/numberFormatInt";
 import SelectTagFieldGroup from "../../commons/SelectTagsFieldGroup";
 import validator from "validator";
 import FormButtons from "../../commons/FormButtons";
 import classNames from "classnames";
-import { CANCELLED, OPEN, STATUS_CLOSED } from "../../utils/constants";
+import {
+  ACCESS_ADD,
+  ACCESS_ADVANCE_SEARCH,
+  ACCESS_OPEN,
+  CANCELLED,
+  OPEN,
+  STATUS_CLOSED,
+} from "../../utils/constants";
 import RangeDatePickerFieldGroup from "../../commons/RangeDatePickerFieldGroup";
 import SimpleSelectFieldGroup from "../../commons/SimpleSelectFieldGroup";
-import ItemsField from "../../commons/ItemsField";
+import AccountFormModal from "../modals/AccountFormModal";
 const { Content } = Layout;
 const { Panel } = Collapse;
 const url = "/api/inventory-adjustments/";
-const title = "Inventory Adjustment Form";
+const title = "Inventory Adjustments";
 
 const initialItemValues = {
   stock: null,
@@ -111,7 +121,7 @@ const onGenerateStockRelease = ({
     });
 };
 
-export default function InventoryAdjustmentForm({ navigate }) {
+export default function InventoryAdjustmentForm({}) {
   const params = useParams();
   const [errors, setErrors] = useState({});
   const [records, setRecords] = useState([]);
@@ -131,7 +141,7 @@ export default function InventoryAdjustmentForm({ navigate }) {
   const [page_size, setPageSize] = useState(10);
 
   const [loading, setLoading] = useState(false);
-  const supplierFormModal = useRef(null);
+  const accountFormModal = useRef(null);
   const warehouseFormModal = useRef(null);
   const caseQuantityField = useRef(null);
   const quanttiyField = useRef(null);
@@ -141,6 +151,7 @@ export default function InventoryAdjustmentForm({ navigate }) {
   const addItemButton = useRef(null);
   const stockField = useRef(null);
 
+  const navigate = useNavigate();
   const [search_state, setSearchState] = useState({});
 
   const initialValues = {
@@ -166,12 +177,8 @@ export default function InventoryAdjustmentForm({ navigate }) {
 
   const records_column = [
     {
-      title: "ADJ #",
-      dataIndex: "adj_no",
-    },
-    {
-      title: "Dept.",
-      dataIndex: ["department", "name"],
+      title: transaction_counter.label,
+      dataIndex: transaction_counter.key,
     },
     {
       title: "Date",
@@ -179,10 +186,14 @@ export default function InventoryAdjustmentForm({ navigate }) {
       render: (date) => moment(date).format("MM/DD/YYYY"),
     },
     {
-      title: "Warehouse",
-      dataIndex: ["warehouse", "name"],
+      title: "Branch",
+      dataIndex: "branch",
+      render: (branch) => `${branch?.company?.name}-${branch?.name}`,
     },
-
+    {
+      title: "Account",
+      dataIndex: ["account", "name"],
+    },
     /*{
       title: "PO#",
       dataIndex: ["purchase_order", "po_no"],
@@ -202,6 +213,10 @@ export default function InventoryAdjustmentForm({ navigate }) {
       dataIndex: "remarks",
     }, */
 
+    {
+      title: "Reference",
+      dataIndex: ["reference"],
+    },
     {
       title: "Items",
       dataIndex: "items",
@@ -229,27 +244,6 @@ export default function InventoryAdjustmentForm({ navigate }) {
         );
       },
     },
-    {
-      title: "",
-      key: "action",
-      width: 10,
-      render: (text, record) => (
-        <span
-          onClick={() =>
-            edit({
-              record,
-              setState,
-              setErrors,
-              setRecords,
-              url,
-              date_fields,
-            })
-          }
-        >
-          <i className="fas fa-edit"></i>
-        </span>
-      ),
-    },
   ];
 
   const items_column = [
@@ -266,7 +260,7 @@ export default function InventoryAdjustmentForm({ navigate }) {
       render: (value, record, index) => (
         <span>
           {record.footer !== 1 &&
-          (isEmpty(state.status) || state.status?.approval_status === OPEN) &&
+          isEmpty(state.status) &&
           isEmpty(state.deleted) ? (
             <Row gutter={8}>
               <Col span={24}>
@@ -305,66 +299,14 @@ export default function InventoryAdjustmentForm({ navigate }) {
         </span>
       ),
     },
-
-    {
-      title: "UOM",
-      width: 150,
-      align: "center",
-      dataIndex: ["unit_of_measure", "unit"],
-    },
-    {
-      title: "Price",
-      dataIndex: ["price"],
-      align: "right",
-      width: 100,
-      render: (value, record, index) =>
-        record.footer !== 1 &&
-        (isEmpty(state.status?.approval_status) ||
-          [state.status?.approval_status].includes(OPEN)) ? (
-          <Input
-            value={value}
-            className="has-text-right"
-            onChange={(e) => {
-              const price = e.target.value;
-              const quantity = record.quantity;
-              const amount = computeTotalAmount({
-                quantity,
-                price,
-              });
-
-              const items = [...state.items];
-              items[index] = {
-                ...items[index],
-                price,
-                amount,
-              };
-
-              setState((prevState) => ({
-                ...prevState,
-                items,
-              }));
-            }}
-          />
-        ) : (
-          value && numberFormat(value)
-        ),
-    },
-    {
-      title: "Amount",
-      dataIndex: ["amount"],
-      align: "right",
-      width: 150,
-      render: (value) => value && numberFormat(value),
-    },
     {
       title: "",
       key: "action",
-      align: "center",
       width: 100,
       render: (text, record, index) => (
         <span>
           {record.footer !== 1 &&
-            (isEmpty(state.status) || state.status?.approval_status === OPEN) &&
+            isEmpty(state.status) &&
             isEmpty(state.deleted) && (
               <span
                 onClick={() =>
@@ -381,20 +323,53 @@ export default function InventoryAdjustmentForm({ navigate }) {
         </span>
       ),
     },
-    ,
   ];
 
   useEffect(() => {
-    const department = auth?.user?.department;
-    setSearchState((prevState) => {
+    const branch = auth?.user?.branches?.[0] || null;
+
+    if (branch?._id) {
+      setSearchState((prevState) => {
+        return {
+          ...prevState,
+          branch,
+        };
+      });
+    }
+
+    setOptions((prevState) => {
       return {
         ...prevState,
-        user_department: department,
+        branches: auth?.user?.branches || [],
       };
     });
 
     return () => {};
-  }, [auth.user]);
+  }, [auth.user.branches]);
+
+  useEffect(() => {
+    const query = qs.parse(location.search, { ignoreQueryPrefix: true });
+
+    (async () => {
+      if (isEmpty(params?.id) && !isEmpty(search_state.branch?._id)) {
+        setTimeout(() => {
+          onSearch({
+            page: current_page,
+            page_size,
+            search_keyword,
+            url,
+            setRecords,
+            setTotalRecords,
+            setCurrentPage,
+            setErrors,
+            advance_search: { ...search_state },
+          });
+        }, 300);
+      }
+    })();
+
+    return () => {};
+  }, [search_state.branch]);
 
   useEffect(() => {
     setState((prevState) => {
@@ -456,8 +431,7 @@ export default function InventoryAdjustmentForm({ navigate }) {
   }, [item.case_quantity, item.quantity, item.case_price, item.price]);
 
   const can_edit =
-    (isEmpty(state.status) || [OPEN].includes(state.status?.approval_status)) &&
-    isEmpty(state.deleted);
+    isEmpty(state.status) || [OPEN].includes(state.status?.approval_status);
 
   return (
     <Content className="content-padding">
@@ -470,14 +444,14 @@ export default function InventoryAdjustmentForm({ navigate }) {
         }}
         ref={warehouseFormModal}
       />
-      <SupplierFormModal
-        setField={(supplier) => {
+      <AccountFormModal
+        setField={(account) => {
           setState((prevState) => ({
             ...prevState,
-            supplier,
+            account,
           }));
         }}
-        ref={supplierFormModal}
+        ref={accountFormModal}
       />
       <div className="columns is-marginless">
         <div className="column">
@@ -491,157 +465,180 @@ export default function InventoryAdjustmentForm({ navigate }) {
             name="search_keyword"
             onChange={(e) => setSearchKeyword(e.target.value)}
             value={search_keyword}
-            onNew={() => {
-              setState({ ...initialValues, date: moment() });
-              setItem(initialItemValues);
-              setRecords([]);
-            }}
+            onNew={
+              hasAccess({
+                auth,
+                access: ACCESS_ADD,
+                location,
+              })
+                ? () => {
+                    setState({
+                      ...initialValues,
+                      date: moment(),
+                      branch: auth.user?.branches?.[0] || null,
+                    });
+                    setItem(initialItemValues);
+                    setRecords([]);
+                  }
+                : null
+            }
           />
         </div>
       </div>
 
-      <Row>
-        <Col span={24} className="m-b-1">
-          <Collapse>
-            <Panel header="Advance Search" key="1">
-              <PageHeader
-                backIcon={false}
-                style={{
-                  border: "1px solid rgb(235, 237, 240)",
-                }}
-                onBack={() => null}
-                title="Advance Filter"
-                subTitle="Enter appropriate data to filter records"
-              >
-                <div className="or-slip-form">
-                  <Row>
-                    <Col span={8}>
-                      <RangeDatePickerFieldGroup
-                        label="Date"
-                        name="period_covered"
-                        value={search_state.period_covered}
-                        onChange={(dates) =>
-                          setSearchState((prevState) => ({
-                            ...prevState,
-                            period_covered: dates,
-                          }))
-                        }
-                        formItemLayout={smallFormItemLayout}
-                      />
-                    </Col>
+      {hasAccess({
+        auth,
+        access: ACCESS_ADVANCE_SEARCH,
+        location,
+      }) && (
+        <Row>
+          <Col span={24} className="m-b-1">
+            <Collapse>
+              <Panel header="Advance Search" key="1">
+                <PageHeader
+                  backIcon={false}
+                  style={{
+                    border: "1px solid rgb(235, 237, 240)",
+                  }}
+                  onBack={() => null}
+                  title="Advance Filter"
+                  subTitle="Enter appropriate data to filter records"
+                >
+                  <div className="or-slip-form">
+                    <Row>
+                      <Col span={8}>
+                        <RangeDatePickerFieldGroup
+                          label="Date"
+                          name="period_covered"
+                          value={search_state.period_covered}
+                          onChange={(dates) =>
+                            setSearchState((prevState) => ({
+                              ...prevState,
+                              period_covered: dates,
+                            }))
+                          }
+                          formItemLayout={smallFormItemLayout}
+                        />
+                      </Col>
+                      <Col span={8}>
+                        <SelectFieldGroup
+                          label="Branch"
+                          value={
+                            search_state.branch &&
+                            `${search_state.branch?.company?.name}-${search_state.branch?.name}`
+                          }
+                          onChange={(index) => {
+                            const branch = auth.user?.branches?.[index] || null;
+                            setSearchState((prevState) => ({
+                              ...prevState,
+                              branch,
+                            }));
+                          }}
+                          formItemLayout={smallFormItemLayout}
+                          data={(auth.user?.branches || []).map((o) => {
+                            return {
+                              ...o,
+                              display_name: `${o.company?.name}-${o?.name}`,
+                            };
+                          })}
+                          column="display_name"
+                        />
+                      </Col>
+                      <Col span={8}></Col>
+                    </Row>
+                    <Row>
+                      <Col span={8}>
+                        <SimpleSelectFieldGroup
+                          label="Status"
+                          name="approval_status"
+                          value={search_state.approval_status}
+                          onChange={(value) => {
+                            onChange({
+                              key: "approval_status",
+                              value: value,
+                              setState: setSearchState,
+                            });
+                          }}
+                          error={errors?.approval_status}
+                          formItemLayout={smallFormItemLayout}
+                          options={[OPEN, STATUS_CLOSED, CANCELLED] || []}
+                        />
+                      </Col>
+                      <Col span={8}>
+                        <SelectFieldGroup
+                          label="Item"
+                          value={search_state.stock?.name}
+                          onSearch={(value) =>
+                            onStockSearch({ value, options, setOptions })
+                          }
+                          onChange={(index) => {
+                            const stock = options.stocks[index];
+                            setSearchState((prevState) => ({
+                              ...prevState,
+                              stock,
+                            }));
+                          }}
+                          formItemLayout={smallFormItemLayout}
+                          data={options.stocks}
+                          column="display_name"
+                        />
+                      </Col>
+                      <Col span={8}>
+                        <TextFieldGroup
+                          label={transaction_counter.label}
+                          name={transaction_counter.key}
+                          formItemLayout={smallFormItemLayout}
+                          value={search_state[transaction_counter.key]}
+                          onChange={(e) => {
+                            onChange({
+                              key: e.target.name,
+                              value: e.target.value,
+                              setState: setSearchState,
+                            });
+                          }}
+                        />
+                      </Col>
+                    </Row>
 
-                    <Col span={8}>
-                      <TextFieldGroup
-                        label="ADJ #"
-                        name="adj_no"
-                        formItemLayout={smallFormItemLayout}
-                        value={search_state.adj_no}
-                        onChange={(e) => {
-                          onChange({
-                            key: e.target.name,
-                            value: e.target.value,
-                            setState: setSearchState,
-                          });
-                        }}
-                      />
-                    </Col>
-                    <Col span={8}>
-                      <SelectFieldGroup
-                        label="Warehouse"
-                        value={search_state.warehouse?.name}
-                        onSearch={(value) =>
-                          onWarehouseSearch({ value, setOptions })
-                        }
-                        onChange={(index) => {
-                          const warehouse = options.warehouses?.[index] || null;
-                          setSearchState((prevState) => ({
-                            ...prevState,
-                            warehouse,
-                          }));
-                        }}
-                        formItemLayout={smallFormItemLayout}
-                        data={options.warehouses}
-                        column="name"
-                      />
-                    </Col>
-                  </Row>
-                  <Row>
-                    <Col span={8}>
-                      <SimpleSelectFieldGroup
-                        label="Status"
-                        name="approval_status"
-                        value={search_state.approval_status}
-                        onChange={(value) => {
-                          onChange({
-                            key: "approval_status",
-                            value: value,
-                            setState: setSearchState,
-                          });
-                        }}
-                        error={errors?.approval_status}
-                        formItemLayout={smallFormItemLayout}
-                        options={[OPEN, STATUS_CLOSED, CANCELLED] || []}
-                      />
-                    </Col>
-                    <Col span={8}>
-                      <SelectFieldGroup
-                        label="Item"
-                        value={search_state.stock?.name}
-                        onSearch={(value) =>
-                          onStockSearch({ value, options, setOptions })
-                        }
-                        onChange={(index) => {
-                          const stock = options.stocks[index];
-                          setSearchState((prevState) => ({
-                            ...prevState,
-                            stock,
-                          }));
-                        }}
-                        formItemLayout={smallFormItemLayout}
-                        data={options.stocks}
-                        column="display_name"
-                      />
-                    </Col>
-                  </Row>
-
-                  <Row>
-                    <Col span={8}>
-                      <Row>
-                        <Col offset={8} span={12}>
-                          <Button
-                            type="info"
-                            size="large"
-                            icon={
-                              <i className="fa-solid fa-magnifying-glass pad-right-8"></i>
-                            }
-                            onClick={() => {
-                              onSearch({
-                                page: 1,
-                                page_size,
-                                search_keyword,
-                                url,
-                                setRecords,
-                                setTotalRecords,
-                                setCurrentPage,
-                                setErrors,
-                                advance_search: { ...search_state },
-                              });
-                            }}
-                          >
-                            Search
-                          </Button>
-                        </Col>
-                      </Row>
-                    </Col>
-                    <Col span={8}></Col>
-                    <Col span={8}></Col>
-                  </Row>
-                </div>
-              </PageHeader>
-            </Panel>
-          </Collapse>
-        </Col>
-      </Row>
+                    <Row>
+                      <Col span={8}>
+                        <Row>
+                          <Col offset={8} span={12}>
+                            <Button
+                              type="info"
+                              size="large"
+                              icon={
+                                <i className="fa-solid fa-magnifying-glass pad-right-8"></i>
+                              }
+                              onClick={() => {
+                                onSearch({
+                                  page: 1,
+                                  page_size,
+                                  search_keyword,
+                                  url,
+                                  setRecords,
+                                  setTotalRecords,
+                                  setCurrentPage,
+                                  setErrors,
+                                  advance_search: { ...search_state },
+                                });
+                              }}
+                            >
+                              Search
+                            </Button>
+                          </Col>
+                        </Row>
+                      </Col>
+                      <Col span={8}></Col>
+                      <Col span={8}></Col>
+                    </Row>
+                  </div>
+                </PageHeader>
+              </Panel>
+            </Collapse>
+          </Col>
+        </Row>
+      )}
 
       <div style={{ background: "#fff", padding: 24 }}>
         <Row>
@@ -676,13 +673,25 @@ export default function InventoryAdjustmentForm({ navigate }) {
             initialValues={initialValues}
           >
             {state[transaction_counter.key] && (
-              <TextFieldGroup
-                label={transaction_counter.label}
-                value={state[transaction_counter.key]}
-                error={errors.remarks}
-                formItemLayout={formItemLayout}
-                readOnly
-              />
+              <Row>
+                <Col span={12}>
+                  <TextFieldGroup
+                    label={transaction_counter.label}
+                    value={state[transaction_counter.key]}
+                    error={errors.remarks}
+                    formItemLayout={smallFormItemLayout}
+                    readOnly
+                  />
+                </Col>
+                <Col span={12}>
+                  <TextFieldGroup
+                    label="Branch Ref."
+                    value={state.branch_reference}
+                    formItemLayout={smallFormItemLayout}
+                    readOnly
+                  />
+                </Col>
+              </Row>
             )}
             <DatePickerFieldGroup
               label="Date"
@@ -699,20 +708,49 @@ export default function InventoryAdjustmentForm({ navigate }) {
               formItemLayout={formItemLayout}
             />
 
-            <SelectFieldGroup
-              label="Warehouse"
-              value={state.warehouse?.name}
-              onSearch={(value) => onWarehouseSearch({ value, setOptions })}
-              onChange={(index) => {
-                const warehouse = options.warehouses?.[index] || null;
-                setState((prevState) => ({
-                  ...prevState,
-                  warehouse,
-                }));
+            <Row>
+              <Col span={12}>
+                <SelectFieldGroup
+                  disabled={!isEmpty(state._id)}
+                  label="Branch"
+                  value={
+                    state.branch &&
+                    `${state.branch?.company?.name}-${state.branch?.name}`
+                  }
+                  onChange={(index) => {
+                    const branch = auth.user?.branches?.[index] || null;
+                    setState((prevState) => ({
+                      ...prevState,
+                      branch,
+                    }));
+                  }}
+                  formItemLayout={smallFormItemLayout}
+                  data={(auth.user?.branches || []).map((o) => {
+                    return {
+                      ...o,
+                      display_name: `${o.company?.name}-${o?.name}`,
+                    };
+                  })}
+                  column="display_name"
+                  error={errors.branch}
+                />
+              </Col>
+              <Col span={12}></Col>
+            </Row>
+
+            <TextFieldGroup
+              label="Reference"
+              name="reference"
+              value={state.reference}
+              error={errors.reference}
+              onChange={(e) => {
+                onChange({
+                  key: e.target.name,
+                  value: e.target.value,
+                  setState,
+                });
               }}
               formItemLayout={formItemLayout}
-              data={options.warehouses}
-              column="name"
             />
 
             <TextAreaGroup
@@ -751,25 +789,95 @@ export default function InventoryAdjustmentForm({ navigate }) {
                 readOnly
               />
             )}
+            {isEmpty(state.status) &&
+              isEmpty(state.deleted) && [
+                <Divider orientation="left" key="divider">
+                  Items
+                </Divider>,
+                <Row key="form" className="ant-form-vertical" gutter="4">
+                  <Col span={12}>
+                    <SelectFieldGroup
+                      key="1"
+                      inputRef={stockField}
+                      label="Item"
+                      value={item.stock?.name}
+                      onSearch={(value) =>
+                        onStockSearch({ value, options, setOptions })
+                      }
+                      onChange={(index) => {
+                        const stock = options.stocks?.[index] || null;
+                        setItem({
+                          ...item,
+                          stock,
+                          price: stock?.price || "",
+                        });
+                        quanttiyField.current.focus();
+                      }}
+                      error={errors.stock?.name}
+                      formItemLayout={null}
+                      data={options.stocks}
+                      column="display_name"
+                    />
+                  </Col>
+                  <Col span={4}>
+                    <TextFieldGroup
+                      type="number"
+                      label="Qty"
+                      value={item.quantity}
+                      onChange={(e) => {
+                        setItem({
+                          ...item,
+                          quantity: parseFloat(e.target.value),
+                        });
+                      }}
+                      error={errors.item && errors.item.quantity}
+                      formItemLayout={null}
+                      inputRef={quanttiyField}
+                      onPressEnter={(e) => {
+                        e.preventDefault();
+                        addItemButton.current.click();
+                      }}
+                    />
+                  </Col>
 
-            {(isEmpty(state.status) ||
-              state.status?.approval_status === OPEN) && (
-              <ItemsField
-                has_open_quantity={false}
-                has_unit={false}
-                item={item}
-                setItem={setItem}
-                state={state}
-                setState={setState}
-                items_key="items"
-                options={options}
-                setOptions={setOptions}
-                errors={errors}
-                initialItemValues={initialItemValues}
-                has_discount={false}
-              />
-            )}
-
+                  <Col
+                    span={2}
+                    className="is-flex align-items-center add-button-height"
+                  >
+                    <input
+                      type="button"
+                      ref={addItemButton}
+                      className="button is-primary "
+                      onClick={() => {
+                        setState((prevState) => ({
+                          ...prevState,
+                          items: [
+                            ...prevState.items,
+                            {
+                              ...item,
+                              quantity: !isEmpty(item.quantity)
+                                ? parseFloat(item.quantity)
+                                : 0,
+                              case_quantity: !isEmpty(item.case_quantity)
+                                ? parseFloat(item.case_quantity)
+                                : 0,
+                              price: !isEmpty(item.price)
+                                ? parseFloat(item.price)
+                                : 0,
+                              case_price: !isEmpty(item.case_price)
+                                ? parseFloat(item.case_price)
+                                : 0,
+                            },
+                          ],
+                        }));
+                        setItem(initialItemValues);
+                        stockField.current.focus();
+                      }}
+                      value="Add"
+                    />
+                  </Col>
+                </Row>,
+              ]}
             <Table
               dataSource={addKeysToArray([
                 ...state.items,
@@ -865,14 +973,22 @@ export default function InventoryAdjustmentForm({ navigate }) {
             onRow={(record, index) => {
               return {
                 onDoubleClick: (e) => {
-                  edit({
-                    record,
-                    setState,
-                    setErrors,
-                    setRecords,
-                    url,
-                    date_fields,
-                  });
+                  if (
+                    hasAccess({
+                      auth,
+                      access: ACCESS_OPEN,
+                      location,
+                    })
+                  ) {
+                    edit({
+                      record,
+                      setState,
+                      setErrors,
+                      setRecords,
+                      url,
+                      date_fields,
+                    });
+                  }
                 },
               };
             }}

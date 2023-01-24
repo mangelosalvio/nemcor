@@ -1,8 +1,6 @@
 const express = require("express");
 const router = express.Router();
 const InventoryAdjustment = require("./../../models/InventoryAdjustment");
-
-const StockReleasing = require("./../../models/StockReleasing");
 const Counter = require("./../../models/Counter");
 const isEmpty = require("./../../validators/is-empty");
 const filterId = require("./../../utils/filterId");
@@ -12,49 +10,22 @@ const validateInput = require("./../../validators/inventory_adjustments");
 const moment = require("moment-timezone");
 const mongoose = require("mongoose");
 const async = require("async");
-const StockTransfer = require("../../models/StockTransfer");
-const PurchaseOrder = require("../../models/PurchaseOrder");
+
 const printing_functions = require("../../utils/printing_functions");
-const { CANCELLED, OPEN } = require("../../config/constants");
-const CompanyCounter = require("../../models/CompanyCounter");
+const {
+  CANCELLED,
+  OPEN,
+  MODULE_INVENTORY_ADJUSTMENTS,
+  ACTION_UPDATE,
+  ACTION_SAVE,
+  ACTION_CANCEL,
+} = require("../../config/constants");
+const BranchCounter = require("../../models/BranchCounter");
+const { saveTransactionAuditTrail } = require("../../library/update_functions");
 
 const Model = InventoryAdjustment;
 const seq_key = "adj_no";
 const ObjectId = mongoose.Types.ObjectId;
-router.get("/:id/print", (req, res) => {
-  async.parallel(
-    {
-      purchase_order: (cb) => {
-        Model.findById(req.params.id).exec(cb);
-      },
-      requesters: (cb) => {
-        Model.aggregate([
-          {
-            $match: {
-              _id: mongoose.Types.ObjectId(req.params.id),
-            },
-          },
-          {
-            $unwind: {
-              path: "$items",
-            },
-          },
-          {
-            $group: {
-              _id: "$items.purchase_request.requested_by",
-              name: {
-                $first: "$items.purchase_request.requested_by",
-              },
-            },
-          },
-        ]).exec(cb);
-      },
-    },
-    (err, record) => {
-      return res.json(record);
-    }
-  );
-});
 
 router.get("/listing", (req, res) => {
   const form_data = isEmpty(req.query)
@@ -114,80 +85,6 @@ router.get("/", (req, res) => {
     .catch((err) => res.status(401).json(err));
 });
 
-/**
- * generate stock releasing form
- */
-router.put("/stock-releasing", (req, res) => {
-  const user = req.body.user;
-  Model.findOne({
-    _id: ObjectId(req.body._id),
-  })
-    .then((record) => {
-      const stocks_receiving = record.toObject();
-
-      const { date, warehouse, customer, items, total_amount, stock_release } =
-        record.toObject();
-
-      const body = {
-        date,
-        warehouse,
-        customer,
-        items,
-        total_amount,
-        sale: stock_release.sale,
-        stocks_receiving,
-      };
-
-      const datetime = moment.tz(moment(), process.env.TIMEZONE);
-      const log = `Added by ${user.name} on ${datetime.format("LLL")}`;
-      const logs = [
-        {
-          user,
-          datetime,
-          log,
-        },
-      ];
-
-      Counter.increment("stock_releasing_no").then((result) => {
-        const items = [...body.items].map((item) => {
-          const quantity = round(item.quantity);
-
-          const amount = round(quantity * item.price);
-
-          return {
-            ...item,
-            quantity,
-            amount,
-            total_quantity_received: 0,
-          };
-        });
-
-        const newRecord = new StockReleasing({
-          ...body,
-          items,
-          stock_releasing_no: result.next,
-          logs,
-        });
-        newRecord
-          .save()
-          .then((record) => {
-            update_inventory.updateItemsInCollection({
-              record: stocks_receiving,
-              ItemModel: StockReleasing,
-              item_collection: "stock_release",
-              items_column_key: "total_quantity_received",
-              is_inc: false,
-            });
-            return res.json(record);
-          })
-          .catch((err) => console.log(err));
-      });
-    })
-    .catch((err) => {
-      return res.status(401).json(err);
-    });
-});
-
 router.put("/", (req, res) => {
   const { isValid, errors } = validateInput(req.body);
 
@@ -207,17 +104,15 @@ router.put("/", (req, res) => {
     },
   ];
 
-  let counter_promise;
-  if (user?.department?._id) {
-    counter_promise = CompanyCounter.increment(seq_key, user?.department?._id);
-  } else {
-    counter_promise = Counter.increment(seq_key);
-  }
+  const branch = req.body.branch;
+  BranchCounter.increment(seq_key, branch._id).then((result) => {
+    const branch_reference = `ADJ-${branch?.company?.company_code}-${
+      branch.name
+    }-${result.next.toString().padStart(6, "0")}`;
 
-  counter_promise.then((result) => {
     const newRecord = new Model({
       ...body,
-      department: user?.department,
+      branch_reference,
       total_payment_amount: 0,
       [seq_key]: result.next,
       logs,
@@ -232,14 +127,23 @@ router.put("/", (req, res) => {
     newRecord
       .save()
       .then((record) => {
+        saveTransactionAuditTrail({
+          user,
+          module_name: MODULE_INVENTORY_ADJUSTMENTS,
+          reference: record[seq_key],
+          action: ACTION_SAVE,
+        }).catch((err) => console.log(err));
+
         return res.json(record);
       })
       .catch((err) => console.log(err));
   });
 });
 
+/**
+ * for raw printing
+ */
 router.post("/:id/print", async (req, res) => {
-  console.log("here");
   await printing_functions.printReceivingReport({
     _id: req.params.id,
   });
@@ -282,6 +186,13 @@ router.post("/:id/update-status", (req, res) => {
       record
         .save()
         .then((record) => {
+          saveTransactionAuditTrail({
+            user,
+            module_name: MODULE_INVENTORY_ADJUSTMENTS,
+            reference: record[seq_key],
+            action: record.status?.approval_status,
+          }).catch((err) => console.log(err));
+
           return res.json(record);
         })
         .catch((err) => console.log(err));
@@ -431,10 +342,6 @@ router.post("/paginate", (req, res) => {
       ],
     }),
 
-    ...(advance_search.user_department?._id && {
-      "department._id": ObjectId(advance_search.user_department._id),
-    }),
-
     ...(advance_search.period_covered &&
       advance_search.period_covered[0] &&
       advance_search.period_covered[1] && {
@@ -450,8 +357,15 @@ router.post("/paginate", (req, res) => {
       rr_no: parseInt(advance_search.rr_no),
     }),
 
-    ...(advance_search.warehouse && {
-      "warehouse._id": ObjectId(advance_search.warehouse._id),
+    ...(advance_search.supplier && {
+      "supplier._id": ObjectId(advance_search.supplier._id),
+    }),
+
+    ...(advance_search.branch && {
+      "branch._id": ObjectId(advance_search.branch._id),
+    }),
+    ...(advance_search.account && {
+      "account._id": ObjectId(advance_search.account._id),
     }),
 
     ...(advance_search.approval_status && {
@@ -465,7 +379,7 @@ router.post("/paginate", (req, res) => {
 
   Model.paginate(form_data, {
     sort: {
-      _id: -1,
+      [seq_key]: -1,
     },
     page,
     limit: req.body?.page_size || 10,
@@ -514,52 +428,12 @@ router.post("/:id", (req, res) => {
       record
         .save()
         .then((record) => {
-          if (record.purchase_order && record.purchase_order._id) {
-            update_inventory
-              .updateItemsInCollection({
-                record: { ...old_record },
-                ItemModel: PurchaseOrder,
-                item_collection: "purchase_order",
-                items_column_key: "received_quantity",
-                items_column_case_key: "received_case_quantity",
-                is_inc: false,
-              })
-              .then(() => {
-                update_inventory
-                  .updateItemsInCollection({
-                    record: record.toObject(),
-                    ItemModel: PurchaseOrder,
-                    item_collection: "purchase_order",
-                    items_column_key: "received_quantity",
-                    items_column_case_key: "received_case_quantity",
-                    is_inc: true,
-                  })
-                  .then(() => {
-                    update_inventory.updatePoStatus(record.purchase_order);
-                  });
-              });
-          }
-
-          if (record.stock_transfer) {
-            update_inventory
-              .updateItemsInCollection({
-                record: old_record,
-                ItemModel: StockTransfer,
-                item_collection: "stock_transfer",
-                items_column_key: "total_received_quantity",
-                items_column_case_key: "total_received_case_quantity",
-                is_inc: false,
-              })
-              .then(() => {
-                update_inventory.updateItemsInCollection({
-                  record: record.toObject(),
-                  ItemModel: StockTransfer,
-                  item_collection: "stock_transfer",
-                  items_column_key: "total_received_quantity",
-                  items_column_case_key: "total_received_case_quantity",
-                });
-              });
-          }
+          saveTransactionAuditTrail({
+            user,
+            module_name: MODULE_INVENTORY_ADJUSTMENTS,
+            reference: record[seq_key],
+            action: ACTION_UPDATE,
+          }).catch((err) => console.log(err));
 
           return res.json(record);
         })
@@ -571,6 +445,7 @@ router.post("/:id", (req, res) => {
 });
 
 router.delete("/:id", (req, res) => {
+  const user = req.body.user;
   Model.findByIdAndUpdate(
     req.params.id,
     {
@@ -591,6 +466,12 @@ router.delete("/:id", (req, res) => {
     }
   )
     .then((record) => {
+      saveTransactionAuditTrail({
+        user,
+        module_name: MODULE_INVENTORY_ADJUSTMENTS,
+        reference: record[seq_key],
+        action: ACTION_CANCEL,
+      }).catch((err) => console.log(err));
       return res.json({ success: 1 });
     })
     .catch((err) => console.log(err));
