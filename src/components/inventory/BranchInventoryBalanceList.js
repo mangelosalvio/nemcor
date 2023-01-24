@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import TextFieldGroup from "../../commons/TextFieldGroup";
 import Searchbar from "../../commons/Searchbar";
 
@@ -13,6 +13,7 @@ import {
   Divider,
   message,
   List,
+  Space,
 } from "antd";
 
 import {
@@ -36,7 +37,7 @@ import moment from "moment";
 import RangeDatePickerFieldGroup from "../../commons/RangeDatePickerFieldGroup";
 import axios from "axios";
 import numberFormat from "../../utils/numberFormat";
-import { addKeysToArray, onWarehouseSearch } from "../../utils/utilities";
+
 import round from "../../utils/round";
 import { sumBy } from "lodash";
 import ReactToPrint from "react-to-print";
@@ -46,7 +47,8 @@ import numberFormatInt from "../../utils/numberFormatInt";
 import DatePickerFieldGroup from "../../commons/DatePickerFieldGroup";
 import Item from "antd/lib/list/Item";
 import CheckboxGroupFieldGroup from "../../commons/CheckboxGroupFieldGroup";
-import { onSupplierSearch } from "../utils/utilities";
+
+import { addKeysToArray, onBranchSearch } from "../../utils/utilities";
 
 const { Content } = Layout;
 
@@ -84,13 +86,6 @@ export default function BranchInventoryBalanceList() {
       align: "right",
       render: (value) => numberFormat(value),
     },
-
-    {
-      title: "Remarks",
-      width: 100,
-      align: "center",
-      render: () => <div className="underline-input">&nbsp;</div>,
-    },
   ];
 
   useEffect(() => {
@@ -103,14 +98,8 @@ export default function BranchInventoryBalanceList() {
     return () => {};
   }, []);
 
-  useEffect(() => {
-    if (state.date && state.warehouse) {
-      const form_data = {
-        date: state.date,
-        warehouse: state.warehouse,
-        supplier: state.supplier,
-      };
-
+  const getReport = useCallback(({ ...form_data }) => {
+    if (form_data.date && form_data.branch) {
       const loading = message.loading("Loading...");
       axios
         .post(`${url}branch-inventory-balance-list`, form_data)
@@ -124,10 +113,10 @@ export default function BranchInventoryBalanceList() {
           loading();
           message.error("There was an error processing your request");
         });
+    } else {
+      return message.error("Date and branch are required");
     }
-
-    return () => {};
-  }, [state.warehouse, state.date, state.categories, state.supplier]);
+  }, []);
 
   return (
     <Content className="content-padding">
@@ -163,69 +152,61 @@ export default function BranchInventoryBalanceList() {
             </Col>
           </Row>
           <Row>
-            <Col span={24}>
+            <Col span={12}>
               <SelectFieldGroup
-                label="Location"
-                value={state.warehouse?.name}
+                label="Branch"
+                value={
+                  state.branch &&
+                  `${state.branch?.company?.name}-${state.branch?.name}`
+                }
+                onFocus={() =>
+                  onBranchSearch({ value: "", options, setOptions })
+                }
                 onSearch={(value) =>
-                  onWarehouseSearch({ value, options, setOptions })
+                  onBranchSearch({ value, options, setOptions })
                 }
                 onChange={(index) => {
-                  const warehouse = options.warehouses[index];
-
+                  const branch = options.branches?.[index] || null;
                   setState((prevState) => ({
                     ...prevState,
-                    warehouse,
+                    branch,
                   }));
                 }}
-                error={errors.warehouse}
-                formItemLayout={formItemLayout}
-                data={options.warehouses}
-                column="name"
+                formItemLayout={smallFormItemLayout}
+                data={options.branches}
+                column="display_name"
               />
             </Col>
           </Row>
 
-          {/* <Row>
-            <Col span={24} className="search-col">
-              <CheckboxGroupFieldGroup
-                label="Categories"
-                name="categories"
-                onChange={(value) => {
-                  onChange({
-                    key: "categories",
-                    value,
-                    setState,
-                  });
-                }}
-                error={errors.categories}
-                value={state.categories}
-                options={categories}
-                formItemLayout={formItemLayout}
-              />
-            </Col>
-          </Row> */}
-
           <Row>
             <Col span={24}>
               <Form.Item {...tailFormItemLayout} className="field is-grouped">
-                <ReactToPrint
-                  trigger={() => (
-                    <Button
-                      type="primary"
-                      icon={
-                        <span>
-                          <i className="fas print"></i>
-                        </span>
-                      }
-                      className="m-l-1"
-                    >
-                      Print
-                    </Button>
-                  )}
-                  bodyClass="print"
-                  content={() => report.current}
-                />
+                <Space>
+                  <Button
+                    onClick={() => {
+                      getReport({ ...state });
+                    }}
+                  >
+                    Search
+                  </Button>
+                  <ReactToPrint
+                    trigger={() => (
+                      <Button
+                        type="primary"
+                        icon={
+                          <span>
+                            <i className="fas print"></i>
+                          </span>
+                        }
+                      >
+                        Print
+                      </Button>
+                    )}
+                    bodyClass="print"
+                    content={() => report.current}
+                  />
+                </Space>
               </Form.Item>
             </Col>
           </Row>
@@ -241,7 +222,7 @@ export default function BranchInventoryBalanceList() {
                 state.period_covered?.[1]
               ).format("ll")} `}{" "}
             <br />
-            {state?.warehouse?.name} <br />
+            {state.branch?.company?.name || ""} {state?.branch?.name} <br />
             Printed By : {auth.user.name} <br />
             Date/Time Printed : {moment().format("LLL")}
           </div>

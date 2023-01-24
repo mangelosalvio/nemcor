@@ -118,6 +118,26 @@ const MenuComponent = ({ component: Component, auth, logoutUser, ...rest }) => {
               <MenuPermission to="/credit-memos" label="Credit Memos" />
             </SubMenu>
             <SubMenu
+              key="inventory-reports"
+              title={
+                <span>
+                  <span>
+                    <i className="fas fa-folder-open"></i>
+                  </span>
+                  Inventory Reports
+                </span>
+              }
+            >
+              <MenuPermission
+                to="/reports/branch-inventory-balance-list"
+                label="Branch Inventory List"
+              />
+              <MenuPermission
+                to="/reports/stock-card-report"
+                label="Stock Card Report"
+              />
+            </SubMenu>
+            <SubMenu
               key="payroll"
               title={
                 <span>

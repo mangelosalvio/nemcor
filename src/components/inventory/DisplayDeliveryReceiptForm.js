@@ -707,6 +707,9 @@ export default function DisplayDeliveryReceiptForm({}) {
         {isEmpty(records) ? (
           <Form
             onFinish={() => {
+              if ((state.items || [])?.length <= 0) {
+                return message.error("Item(s) is/are required");
+              }
               onSubmit({
                 values: state,
                 auth,

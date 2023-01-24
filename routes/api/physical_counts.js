@@ -247,20 +247,17 @@ router.post("/current-stock-balance", async (req, res) => {
 });
 
 router.post("/branch-stock-card", async (req, res) => {
-  const { period_covered, stock, warehouse } = req.body;
+  const { ...form_data } = req.body;
 
-  const records = await getBranchStockCard(stock, period_covered, warehouse);
+  const records = await getBranchStockCard({ ...form_data });
 
   return res.json(records);
 });
 
 router.post("/branch-inventory-balance-list", async (req, res) => {
-  const { date, warehouse, categories, ...rest } = req.body;
+  const { ...rest } = req.body;
 
   const records = await getBranchInventoryBalanceList({
-    date,
-    warehouse,
-    categories,
     ...rest,
   });
 

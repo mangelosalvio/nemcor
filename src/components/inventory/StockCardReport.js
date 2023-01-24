@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import TextFieldGroup from "../../commons/TextFieldGroup";
 import Searchbar from "../../commons/Searchbar";
 
@@ -12,6 +12,7 @@ import {
   Button,
   Divider,
   message,
+  Space,
 } from "antd";
 
 import {
@@ -43,6 +44,7 @@ import {
   addKeysToArray,
   onWarehouseSearch,
   onStockSearch,
+  onBranchSearch,
 } from "../../utils/utilities";
 import round from "../../utils/round";
 import { sumBy } from "lodash";
@@ -53,7 +55,7 @@ import SelectFieldGroup from "../../commons/SelectFieldGroup";
 const { Content } = Layout;
 
 const url = "/api/physical-counts/";
-const title = "Location Stock Card Report";
+const title = "Stock Card Report";
 
 const initialValues = {
   period_covered: [null, null],
@@ -113,19 +115,13 @@ export default function StockCardReport() {
     },
   ];
 
-  useEffect(() => {
+  const getReport = useCallback(({ ...form_data }) => {
     if (
-      state.period_covered?.[0] &&
-      state.period_covered?.[1] &&
-      state.stock?._id &&
-      state.warehouse
+      form_data.period_covered?.[0] &&
+      form_data.period_covered?.[1] &&
+      form_data.branch &&
+      form_data.stock?._id
     ) {
-      const form_data = {
-        period_covered: state.period_covered,
-        stock: state.stock,
-        warehouse: state.warehouse,
-      };
-
       const loading = message.loading("Loading...");
       axios
         .post(`${url}branch-stock-card`, form_data)
@@ -139,10 +135,10 @@ export default function StockCardReport() {
           loading();
           message.error("There was an error processing your request");
         });
+    } else {
+      return message.error("All fields are required");
     }
-
-    return () => {};
-  }, [state.period_covered, state.stock, state.warehouse]);
+  }, []);
 
   return (
     <Content className="content-padding">
@@ -162,23 +158,27 @@ export default function StockCardReport() {
           <Row>
             <Col span={12}>
               <SelectFieldGroup
-                label="Location"
-                value={state.warehouse?.name}
+                label="Branch"
+                value={
+                  state.branch &&
+                  `${state.branch?.company?.name}-${state.branch?.name}`
+                }
+                onFocus={() =>
+                  onBranchSearch({ value: "", options, setOptions })
+                }
                 onSearch={(value) =>
-                  onWarehouseSearch({ value, options, setOptions })
+                  onBranchSearch({ value, options, setOptions })
                 }
                 onChange={(index) => {
-                  const warehouse = options.warehouses[index];
-
+                  const branch = options.branches?.[index] || null;
                   setState((prevState) => ({
                     ...prevState,
-                    warehouse,
+                    branch,
                   }));
                 }}
-                error={errors.warehouse}
                 formItemLayout={smallFormItemLayout}
-                data={options.warehouses}
-                column="name"
+                data={options.branches}
+                column="display_name"
               />
             </Col>
             <Col span={12}>
@@ -226,23 +226,31 @@ export default function StockCardReport() {
                 {...smallTailFormItemLayout}
                 className="field is-grouped"
               >
-                <ReactToPrint
-                  trigger={() => (
-                    <Button
-                      type="primary"
-                      icon={
-                        <span>
-                          <i className="fas print"></i>
-                        </span>
-                      }
-                      className="m-l-1"
-                    >
-                      Print
-                    </Button>
-                  )}
-                  bodyClass="print"
-                  content={() => report.current}
-                />
+                <Space>
+                  <Button
+                    onClick={() => {
+                      getReport({ ...state });
+                    }}
+                  >
+                    Search
+                  </Button>
+                  <ReactToPrint
+                    trigger={() => (
+                      <Button
+                        type="primary"
+                        icon={
+                          <span>
+                            <i className="fas print"></i>
+                          </span>
+                        }
+                      >
+                        Print
+                      </Button>
+                    )}
+                    bodyClass="print"
+                    content={() => report.current}
+                  />
+                </Space>
               </Form.Item>
             </Col>
           </Row>
@@ -253,6 +261,7 @@ export default function StockCardReport() {
             <span className="has-text-weight-bold">{title}</span>
             <br />
             {state.date && <div>{state.date}</div>}
+            {state.branch?.company?.name || ""} {state?.branch?.name} <br />
             Printed By : {auth.user.name} <br />
             Date/Time Printed : {moment().format("LLL")}
           </div>

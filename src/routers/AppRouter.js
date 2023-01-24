@@ -50,6 +50,8 @@ import { PAYMENT_TYPE_CASH, PAYMENT_TYPE_CHARGE } from "../utils/constants";
 import PurchaseReturnForm from "../components/inventory/PurchaseReturnForm";
 import ReturnStockForm from "../components/inventory/ReturnStockForm";
 import CreditMemoForm from "../components/inventory/CreditMemoForm";
+import BranchInventoryBalanceList from "../components/inventory/BranchInventoryBalanceList";
+import StockCardReport from "../components/inventory/StockCardReport";
 
 const AppRouter = () => (
   <div className="is-full-height">
@@ -263,6 +265,27 @@ const AppRouter = () => (
           <Route
             path=""
             element={<MenuComponent component={PurchaseReturnForm} />}
+          ></Route>
+        </Route>
+
+        <Route
+          path="/reports/branch-inventory-balance-list"
+          element={<PrivateRoute />}
+          exact={true}
+        >
+          <Route
+            path=""
+            element={<MenuComponent component={BranchInventoryBalanceList} />}
+          ></Route>
+        </Route>
+        <Route
+          path="/reports/stock-card-report"
+          element={<PrivateRoute />}
+          exact={true}
+        >
+          <Route
+            path=""
+            element={<MenuComponent component={StockCardReport} />}
           ></Route>
         </Route>
 

@@ -41,31 +41,28 @@ module.exports.getLatestPhysicalCountOfBranch = (date, warehouse) => {
   });
 };
 
-module.exports.getBranchInventoryBalance = (stock, date, warehouse) => {
+module.exports.getBranchInventoryBalance = ({ stock, date, branch }) => {
   return new Promise(async (resolve, reject) => {
     let from_date = null;
     let to_date = moment(date).endOf("day").toDate();
 
-    const query = [
+    StockReceiving.aggregate([
       {
         $match: {
           deleted: {
             $exists: false,
           },
-          "warehouse._id": ObjectId(warehouse._id),
+          "branch._id": ObjectId(branch._id),
           "items.stock._id": ObjectId(stock._id),
-          "status.approval_status": FINALIZED,
+          "status.approval_status": {
+            $ne: CANCELLED,
+          },
           date: {
             ...(from_date && {
               $gt: from_date,
             }),
             $lte: to_date,
           },
-        },
-      },
-      {
-        $sort: {
-          date: -1,
         },
       },
       {
@@ -80,13 +77,13 @@ module.exports.getBranchInventoryBalance = (stock, date, warehouse) => {
         $group: {
           _id: null,
           quantity: {
-            $sum: "$items.adjustment_quantity",
+            $sum: "$items.quantity",
           },
         },
       },
       {
         $unionWith: {
-          coll: "tanker_withdrawals",
+          coll: "purchase_returns",
           pipeline: [
             {
               $match: {
@@ -96,49 +93,7 @@ module.exports.getBranchInventoryBalance = (stock, date, warehouse) => {
                 "status.approval_status": {
                   $ne: CANCELLED,
                 },
-                "source_depot_items.stock._id": ObjectId(stock._id),
-                "warehouse._id": ObjectId(warehouse._id),
-                date: {
-                  ...(from_date && {
-                    $gt: from_date,
-                  }),
-                  $lte: to_date,
-                },
-              },
-            },
-            {
-              $unwind: "$source_depot_items",
-            },
-            {
-              $match: {
-                "source_depot_items.stock._id": ObjectId(stock._id),
-              },
-            },
-            {
-              $group: {
-                _id: null,
-                quantity: {
-                  $sum: { $subtract: [0, "$source_depot_items.quantity"] },
-                },
-              },
-            },
-          ],
-        },
-      },
-      {
-        $unionWith: {
-          coll: "warehouse_transfers",
-          pipeline: [
-            {
-              $match: {
-                deleted: {
-                  $exists: false,
-                },
-                "status.approval_status": {
-                  $ne: CANCELLED,
-                },
-                "items.stock._id": ObjectId(stock._id),
-                "warehouse._id": ObjectId(warehouse._id),
+                "branch._id": ObjectId(branch._id),
                 date: {
                   ...(from_date && {
                     $gt: from_date,
@@ -170,7 +125,7 @@ module.exports.getBranchInventoryBalance = (stock, date, warehouse) => {
       },
       {
         $unionWith: {
-          coll: "warehouse_transfers",
+          coll: "stock_transfers",
           pipeline: [
             {
               $match: {
@@ -180,90 +135,7 @@ module.exports.getBranchInventoryBalance = (stock, date, warehouse) => {
                 "status.approval_status": {
                   $ne: CANCELLED,
                 },
-                "items.stock._id": ObjectId(stock._id),
-                "to_warehouse._id": ObjectId(warehouse._id),
-                date: {
-                  ...(from_date && {
-                    $gt: from_date,
-                  }),
-                  $lte: to_date,
-                },
-              },
-            },
-            {
-              $unwind: "$items",
-            },
-            {
-              $match: {
-                "items.stock._id": ObjectId(stock._id),
-              },
-            },
-            {
-              $group: {
-                _id: null,
-                quantity: {
-                  $sum: "$items.quantity",
-                },
-              },
-            },
-          ],
-        },
-      },
-      {
-        $unionWith: {
-          coll: "warehouse_returns",
-          pipeline: [
-            {
-              $match: {
-                deleted: {
-                  $exists: false,
-                },
-                "status.approval_status": {
-                  $ne: CANCELLED,
-                },
-                "items.stock._id": ObjectId(stock._id),
-                "warehouse._id": ObjectId(warehouse._id),
-                date: {
-                  ...(from_date && {
-                    $gt: from_date,
-                  }),
-                  $lte: to_date,
-                },
-              },
-            },
-            {
-              $unwind: "$items",
-            },
-            {
-              $match: {
-                "items.stock._id": ObjectId(stock._id),
-              },
-            },
-            {
-              $group: {
-                _id: null,
-                quantity: {
-                  $sum: "$items.quantity",
-                },
-              },
-            },
-          ],
-        },
-      },
-      {
-        $unionWith: {
-          coll: "company_uses",
-          pipeline: [
-            {
-              $match: {
-                deleted: {
-                  $exists: false,
-                },
-                "status.approval_status": {
-                  $ne: CANCELLED,
-                },
-                "items.stock._id": ObjectId(stock._id),
-                "warehouse._id": ObjectId(warehouse._id),
+                "branch._id": ObjectId(branch._id),
                 date: {
                   ...(from_date && {
                     $gt: from_date,
@@ -293,7 +165,130 @@ module.exports.getBranchInventoryBalance = (stock, date, warehouse) => {
           ],
         },
       },
-
+      {
+        $unionWith: {
+          coll: "display_delivery_receipts",
+          pipeline: [
+            {
+              $match: {
+                deleted: {
+                  $exists: false,
+                },
+                "status.approval_status": {
+                  $ne: CANCELLED,
+                },
+                "branch._id": ObjectId(branch._id),
+                date: {
+                  ...(from_date && {
+                    $gt: from_date,
+                  }),
+                  $lte: to_date,
+                },
+              },
+            },
+            {
+              $unwind: "$items",
+            },
+            {
+              $match: {
+                "items.stock._id": ObjectId(stock._id),
+              },
+            },
+            {
+              $group: {
+                _id: null,
+                quantity: {
+                  $sum: {
+                    $subtract: [0, "$items.quantity"],
+                  },
+                },
+              },
+            },
+          ],
+        },
+      },
+      {
+        $unionWith: {
+          coll: "delivery_receipts",
+          pipeline: [
+            {
+              $match: {
+                deleted: {
+                  $exists: false,
+                },
+                "status.approval_status": {
+                  $ne: CANCELLED,
+                },
+                "branch._id": ObjectId(branch._id),
+                date: {
+                  ...(from_date && {
+                    $gt: from_date,
+                  }),
+                  $lte: to_date,
+                },
+              },
+            },
+            {
+              $unwind: "$items",
+            },
+            {
+              $match: {
+                "items.stock._id": ObjectId(stock._id),
+              },
+            },
+            {
+              $group: {
+                _id: null,
+                quantity: {
+                  $sum: {
+                    $subtract: [0, "$items.quantity"],
+                  },
+                },
+              },
+            },
+          ],
+        },
+      },
+      {
+        $unionWith: {
+          coll: "sales_returns",
+          pipeline: [
+            {
+              $match: {
+                deleted: {
+                  $exists: false,
+                },
+                "status.approval_status": {
+                  $ne: CANCELLED,
+                },
+                "branch._id": ObjectId(branch._id),
+                date: {
+                  ...(from_date && {
+                    $gt: from_date,
+                  }),
+                  $lte: to_date,
+                },
+              },
+            },
+            {
+              $unwind: "$items",
+            },
+            {
+              $match: {
+                "items.stock._id": ObjectId(stock._id),
+              },
+            },
+            {
+              $group: {
+                _id: null,
+                quantity: {
+                  $sum: "$items.quantity",
+                },
+              },
+            },
+          ],
+        },
+      },
       {
         $unionWith: {
           coll: "inventory_adjustments",
@@ -306,8 +301,7 @@ module.exports.getBranchInventoryBalance = (stock, date, warehouse) => {
                 "status.approval_status": {
                   $ne: CANCELLED,
                 },
-                "warehouse._id": ObjectId(warehouse._id),
-                "items.stock._id": ObjectId(stock._id),
+                "branch._id": ObjectId(branch._id),
                 date: {
                   ...(from_date && {
                     $gt: from_date,
@@ -335,7 +329,6 @@ module.exports.getBranchInventoryBalance = (stock, date, warehouse) => {
           ],
         },
       },
-
       {
         $group: {
           _id: null,
@@ -344,9 +337,8 @@ module.exports.getBranchInventoryBalance = (stock, date, warehouse) => {
           },
         },
       },
-    ];
-
-    PhysicalCount.aggregate(query)
+    ])
+      .allowDiskUse(true)
       .then((records) => {
         if (records.length > 0) {
           return resolve(records[0].quantity);
@@ -358,7 +350,12 @@ module.exports.getBranchInventoryBalance = (stock, date, warehouse) => {
   });
 };
 
-module.exports.getBranchStockCard = (stock, period_covered, warehouse) => {
+module.exports.getBranchStockCard = ({
+  branch,
+  period_covered,
+  stock,
+  ...rest
+}) => {
   return new Promise(async (resolve, reject) => {
     let from_date = moment(period_covered[0])
       .subtract({ day: 1 })
@@ -367,32 +364,32 @@ module.exports.getBranchStockCard = (stock, period_covered, warehouse) => {
 
     let to_date = moment(period_covered[1]).endOf("day").toDate();
 
-    const beginning_balance = await this.getBranchInventoryBalance(
+    const beginning_balance = await this.getBranchInventoryBalance({
       stock,
-      moment(period_covered[0]).subtract({ day: 1 }).endOf("day").toDate(),
-      warehouse
-    );
+      date: moment(period_covered[0])
+        .subtract({ day: 1 })
+        .endOf("day")
+        .toDate(),
+      branch,
+    });
 
-    PhysicalCount.aggregate([
+    StockReceiving.aggregate([
       {
         $match: {
           deleted: {
             $exists: false,
           },
-          "warehouse._id": ObjectId(warehouse._id),
+          "branch._id": ObjectId(branch._id),
           "items.stock._id": ObjectId(stock._id),
-          "status.approval_status": FINALIZED,
+          "status.approval_status": {
+            $ne: CANCELLED,
+          },
           date: {
             ...(from_date && {
               $gt: from_date,
             }),
             $lte: to_date,
           },
-        },
-      },
-      {
-        $sort: {
-          date: -1,
         },
       },
       {
@@ -405,7 +402,7 @@ module.exports.getBranchStockCard = (stock, period_covered, warehouse) => {
       },
       {
         $addFields: {
-          transaction: "Physical Count",
+          transaction: "Warehouse Receipt",
         },
       },
       {
@@ -413,73 +410,25 @@ module.exports.getBranchStockCard = (stock, period_covered, warehouse) => {
           date: "$date",
           transaction: "$transaction",
           reference: {
-            $concat: ["PC#", { $toString: "$pc_no" }],
+            $concat: ["WR#", { $toString: "$rr_no" }],
           },
-          quantity: "$items.adjustment_quantity",
+          quantity: "$items.quantity",
         },
       },
       {
         $unionWith: {
-          coll: "tanker_withdrawals",
+          coll: "purchase_returns",
           pipeline: [
             {
               $match: {
                 deleted: {
                   $exists: false,
                 },
-                "status.approval_status": {
-                  $ne: CANCELLED,
-                },
-                "source_depot_items.stock._id": ObjectId(stock._id),
-                "warehouse._id": ObjectId(warehouse._id),
-                date: {
-                  ...(from_date && {
-                    $gt: from_date,
-                  }),
-                  $lte: to_date,
-                },
-              },
-            },
-            {
-              $unwind: "$source_depot_items",
-            },
-            {
-              $match: {
-                "source_depot_items.stock._id": ObjectId(stock._id),
-              },
-            },
-            {
-              $addFields: {
-                transaction: "Tanker Scheduling",
-              },
-            },
-            {
-              $project: {
-                date: "$date",
-                transaction: "$transaction",
-                reference: {
-                  $concat: ["TS#", { $toString: "$tw_no" }],
-                },
-                quantity: { $subtract: [0, "$source_depot_items.quantity"] },
-              },
-            },
-          ],
-        },
-      },
-      {
-        $unionWith: {
-          coll: "warehouse_transfers",
-          pipeline: [
-            {
-              $match: {
-                deleted: {
-                  $exists: false,
-                },
-                "status.approval_status": {
-                  $ne: CANCELLED,
-                },
+                "branch._id": ObjectId(branch._id),
                 "items.stock._id": ObjectId(stock._id),
-                "warehouse._id": ObjectId(warehouse._id),
+                "status.approval_status": {
+                  $ne: CANCELLED,
+                },
                 date: {
                   ...(from_date && {
                     $gt: from_date,
@@ -498,7 +447,7 @@ module.exports.getBranchStockCard = (stock, period_covered, warehouse) => {
             },
             {
               $addFields: {
-                transaction: "Warehouse Transfers",
+                transaction: "Purchase Returns",
               },
             },
             {
@@ -506,9 +455,11 @@ module.exports.getBranchStockCard = (stock, period_covered, warehouse) => {
                 date: "$date",
                 transaction: "$transaction",
                 reference: {
-                  $concat: ["WT#", { $toString: "$wt_no" }],
+                  $concat: ["PR#", { $toString: "$pr_no" }],
                 },
-                quantity: { $subtract: [0, "$items.quantity"] },
+                quantity: {
+                  $subtract: [0, "$items.quantity"],
+                },
               },
             },
           ],
@@ -516,18 +467,18 @@ module.exports.getBranchStockCard = (stock, period_covered, warehouse) => {
       },
       {
         $unionWith: {
-          coll: "warehouse_transfers",
+          coll: "stock_transfers",
           pipeline: [
             {
               $match: {
                 deleted: {
                   $exists: false,
                 },
+                "branch._id": ObjectId(branch._id),
+                "items.stock._id": ObjectId(stock._id),
                 "status.approval_status": {
                   $ne: CANCELLED,
                 },
-                "items.stock._id": ObjectId(stock._id),
-                "to_warehouse._id": ObjectId(warehouse._id),
                 date: {
                   ...(from_date && {
                     $gt: from_date,
@@ -546,7 +497,7 @@ module.exports.getBranchStockCard = (stock, period_covered, warehouse) => {
             },
             {
               $addFields: {
-                transaction: "Warehouse Transfers",
+                transaction: "Stock Transfers",
               },
             },
             {
@@ -554,7 +505,155 @@ module.exports.getBranchStockCard = (stock, period_covered, warehouse) => {
                 date: "$date",
                 transaction: "$transaction",
                 reference: {
-                  $concat: ["WT#", { $toString: "$wt_no" }],
+                  $concat: ["ST#", { $toString: "$stock_transfer_no" }],
+                },
+                quantity: {
+                  $subtract: [0, "$items.quantity"],
+                },
+              },
+            },
+          ],
+        },
+      },
+      {
+        $unionWith: {
+          coll: "display_delivery_receipts",
+          pipeline: [
+            {
+              $match: {
+                deleted: {
+                  $exists: false,
+                },
+                "branch._id": ObjectId(branch._id),
+                "items.stock._id": ObjectId(stock._id),
+                "status.approval_status": {
+                  $ne: CANCELLED,
+                },
+                date: {
+                  ...(from_date && {
+                    $gt: from_date,
+                  }),
+                  $lte: to_date,
+                },
+              },
+            },
+            {
+              $unwind: "$items",
+            },
+            {
+              $match: {
+                "items.stock._id": ObjectId(stock._id),
+              },
+            },
+            {
+              $addFields: {
+                transaction: "Display Delivery Receipt",
+              },
+            },
+            {
+              $project: {
+                date: "$date",
+                transaction: "$transaction",
+                reference: {
+                  $concat: ["DS#", { $toString: "$display_dr_no" }],
+                },
+                quantity: {
+                  $subtract: [0, "$items.quantity"],
+                },
+              },
+            },
+          ],
+        },
+      },
+      {
+        $unionWith: {
+          coll: "delivery_receipts",
+          pipeline: [
+            {
+              $match: {
+                deleted: {
+                  $exists: false,
+                },
+                "branch._id": ObjectId(branch._id),
+                "items.stock._id": ObjectId(stock._id),
+                "status.approval_status": {
+                  $ne: CANCELLED,
+                },
+                date: {
+                  ...(from_date && {
+                    $gt: from_date,
+                  }),
+                  $lte: to_date,
+                },
+              },
+            },
+            {
+              $unwind: "$items",
+            },
+            {
+              $match: {
+                "items.stock._id": ObjectId(stock._id),
+              },
+            },
+            {
+              $addFields: {
+                transaction: "Purchase Returns",
+              },
+            },
+            {
+              $project: {
+                date: "$date",
+                transaction: "$transaction",
+                reference: "$branch_reference",
+                quantity: {
+                  $subtract: [0, "$items.quantity"],
+                },
+              },
+            },
+          ],
+        },
+      },
+      {
+        $unionWith: {
+          coll: "sales_returns",
+          pipeline: [
+            {
+              $match: {
+                deleted: {
+                  $exists: false,
+                },
+                "branch._id": ObjectId(branch._id),
+                "items.stock._id": ObjectId(stock._id),
+                "status.approval_status": {
+                  $ne: CANCELLED,
+                },
+                date: {
+                  ...(from_date && {
+                    $gt: from_date,
+                  }),
+                  $lte: to_date,
+                },
+              },
+            },
+            {
+              $unwind: "$items",
+            },
+            {
+              $match: {
+                "items.stock._id": ObjectId(stock._id),
+              },
+            },
+            {
+              $addFields: {
+                transaction: "Return Stock",
+              },
+            },
+            {
+              $project: {
+                date: "$date",
+                transaction: "$transaction",
+                reference: {
+                  $concat: ["RET#", { $toString: "$return_no" }],
                 },
                 quantity: "$items.quantity",
               },
@@ -562,105 +661,6 @@ module.exports.getBranchStockCard = (stock, period_covered, warehouse) => {
           ],
         },
       },
-
-      {
-        $unionWith: {
-          coll: "warehouse_returns",
-          pipeline: [
-            {
-              $match: {
-                deleted: {
-                  $exists: false,
-                },
-                "status.approval_status": {
-                  $ne: CANCELLED,
-                },
-                "items.stock._id": ObjectId(stock._id),
-                "warehouse._id": ObjectId(warehouse._id),
-                date: {
-                  ...(from_date && {
-                    $gt: from_date,
-                  }),
-                  $lte: to_date,
-                },
-              },
-            },
-            {
-              $unwind: "$items",
-            },
-            {
-              $match: {
-                "items.stock._id": ObjectId(stock._id),
-              },
-            },
-            {
-              $addFields: {
-                transaction: "Warehouse Return",
-              },
-            },
-            {
-              $project: {
-                date: "$date",
-                transaction: "$transaction",
-                reference: {
-                  $concat: ["WR#", { $toString: "$ds_no" }],
-                },
-                quantity: "$items.quantity",
-              },
-            },
-          ],
-        },
-      },
-
-      {
-        $unionWith: {
-          coll: "company_uses",
-          pipeline: [
-            {
-              $match: {
-                deleted: {
-                  $exists: false,
-                },
-                "status.approval_status": {
-                  $ne: CANCELLED,
-                },
-                "items.stock._id": ObjectId(stock._id),
-                "warehouse._id": ObjectId(warehouse._id),
-                date: {
-                  ...(from_date && {
-                    $gt: from_date,
-                  }),
-                  $lte: to_date,
-                },
-              },
-            },
-            {
-              $unwind: "$items",
-            },
-            {
-              $match: {
-                "items.stock._id": ObjectId(stock._id),
-              },
-            },
-            {
-              $addFields: {
-                transaction: "Company Use",
-              },
-            },
-            {
-              $project: {
-                date: "$date",
-                transaction: "$transaction",
-                reference: {
-                  $concat: ["Doc#", { $toString: "$company_use_no" }],
-                },
-                quantity: { $subtract: [0, "$items.quantity"] },
-              },
-            },
-          ],
-        },
-      },
-
       {
         $unionWith: {
           coll: "inventory_adjustments",
@@ -670,11 +670,11 @@ module.exports.getBranchStockCard = (stock, period_covered, warehouse) => {
                 deleted: {
                   $exists: false,
                 },
+                "branch._id": ObjectId(branch._id),
+                "items.stock._id": ObjectId(stock._id),
                 "status.approval_status": {
                   $ne: CANCELLED,
                 },
-                "warehouse._id": ObjectId(warehouse._id),
-                "items.stock._id": ObjectId(stock._id),
                 date: {
                   ...(from_date && {
                     $gt: from_date,
@@ -693,7 +693,7 @@ module.exports.getBranchStockCard = (stock, period_covered, warehouse) => {
             },
             {
               $addFields: {
-                transaction: "Adjustments",
+                transaction: "Inventory Adjustments",
               },
             },
             {
@@ -736,24 +736,21 @@ module.exports.getBranchStockCard = (stock, period_covered, warehouse) => {
   });
 };
 
-module.exports.getBranchInventoryBalanceList = ({
-  date,
-  warehouse,
-  categories = [],
-  ...rest
-}) => {
+module.exports.getBranchInventoryBalanceList = ({ date, branch, ...rest }) => {
   return new Promise(async (resolve, reject) => {
     let from_date = null;
     let to_date = moment(date).endOf("day").toDate();
 
-    PhysicalCount.aggregate([
+    StockReceiving.aggregate([
       {
         $match: {
           deleted: {
             $exists: false,
           },
-          "warehouse._id": ObjectId(warehouse._id),
-          "status.approval_status": FINALIZED,
+          "branch._id": ObjectId(branch._id),
+          "status.approval_status": {
+            $ne: CANCELLED,
+          },
           date: {
             ...(from_date && {
               $gt: from_date,
@@ -761,14 +758,6 @@ module.exports.getBranchInventoryBalanceList = ({
             $lte: to_date,
           },
         },
-      },
-      {
-        $sort: {
-          date: -1,
-        },
-      },
-      {
-        $limit: 1,
       },
       {
         $unwind: "$items",
@@ -780,13 +769,13 @@ module.exports.getBranchInventoryBalanceList = ({
             $first: "$items.stock",
           },
           quantity: {
-            $sum: "$items.adjustment_quantity",
+            $sum: "$items.quantity",
           },
         },
       },
       {
         $unionWith: {
-          coll: "tanker_withdrawals",
+          coll: "purchase_returns",
           pipeline: [
             {
               $match: {
@@ -796,7 +785,7 @@ module.exports.getBranchInventoryBalanceList = ({
                 "status.approval_status": {
                   $ne: CANCELLED,
                 },
-                "warehouse._id": ObjectId(warehouse._id),
+                "branch._id": ObjectId(branch._id),
                 date: {
                   ...(from_date && {
                     $gt: from_date,
@@ -806,16 +795,18 @@ module.exports.getBranchInventoryBalanceList = ({
               },
             },
             {
-              $unwind: "$source_depot_items",
+              $unwind: "$items",
             },
             {
               $group: {
-                _id: "$source_depot_items.stock._id",
+                _id: "$items.stock._id",
                 stock: {
-                  $first: "$source_depot_items.stock",
+                  $first: "$items.stock",
                 },
                 quantity: {
-                  $sum: { $subtract: [0, "$source_depot_items.quantity"] },
+                  $sum: {
+                    $subtract: [0, "$items.quantity"],
+                  },
                 },
               },
             },
@@ -824,7 +815,7 @@ module.exports.getBranchInventoryBalanceList = ({
       },
       {
         $unionWith: {
-          coll: "warehouse_transfers",
+          coll: "stock_transfers",
           pipeline: [
             {
               $match: {
@@ -834,7 +825,127 @@ module.exports.getBranchInventoryBalanceList = ({
                 "status.approval_status": {
                   $ne: CANCELLED,
                 },
-                "to_warehouse._id": ObjectId(warehouse._id),
+                "branch._id": ObjectId(branch._id),
+                date: {
+                  ...(from_date && {
+                    $gt: from_date,
+                  }),
+                  $lte: to_date,
+                },
+              },
+            },
+            {
+              $unwind: "$items",
+            },
+            {
+              $group: {
+                _id: "$items.stock._id",
+                stock: {
+                  $first: "$items.stock",
+                },
+                quantity: {
+                  $sum: {
+                    $subtract: [0, "$items.quantity"],
+                  },
+                },
+              },
+            },
+          ],
+        },
+      },
+      {
+        $unionWith: {
+          coll: "display_delivery_receipts",
+          pipeline: [
+            {
+              $match: {
+                deleted: {
+                  $exists: false,
+                },
+                "status.approval_status": {
+                  $ne: CANCELLED,
+                },
+                "branch._id": ObjectId(branch._id),
+                date: {
+                  ...(from_date && {
+                    $gt: from_date,
+                  }),
+                  $lte: to_date,
+                },
+              },
+            },
+            {
+              $unwind: "$items",
+            },
+            {
+              $group: {
+                _id: "$items.stock._id",
+                stock: {
+                  $first: "$items.stock",
+                },
+                quantity: {
+                  $sum: {
+                    $subtract: [0, "$items.quantity"],
+                  },
+                },
+              },
+            },
+          ],
+        },
+      },
+      {
+        $unionWith: {
+          coll: "delivery_receipts",
+          pipeline: [
+            {
+              $match: {
+                deleted: {
+                  $exists: false,
+                },
+                "status.approval_status": {
+                  $ne: CANCELLED,
+                },
+                "branch._id": ObjectId(branch._id),
+                date: {
+                  ...(from_date && {
+                    $gt: from_date,
+                  }),
+                  $lte: to_date,
+                },
+              },
+            },
+            {
+              $unwind: "$items",
+            },
+            {
+              $group: {
+                _id: "$items.stock._id",
+                stock: {
+                  $first: "$items.stock",
+                },
+                quantity: {
+                  $sum: {
+                    $subtract: [0, "$items.quantity"],
+                  },
+                },
+              },
+            },
+          ],
+        },
+      },
+      {
+        $unionWith: {
+          coll: "sales_returns",
+          pipeline: [
+            {
+              $match: {
+                deleted: {
+                  $exists: false,
+                },
+                "status.approval_status": {
+                  $ne: CANCELLED,
+                },
+                "branch._id": ObjectId(branch._id),
                 date: {
                   ...(from_date && {
                     $gt: from_date,
@@ -854,121 +965,6 @@ module.exports.getBranchInventoryBalanceList = ({
                 },
                 quantity: {
                   $sum: "$items.quantity",
-                },
-              },
-            },
-          ],
-        },
-      },
-      {
-        $unionWith: {
-          coll: "warehouse_transfers",
-          pipeline: [
-            {
-              $match: {
-                deleted: {
-                  $exists: false,
-                },
-                "status.approval_status": {
-                  $ne: CANCELLED,
-                },
-                "warehouse._id": ObjectId(warehouse._id),
-                date: {
-                  ...(from_date && {
-                    $gt: from_date,
-                  }),
-                  $lte: to_date,
-                },
-              },
-            },
-            {
-              $unwind: "$items",
-            },
-            {
-              $group: {
-                _id: "$items.stock._id",
-                stock: {
-                  $first: "$items.stock",
-                },
-                quantity: {
-                  $sum: { $subtract: [0, "$items.quantity"] },
-                },
-              },
-            },
-          ],
-        },
-      },
-
-      {
-        $unionWith: {
-          coll: "warehouse_returns",
-          pipeline: [
-            {
-              $match: {
-                deleted: {
-                  $exists: false,
-                },
-                "status.approval_status": {
-                  $ne: CANCELLED,
-                },
-                "warehouse._id": ObjectId(warehouse._id),
-                date: {
-                  ...(from_date && {
-                    $gt: from_date,
-                  }),
-                  $lte: to_date,
-                },
-              },
-            },
-            {
-              $unwind: "$items",
-            },
-            {
-              $group: {
-                _id: "$items.stock._id",
-                stock: {
-                  $first: "$items.stock",
-                },
-                quantity: {
-                  $sum: "$items.quantity",
-                },
-              },
-            },
-          ],
-        },
-      },
-      {
-        $unionWith: {
-          coll: "company_uses",
-          pipeline: [
-            {
-              $match: {
-                deleted: {
-                  $exists: false,
-                },
-                "status.approval_status": {
-                  $ne: CANCELLED,
-                },
-                "warehouse._id": ObjectId(warehouse._id),
-                date: {
-                  ...(from_date && {
-                    $gt: from_date,
-                  }),
-                  $lte: to_date,
-                },
-              },
-            },
-            {
-              $unwind: "$items",
-            },
-            {
-              $group: {
-                _id: "$items.stock._id",
-                stock: {
-                  $first: "$items.stock",
-                },
-                quantity: {
-                  $sum: { $subtract: [0, "$items.quantity"] },
                 },
               },
             },
@@ -987,7 +983,7 @@ module.exports.getBranchInventoryBalanceList = ({
                 "status.approval_status": {
                   $ne: CANCELLED,
                 },
-                "warehouse._id": ObjectId(warehouse._id),
+                "branch._id": ObjectId(branch._id),
                 date: {
                   ...(from_date && {
                     $gt: from_date,
@@ -1028,23 +1024,8 @@ module.exports.getBranchInventoryBalanceList = ({
       {
         $lookup: {
           from: "products",
-          let: {
-            stock: "$stock",
-          },
-          pipeline: [
-            {
-              $match: {
-                $expr: {
-                  $eq: [
-                    "$_id",
-                    {
-                      $toObjectId: "$$stock._id",
-                    },
-                  ],
-                },
-              },
-            },
-          ],
+          localField: "stock._id",
+          foreignField: "_id",
           as: "stock",
         },
       },
@@ -1055,16 +1036,16 @@ module.exports.getBranchInventoryBalanceList = ({
           },
         },
       },
-      {
-        $match: {
-          ...(rest?.supplier?._id && {
-            "stock.supplier._id": ObjectId(rest.supplier?._id),
-          }),
-        },
-      },
+      // {
+      //   $match: {
+      //     ...(rest?.supplier?._id && {
+      //       "stock.supplier._id": ObjectId(rest.supplier?._id),
+      //     }),
+      //   },
+      // },
       {
         $sort: {
-          "stock.sku": 1,
+          "stock.name": 1,
         },
       },
     ])
