@@ -62,7 +62,7 @@ module.exports.updateCheckVoucherRefefence = ({ period_covered, branch }) => {
             const counter_result = await Counter.increment("cv_no");
 
             record.set({
-              cv_no: counter_result.next,
+              cv_no: counter_result.nexft,
             });
             await record.save();
           }
@@ -70,7 +70,7 @@ module.exports.updateCheckVoucherRefefence = ({ period_covered, branch }) => {
           if (isEmpty(record.branch_reference)) {
             const counter_result = await BranchCounter.increment(
               "cv_no",
-              branch
+              branch?._id
             );
 
             const next = counter_result.next;
