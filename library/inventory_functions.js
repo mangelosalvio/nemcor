@@ -451,6 +451,7 @@ module.exports.getBranchStockCard = ({
             $concat: ["WR#", { $toString: "$rr_no" }],
           },
           quantity: "$items.quantity",
+          external_reference: "$reference",
         },
       },
       {
@@ -498,6 +499,7 @@ module.exports.getBranchStockCard = ({
                 quantity: {
                   $subtract: [0, "$items.quantity"],
                 },
+                external_reference: "$reference",
               },
             },
           ],
@@ -548,6 +550,7 @@ module.exports.getBranchStockCard = ({
                 quantity: {
                   $subtract: [0, "$items.quantity"],
                 },
+                external_reference: "$reference",
               },
             },
           ],
@@ -598,6 +601,7 @@ module.exports.getBranchStockCard = ({
                 quantity: {
                   $subtract: [0, "$items.quantity"],
                 },
+                external_reference: "$reference",
               },
             },
           ],
@@ -646,6 +650,7 @@ module.exports.getBranchStockCard = ({
                 quantity: {
                   $subtract: [0, "$items.quantity"],
                 },
+                external_reference: "$reference",
               },
             },
           ],
@@ -694,6 +699,7 @@ module.exports.getBranchStockCard = ({
                   $concat: ["RET#", { $toString: "$return_no" }],
                 },
                 quantity: "$items.quantity",
+                external_reference: "$reference",
               },
             },
           ],
@@ -742,6 +748,7 @@ module.exports.getBranchStockCard = ({
                   $concat: ["ADJ#", { $toString: "$adj_no" }],
                 },
                 quantity: "$items.quantity",
+                external_reference: "$reference",
               },
             },
           ],
@@ -788,6 +795,7 @@ module.exports.getBranchStockCard = ({
                   $concat: ["PC#", { $toString: "$pc_no" }],
                 },
                 quantity: "$items.adjustment_quantity",
+                external_reference: "$reference",
               },
             },
           ],

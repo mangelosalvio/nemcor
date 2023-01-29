@@ -92,6 +92,10 @@ export default function StockCardReport() {
       dataIndex: "reference",
     },
     {
+      title: "Ext. Ref",
+      dataIndex: "external_reference",
+    },
+    {
       title: "In",
       dataIndex: "quantity",
       align: "right",
