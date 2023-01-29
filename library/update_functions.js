@@ -722,25 +722,41 @@ module.exports.adjustActualCount = ({ _id }) => {
   return new Promise(async (resolve, reject) => {
     const record = await PhysicalCount.findOne({ _id: ObjectId(_id) }).lean();
 
+    if (isEmpty(record)) {
+      return resolve(true);
+    }
+
+    const stock_ids = (record.items || []).map((item) => {
+      return ObjectId(item.stock._id);
+    });
+
+    const application_date = moment(record.application_date)
+      .startOf("day")
+      .minute(1)
+      .toDate();
+
+    const inventory_list = await getBranchInventoryBalanceList({
+      date: application_date,
+      branch: record.branch,
+      stock_ids,
+    });
+
     let items = await async.map([...record.items], async (item) => {
       // console.log(item.stock, record.warehouse);
 
-      const inventory_quantity = await getBranchInventoryBalance(
-        { ...item.stock, _id: item.stock._id.toString() },
-        moment(record.date).toDate(),
-        record.warehouse
-      );
-
-      // console.log(` ${item.stock.name} - ${inventory_quantity}`);
+      const running_balance =
+        inventory_list?.filter(
+          (o) => o.stock?._id?.toString() === item.stock?._id?.toString()
+        )?.[0]?.quantity || 0;
 
       const actual_count = item.quantity;
 
-      const adjustment_quantity = round(actual_count - inventory_quantity);
+      const adjustment_quantity = round(actual_count - running_balance);
 
       return {
         ...item,
         adjustment_quantity,
-        inventory_quantity,
+        running_balance,
       };
     });
 

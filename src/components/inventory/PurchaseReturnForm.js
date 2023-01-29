@@ -209,8 +209,7 @@ export default function PurchaseReturnForm({}) {
       render: (value, record, index) => (
         <span>
           {record.footer !== 1 &&
-          isEmpty(state.status) &&
-          isEmpty(state.deleted) ? (
+          [undefined, OPEN].includes(state.status?.approval_status) ? (
             <Row gutter={8}>
               <Col span={24}>
                 <Input
@@ -255,8 +254,7 @@ export default function PurchaseReturnForm({}) {
       render: (text, record, index) => (
         <span>
           {record.footer !== 1 &&
-            isEmpty(state.status) &&
-            isEmpty(state.deleted) && (
+            [undefined, OPEN].includes(state.status?.approval_status) && (
               <span
                 onClick={() =>
                   onDeleteItem({

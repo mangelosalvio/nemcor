@@ -51,6 +51,7 @@ module.exports = {
   STATUS_PAID: "PAID",
 
   MODULE_WAREHOUSE_RECEIPT: "Warehouse Receipt",
+  MODULE_PHYSICAL_COUNT: "Physical Count",
   MODULE_DISPLAY_DELIVERY_RECEIPTS: "Display Delivery Receipts",
   MODULE_STOCK_TRANSFER: "Stock Transfer",
   MODULE_CASH_SALES: "Cash Sales",

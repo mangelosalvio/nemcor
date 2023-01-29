@@ -1,6 +1,7 @@
-import React, { useState, useRef, useEffect, useCallback } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import TextFieldGroup from "../../commons/TextFieldGroup";
 import Searchbar from "../../commons/Searchbar";
+import qs from "qs";
 
 import {
   Layout,
@@ -9,9 +10,9 @@ import {
   Table,
   Divider,
   message,
-  Row,
-  Col,
   Input,
+  Col,
+  Row,
   Collapse,
   PageHeader,
   Button,
@@ -22,141 +23,162 @@ import {
   smallFormItemLayout,
   tailFormItemLayout,
 } from "./../../utils/Layouts";
-import {
-  EditOutlined,
-  CloseOutlined,
-  DeleteOutlined,
-  SearchOutlined,
-} from "@ant-design/icons";
+import { EditOutlined, CloseOutlined, DeleteOutlined } from "@ant-design/icons";
 import isEmpty from "../../validation/is-empty";
 import { useSelector } from "react-redux";
 import {
   edit,
   onDelete,
   onSubmit,
-  addNew,
   onSearch,
   onDeleteItem,
   onChange,
-  onFinalize,
+  onUpdateStatus,
+  hasAccess,
 } from "../../utils/form_utilities";
 import moment from "moment";
 import SelectFieldGroup from "../../commons/SelectFieldGroup";
+import SupplierFormModal from "../modals/SupplierFormModal";
 import {
   onSupplierSearch,
   onStockSearch,
   addKeysToArray,
   onWarehouseSearch,
+  onBranchSearch,
 } from "../../utils/utilities";
 import DatePickerFieldGroup from "../../commons/DatePickerFieldGroup";
 import TextAreaGroup from "../../commons/TextAreaGroup";
 import numberFormat from "../../utils/numberFormat";
 import round from "../../utils/round";
 import axios from "axios";
-import {
-  PO_STATUS_PENDING,
-  PO_STATUS_ACCOMPLISHED,
-  PO_STATUS_CLOSED,
-  APPROVED,
-  DISCOUNT_PERCENT,
-  DISCOUNT_VALUE,
-  PENDING,
-  USER_ADMINISTRATOR,
-  UNITS_CATEGORY,
-} from "../../utils/constants";
-import { debounce, sumBy } from "lodash";
-import { Link } from "react-router-dom";
+import { sumBy, uniq } from "lodash";
+import WarehouseFormModal from "../modals/WarehouseFormModal";
+import { Link, useMatch, useNavigate, useParams } from "react-router-dom";
+import numberFormatInt from "../../utils/numberFormatInt";
+import SelectTagFieldGroup from "../../commons/SelectTagsFieldGroup";
 import validator from "validator";
-import CheckboxFieldGroup from "../../commons/CheckboxFieldGroup";
-import RadioGroupFieldGroup from "../../commons/RadioGroupFieldGroup";
-import {
-  jo_status_options,
-  received_with_options,
-} from "./../../utils/Options";
-import CheckboxGroupFieldGroup from "../../commons/CheckboxGroupFieldGroup";
-import ItemsNoCostField from "../../commons/ItemsNoCostField";
 import FormButtons from "../../commons/FormButtons";
+import classNames from "classnames";
+import {
+  ACCESS_ADD,
+  ACCESS_ADVANCE_SEARCH,
+  ACCESS_OPEN,
+  CANCELLED,
+  OPEN,
+  STATUS_CLOSED,
+} from "../../utils/constants";
 import RangeDatePickerFieldGroup from "../../commons/RangeDatePickerFieldGroup";
+import SimpleSelectFieldGroup from "../../commons/SimpleSelectFieldGroup";
+import AccountFormModal from "../modals/AccountFormModal";
 const { Content } = Layout;
 const { Panel } = Collapse;
-
 const url = "/api/physical-counts/";
-const title = "Actual Count Form";
+const title = "Physical Count";
 
-const date_fields = ["date"];
+const initialItemValues = {
+  stock: null,
+  case_quantity: null,
+  quantity: null,
+  case_price: null,
+  price: null,
+  amount: null,
+};
 
 const transaction_counter = {
   label: "PC #",
   key: "pc_no",
 };
 
-const initialValues = {
-  _id: null,
-  [transaction_counter.key]: null,
-  branch_reference: "",
-  date: moment(),
+const date_fields = ["date", "application_date"];
 
-  warehouse: null,
-  remarks: "",
-  is_merchandise: true,
+const onGenerateStockRelease = ({
+  state,
+  user,
+  history,
+  setProcessing,
+  processing,
+}) => {
+  if (processing) return;
 
-  items: [],
-};
+  const form_data = {
+    _id: state._id,
+    user,
+  };
 
-const initialItemValues = {
-  stock: null,
-  quantity: null,
-  price: null,
-  amount: null,
-  discount_type: "",
-  discount: "",
-  phone_details: [],
-  status: null,
-};
-
-const getMainWarehouse = ({ setState, setItem, setRecords }) => {
+  const loading = message.loading("Processing....");
+  setProcessing(true);
   axios
-    .get("/api/account-settings/main_warehouse")
+    .put(`${url}stock-releasing`, form_data)
     .then((response) => {
-      setState({ ...initialValues, warehouse: response.data.value });
-      setItem(initialItemValues);
-      setRecords([]);
+      setProcessing(false);
+      loading();
+      navigate(`/stock-releasing/${response.data._id}`);
     })
-    .catch((err) => console.log(err));
+    .catch((err) => {
+      loading();
+      setProcessing(false);
+      message.error("There was an error processing your request");
+    });
 };
 
-export default function PhysicalCountForm() {
+export default function PhysicalCountForm({}) {
+  const params = useParams();
   const [errors, setErrors] = useState({});
   const [records, setRecords] = useState([]);
-  const [loading, setLoading] = useState(false);
-
+  const [processing, setProcessing] = useState(false);
   const [total_records, setTotalRecords] = useState(null);
   const [current_page, setCurrentPage] = useState(1);
   const [search_keyword, setSearchKeyword] = useState("");
   const auth = useSelector((state) => state.auth);
   const [item, setItem] = useState(initialItemValues);
+  const [dr_numbers, setDrNumbers] = useState([]);
   const [options, setOptions] = useState({
     suppliers: [],
     stocks: [],
+    purchase_orders: [],
+    warehouses: [],
   });
-  const [search_state, setSearchState] = useState({
-    period_covered: [null, null],
-    warehouse: null,
-    branch_reference: "",
-  });
+  const [page_size, setPageSize] = useState(10);
 
+  const [loading, setLoading] = useState(false);
+  const accountFormModal = useRef(null);
+  const warehouseFormModal = useRef(null);
+  const caseQuantityField = useRef(null);
+  const quanttiyField = useRef(null);
+  const casePriceField = useRef(null);
+  const priceField = useRef(null);
+  const amountField = useRef(null);
+  const addItemButton = useRef(null);
+  const stockField = useRef(null);
+
+  const navigate = useNavigate();
+  const [search_state, setSearchState] = useState({});
+
+  const initialValues = {
+    _id: null,
+    rr_no: null,
+    date: moment(),
+    supplier: null,
+    warehouse: auth.user?.warehouse,
+    remarks: "",
+    items: [],
+    discounts: [],
+
+    purchase_order: null,
+    stock_release: null,
+    sales_return: null,
+    customer: null,
+
+    gross_amount: 0,
+    total_discount_amount: 0,
+    total_amount: 0,
+  };
   const [state, setState] = useState(initialValues);
-
-  const phoneDetailsField = useRef([]);
 
   const records_column = [
     {
-      title: "PC #",
-      dataIndex: "pc_no",
-    },
-    {
-      title: "From",
-      dataIndex: ["warehouse", "name"],
+      title: transaction_counter.label,
+      dataIndex: transaction_counter.key,
     },
     {
       title: "Date",
@@ -164,52 +186,46 @@ export default function PhysicalCountForm() {
       render: (date) => moment(date).format("MM/DD/YYYY"),
     },
     {
-      title: "Remarks",
-      dataIndex: "remarks",
+      title: "Application Date",
+      dataIndex: "date",
+      render: (date) => moment(date).format("MM/DD/YYYY"),
     },
     {
-      title: "Log",
-      dataIndex: "logs",
-      render: (logs) => (
-        <span className="log-desc">
-          {!isEmpty(logs) && logs[logs.length - 1].log}
-        </span>
-      ),
+      title: "Branch",
+      dataIndex: "branch",
+      render: (branch) => `${branch?.company?.name}-${branch?.name}`,
+    },
+
+    {
+      title: "Reference",
+      dataIndex: ["reference"],
+    },
+    {
+      title: "Items",
+      dataIndex: "items",
+      width: 350,
+      render: (items) =>
+        (items || [])
+          .slice(0, 4)
+          .map((o) => o?.stock?.name)
+          .join("/ "),
     },
 
     {
       title: "Status",
-      dataIndex: "status",
+      dataIndex: ["status"],
+      align: "center",
       render: (status, record, index) => {
-        if (record.deleted && record.deleted.date) {
-          return (
-            <span className="has-text-danger has-text-weight-bold">VOIDED</span>
-          );
-        }
-
-        return <span>{status && status.approval_status}</span>;
+        return (
+          <span
+            className={classNames("has-text-weight-bold", {
+              "has-text-danger": status?.approval_status === CANCELLED,
+            })}
+          >
+            {status?.approval_status || ""}
+          </span>
+        );
       },
-    },
-    {
-      title: "",
-      key: "action",
-      width: 10,
-      render: (text, record) => (
-        <span
-          onClick={() =>
-            edit({
-              record,
-              setState,
-              setErrors,
-              setRecords,
-              url,
-              date_fields,
-            })
-          }
-        >
-          <i className="fas fa-edit"></i>
-        </span>
-      ),
     },
   ];
 
@@ -218,19 +234,22 @@ export default function PhysicalCountForm() {
       title: "Item",
       dataIndex: ["stock", "name"],
     },
+
     {
-      title: "Qty",
+      title: "Actual Count",
       dataIndex: "quantity",
-      align: "center",
-      width: 80,
+      align: "right",
+      width: 200,
       render: (value, record, index) => (
         <span>
           {record.footer !== 1 &&
-          isEmpty(state.status) &&
-          isEmpty(state.deleted) ? (
+          [undefined, OPEN].includes(state.status?.approval_status) ? (
             <Row gutter={8}>
               <Col span={24}>
                 <Input
+                  type="number"
+                  step={0.01}
+                  className="has-text-right"
                   value={record.quantity}
                   onChange={(e) => {
                     const value = e.target.value;
@@ -238,10 +257,12 @@ export default function PhysicalCountForm() {
                       let items = [...state.items];
                       let item = items[index];
                       const quantity = value;
+                      const amount = round(quantity * item.price);
 
                       items[index] = {
                         ...items[index],
                         quantity,
+                        amount,
                       };
 
                       return {
@@ -260,81 +281,160 @@ export default function PhysicalCountForm() {
         </span>
       ),
     },
-    {
-      title: "Inventory Count",
-      dataIndex: ["inventory_quantity"],
-      align: "center",
-      width: 80,
-    },
-    {
-      title: "Adjustment",
-      dataIndex: ["adjustment_quantity"],
-      align: "center",
-      width: 80,
-    },
+    ...(state?.status?.approval_status === STATUS_CLOSED
+      ? [
+          {
+            title: "Running Qty",
+            dataIndex: "running_balance",
+            align: "right",
+            width: 200,
+          },
+          {
+            title: "Adj Qty",
+            dataIndex: "adjustment_quantity",
+            align: "right",
+            width: 200,
+          },
+        ]
+      : []),
+
     {
       title: "",
       key: "action",
-      width: 50,
+      width: 100,
       render: (text, record, index) => (
         <span>
-          {isEmpty(state.status) && isEmpty(state.deleted) && (
-            <DeleteOutlined
-              onClick={() =>
-                onDeleteItem({
-                  field: "items",
-                  index,
-                  setState,
-                })
-              }
-            />
-          )}
+          {record.footer !== 1 &&
+            [undefined, OPEN].includes(state.status?.approval_status) && (
+              <span
+                onClick={() =>
+                  onDeleteItem({
+                    field: "items",
+                    index,
+                    setState,
+                  })
+                }
+              >
+                <i className="fas fa-trash-alt"></i>
+              </span>
+            )}
         </span>
       ),
     },
   ];
 
   useEffect(() => {
-    onSearch({
-      page: 1,
-      search_keyword,
-      url,
-      setRecords,
-      setTotalRecords,
-      setCurrentPage,
-      setErrors,
+    const branch = auth?.user?.branches?.[0] || null;
+
+    if (branch?._id) {
+      setSearchState((prevState) => {
+        return {
+          ...prevState,
+          branch,
+        };
+      });
+    }
+
+    setOptions((prevState) => {
+      return {
+        ...prevState,
+        branches: auth?.user?.branches || [],
+      };
     });
+
+    return () => {};
+  }, [auth.user.branches]);
+
+  useEffect(() => {
+    const query = qs.parse(location.search, { ignoreQueryPrefix: true });
+
+    (async () => {
+      if (isEmpty(params?.id) && !isEmpty(search_state.branch?._id)) {
+        setTimeout(() => {
+          onSearch({
+            page: current_page,
+            page_size,
+            search_keyword,
+            url,
+            setRecords,
+            setTotalRecords,
+            setCurrentPage,
+            setErrors,
+            advance_search: { ...search_state },
+          });
+        }, 300);
+      }
+    })();
+
+    return () => {};
+  }, [search_state.branch]);
+
+  useEffect(() => {
+    setState((prevState) => {
+      const total_amount = sumBy(state.items, (o) => o.amount);
+      const gross_amount = total_amount;
+      let net_amount = gross_amount;
+
+      (state.discounts || []).forEach((discount) => {
+        let discount_rate = validator.isNumeric(discount.toString())
+          ? 1 - round(discount) / 100
+          : 1;
+
+        net_amount = net_amount * discount_rate;
+      });
+
+      const total_discount_amount = round(gross_amount - net_amount);
+
+      return {
+        ...prevState,
+        total_amount,
+        gross_amount,
+        total_discount_amount,
+      };
+    });
+
+    return () => {};
+  }, [state.items, state.discounts]);
+
+  useEffect(() => {
+    if (params?.id) {
+      edit({
+        record: {
+          _id: params.id,
+        },
+        setState,
+        setErrors,
+        setRecords,
+        url,
+        date_fields,
+      });
+    }
     return () => {};
   }, []);
 
-  /*   const saveTransaction = useCallback(
-    debounce((form_data) => {
-      onSubmit(form_data);
-    }, 500),
-    []
-  ); */
+  const can_edit =
+    isEmpty(state.status) || [OPEN].includes(state.status?.approval_status);
 
-  /* useEffect(() => {
-    if (state.items.length > 0) {
-      const form_data = {
-        values: state,
-        auth,
-        url,
-        setErrors,
-        setState,
-        date_fields,
-        setLoading,
-        set_state_on_save: false,
-      };
-
-      if (!isEmpty(state._id)) {
-        saveTransaction(form_data);
-      }
-    }
-
-    return () => {};
-  }, [state.items]) */ return (
+  return (
     <Content className="content-padding">
+      <WarehouseFormModal
+        setField={(warehouse) => {
+          setState((prevState) => ({
+            ...prevState,
+            warehouse,
+          }));
+        }}
+        ref={warehouseFormModal}
+      />
+      <AccountFormModal
+        setField={(account) => {
+          setState((prevState) => ({
+            ...prevState,
+            account,
+          }));
+        }}
+        ref={accountFormModal}
+      />
       <div className="columns is-marginless">
         <div className="column">
           <Breadcrumb style={{ margin: "16px 0" }}>
@@ -345,232 +445,317 @@ export default function PhysicalCountForm() {
         <div className="column">
           <Searchbar
             name="search_keyword"
-            onSearch={(value, e) => {
-              e.preventDefault();
-              onSearch({
-                page: 1,
-                search_keyword,
-                url,
-                setRecords,
-                setTotalRecords,
-                setCurrentPage,
-                setErrors,
-              });
-            }}
             onChange={(e) => setSearchKeyword(e.target.value)}
             value={search_keyword}
-            onNew={() => {
-              setItem(initialItemValues);
-              setRecords([]);
-              setState({
-                ...initialValues,
-                date: moment(),
-              });
-              // axios
-              //   .get("/api/stocks/all-inventory-items")
-              //   .then((response) => {
-              //     if (response.data) {
-              //       let items = response.data.map((o) => {
-              //         return {
-              //           stock: { ...o },
-              //           quantity: "",
-              //         };
-              //       });
-
-              //       setState((prevState) => ({
-              //         ...initialValues,
-              //         date: moment(),
-              //         items,
-              //       }));
-              //     }
-              //   })
-              //   .catch((err) =>
-              //     message.error("There was an error getting inventory items")
-              //   );
-            }}
+            onNew={
+              hasAccess({
+                auth,
+                access: ACCESS_ADD,
+                location,
+              })
+                ? () => {
+                    setState({
+                      ...initialValues,
+                      date: moment(),
+                      branch: auth.user?.branches?.[0] || null,
+                    });
+                    setItem(initialItemValues);
+                    setRecords([]);
+                  }
+                : null
+            }
           />
         </div>
       </div>
 
-      {/* Start of Advance Search */}
-      <Row>
-        <Col span={24} className="m-b-1">
-          <Collapse>
-            <Panel header="Advance Search">
-              <PageHeader
-                backIcon={false}
-                style={{
-                  border: "1px solid rgb(235, 237, 240)",
-                }}
-                onBack={() => null}
-                title="Advance Filter"
-                subTitle="Enter appropriate data to filter records"
-              >
-                <div className="or-slip-form">
-                  <Row>
-                    <Col span={8}>
-                      <RangeDatePickerFieldGroup
-                        label="Date"
-                        name="period_covered"
-                        value={search_state.period_covered}
-                        onChange={(dates) =>
-                          setSearchState((prevState) => ({
-                            ...prevState,
-                            period_covered: dates,
-                          }))
-                        }
-                        formItemLayout={smallFormItemLayout}
-                      />
-                    </Col>
-                    <Col span={8}>
-                      <SelectFieldGroup
-                        label="Warehouse"
-                        value={search_state.warehouse?.name}
-                        onSearch={(value) =>
-                          onWarehouseSearch({ value, options, setOptions })
-                        }
-                        onChange={(index) => {
-                          const warehouse = options.warehouses[index];
-                          setSearchState((prevState) => ({
-                            ...prevState,
-                            warehouse,
-                          }));
-                        }}
-                        formItemLayout={smallFormItemLayout}
-                        data={options.warehouses}
-                        column="name"
-                      />
-                    </Col>
-                    <Col span={8}>
-                      <TextFieldGroup
-                        label="Reference"
-                        name="branch_reference"
-                        formItemLayout={smallFormItemLayout}
-                        value={search_state.branch_reference}
-                        onChange={(e) => {
-                          onChange({
-                            key: e.target.name,
-                            value: e.target.value,
-                            setState: setSearchState,
-                          });
-                        }}
-                      />
-                    </Col>
-                  </Row>
+      {hasAccess({
+        auth,
+        access: ACCESS_ADVANCE_SEARCH,
+        location,
+      }) && (
+        <Row>
+          <Col span={24} className="m-b-1">
+            <Collapse>
+              <Panel header="Advance Search" key="1">
+                <PageHeader
+                  backIcon={false}
+                  style={{
+                    border: "1px solid rgb(235, 237, 240)",
+                  }}
+                  onBack={() => null}
+                  title="Advance Filter"
+                  subTitle="Enter appropriate data to filter records"
+                >
+                  <div className="or-slip-form">
+                    <Row>
+                      <Col span={8}>
+                        <RangeDatePickerFieldGroup
+                          label="Date"
+                          name="period_covered"
+                          value={search_state.period_covered}
+                          onChange={(dates) =>
+                            setSearchState((prevState) => ({
+                              ...prevState,
+                              period_covered: dates,
+                            }))
+                          }
+                          formItemLayout={smallFormItemLayout}
+                        />
+                      </Col>
+                      <Col span={8}>
+                        <SelectFieldGroup
+                          label="Branch"
+                          value={
+                            search_state.branch &&
+                            `${search_state.branch?.company?.name}-${search_state.branch?.name}`
+                          }
+                          onChange={(index) => {
+                            const branch = auth.user?.branches?.[index] || null;
+                            setSearchState((prevState) => ({
+                              ...prevState,
+                              branch,
+                            }));
+                          }}
+                          formItemLayout={smallFormItemLayout}
+                          data={(auth.user?.branches || []).map((o) => {
+                            return {
+                              ...o,
+                              display_name: `${o.company?.name}-${o?.name}`,
+                            };
+                          })}
+                          column="display_name"
+                        />
+                      </Col>
+                    </Row>
+                    <Row>
+                      <Col span={8}>
+                        <SimpleSelectFieldGroup
+                          label="Status"
+                          name="approval_status"
+                          value={search_state.approval_status}
+                          onChange={(value) => {
+                            onChange({
+                              key: "approval_status",
+                              value: value,
+                              setState: setSearchState,
+                            });
+                          }}
+                          error={errors?.approval_status}
+                          formItemLayout={smallFormItemLayout}
+                          options={[OPEN, STATUS_CLOSED, CANCELLED] || []}
+                        />
+                      </Col>
+                      <Col span={8}>
+                        <SelectFieldGroup
+                          label="Item"
+                          value={search_state.stock?.name}
+                          onSearch={(value) =>
+                            onStockSearch({ value, options, setOptions })
+                          }
+                          onChange={(index) => {
+                            const stock = options.stocks[index];
+                            setSearchState((prevState) => ({
+                              ...prevState,
+                              stock,
+                            }));
+                          }}
+                          formItemLayout={smallFormItemLayout}
+                          data={options.stocks}
+                          column="display_name"
+                        />
+                      </Col>
+                      <Col span={8}>
+                        <TextFieldGroup
+                          label={transaction_counter.label}
+                          name={transaction_counter.key}
+                          formItemLayout={smallFormItemLayout}
+                          value={search_state[transaction_counter.key]}
+                          onChange={(e) => {
+                            onChange({
+                              key: e.target.name,
+                              value: e.target.value,
+                              setState: setSearchState,
+                            });
+                          }}
+                        />
+                      </Col>
+                    </Row>
 
-                  <Row>
-                    <Col span={8}>
-                      <Row>
-                        <Col offset={8} span={12}>
-                          <Button
-                            type="info"
-                            size="small"
-                            icon={<SearchOutlined />}
-                            onClick={() => {
-                              onSearch({
-                                page: 1,
-                                search_keyword,
-                                url,
-                                setRecords,
-                                setTotalRecords,
-                                setCurrentPage,
-                                setErrors,
-                                advance_search: search_state,
-                              });
-                            }}
-                          >
-                            Search
-                          </Button>
-                        </Col>
-                      </Row>
-                    </Col>
-                    <Col span={8}></Col>
-                    <Col span={8}></Col>
-                  </Row>
-                </div>
-              </PageHeader>
-            </Panel>
-          </Collapse>
-        </Col>
-      </Row>
-      {/* End of Advanced Search */}
+                    <Row>
+                      <Col span={8}>
+                        <Row>
+                          <Col offset={8} span={12}>
+                            <Button
+                              type="info"
+                              size="large"
+                              icon={
+                                <i className="fa-solid fa-magnifying-glass pad-right-8"></i>
+                              }
+                              onClick={() => {
+                                onSearch({
+                                  page: 1,
+                                  page_size,
+                                  search_keyword,
+                                  url,
+                                  setRecords,
+                                  setTotalRecords,
+                                  setCurrentPage,
+                                  setErrors,
+                                  advance_search: { ...search_state },
+                                });
+                              }}
+                            >
+                              Search
+                            </Button>
+                          </Col>
+                        </Row>
+                      </Col>
+                      <Col span={8}></Col>
+                      <Col span={8}></Col>
+                    </Row>
+                  </div>
+                </PageHeader>
+              </Panel>
+            </Collapse>
+          </Col>
+        </Row>
+      )}
 
       <div style={{ background: "#fff", padding: 24 }}>
-        <span className="module-title">{title}</span>
+        <Row>
+          <Col span={12}>
+            <span className="module-title">{title}</span>
+          </Col>
+          {/* <Col span={12} className="has-text-right">
+            <Button
+              type="link"
+              onClick={() => {
+                navigate("/cashier");
+              }}
+            >
+              Go Back Cashiering
+            </Button>
+          </Col> */}
+        </Row>
+
         <Divider />
         {isEmpty(records) ? (
           <Form
-            onFinish={(values) => {
-              if (!loading) {
-                onSubmit({
-                  values: {
-                    ...state,
-                    items: state.items.filter((o) => !isEmpty(o.quantity)),
-                  },
-                  auth,
-                  url,
-                  setErrors,
-                  setState,
-                  date_fields,
-                  setLoading,
-                });
+            onFinish={() => {
+              if (state.items?.length <= 0) {
+                return message.error("At least 1 item is required");
               }
+
+              onSubmit({
+                values: state,
+                auth,
+                url,
+                setErrors,
+                setState,
+                date_fields,
+              });
             }}
             initialValues={initialValues}
           >
             {state[transaction_counter.key] && (
-              <TextFieldGroup
-                label={transaction_counter.label}
-                value={state[transaction_counter.key]}
-                error={errors.remarks}
-                formItemLayout={formItemLayout}
-                readOnly
-              />
+              <Row>
+                <Col span={12}>
+                  <TextFieldGroup
+                    label={transaction_counter.label}
+                    value={state[transaction_counter.key]}
+                    error={errors.remarks}
+                    formItemLayout={smallFormItemLayout}
+                    readOnly
+                  />
+                </Col>
+                <Col span={12}>
+                  <TextFieldGroup
+                    label="Branch Ref."
+                    value={state.branch_reference}
+                    formItemLayout={smallFormItemLayout}
+                    readOnly
+                  />
+                </Col>
+              </Row>
             )}
 
-            {!isEmpty(state._id) && (
-              <TextFieldGroup
-                label="Ref"
-                value={state.branch_reference}
-                error={errors.branch_reference}
-                formItemLayout={formItemLayout}
-                readOnly
-              />
-            )}
+            <Row>
+              <Col span={12}>
+                <DatePickerFieldGroup
+                  label="Date"
+                  name="date"
+                  value={state.date || null}
+                  onChange={(value) => {
+                    onChange({
+                      key: "date",
+                      value: value,
+                      setState,
+                    });
+                  }}
+                  error={errors.date}
+                  formItemLayout={smallFormItemLayout}
+                />
+              </Col>
+              <Col span={12}>
+                <DatePickerFieldGroup
+                  label="Application date"
+                  name="application_date"
+                  value={state.application_date || null}
+                  onChange={(value) => {
+                    onChange({
+                      key: "application_date",
+                      value: value?.startOf("day")?.minutes(1),
+                      setState,
+                    });
+                  }}
+                  error={errors.application_date}
+                  formItemLayout={smallFormItemLayout}
+                />
+              </Col>
+            </Row>
 
-            <DatePickerFieldGroup
-              label="Date"
-              name="date"
-              value={state.date}
-              onChange={(value) => {
+            <Row>
+              <Col span={12}>
+                <SelectFieldGroup
+                  disabled={!isEmpty(state._id)}
+                  label="Branch"
+                  value={
+                    state.branch &&
+                    `${state.branch?.company?.name}-${state.branch?.name}`
+                  }
+                  onChange={(index) => {
+                    const branch = auth.user?.branches?.[index] || null;
+                    setState((prevState) => ({
+                      ...prevState,
+                      branch,
+                    }));
+                  }}
+                  formItemLayout={smallFormItemLayout}
+                  data={(auth.user?.branches || []).map((o) => {
+                    return {
+                      ...o,
+                      display_name: `${o.company?.name}-${o?.name}`,
+                    };
+                  })}
+                  column="display_name"
+                  error={errors.branch}
+                />
+              </Col>
+            </Row>
+
+            <TextFieldGroup
+              label="Reference"
+              name="reference"
+              value={state.reference}
+              error={errors.reference}
+              onChange={(e) => {
                 onChange({
-                  key: "date",
-                  value: value,
+                  key: e.target.name,
+                  value: e.target.value,
                   setState,
                 });
               }}
-              error={errors.date}
               formItemLayout={formItemLayout}
-            />
-
-            <SelectFieldGroup
-              label="Warehouse"
-              value={state.warehouse?.name}
-              onSearch={(value) =>
-                onWarehouseSearch({ value, options, setOptions })
-              }
-              onChange={(index) => {
-                const warehouse = options.warehouses[index];
-
-                setState((prevState) => ({
-                  ...prevState,
-                  warehouse,
-                }));
-              }}
-              error={errors.warehouse}
-              formItemLayout={formItemLayout}
-              data={options.warehouses}
-              column="name"
             />
 
             <TextAreaGroup
@@ -587,7 +772,6 @@ export default function PhysicalCountForm() {
               }}
               formItemLayout={formItemLayout}
             />
-
             {state.status && state.status.datetime && (
               <TextFieldGroup
                 label="Status"
@@ -599,7 +783,6 @@ export default function PhysicalCountForm() {
                 readOnly
               />
             )}
-
             {state.deleted && state.deleted.date && (
               <TextFieldGroup
                 label="Voided By"
@@ -611,89 +794,227 @@ export default function PhysicalCountForm() {
                 readOnly
               />
             )}
+            {isEmpty(state.status) &&
+              isEmpty(state.deleted) && [
+                <Divider orientation="left" key="divider">
+                  Items
+                </Divider>,
+                <Row key="form" className="ant-form-vertical" gutter="4">
+                  <Col span={12}>
+                    <SelectFieldGroup
+                      key="1"
+                      inputRef={stockField}
+                      label="Item"
+                      value={item.stock?.name}
+                      onSearch={(value) =>
+                        onStockSearch({ value, options, setOptions })
+                      }
+                      onChange={(index) => {
+                        const stock = options.stocks?.[index] || null;
+                        setItem({
+                          ...item,
+                          stock,
+                          price: stock?.price || "",
+                        });
+                        quanttiyField.current.focus();
+                      }}
+                      error={errors.stock?.name}
+                      formItemLayout={null}
+                      data={options.stocks}
+                      column="display_name"
+                    />
+                  </Col>
+                  <Col span={4}>
+                    <TextFieldGroup
+                      type="number"
+                      label="Qty"
+                      value={item.quantity}
+                      onChange={(e) => {
+                        setItem({
+                          ...item,
+                          quantity: parseFloat(e.target.value),
+                        });
+                      }}
+                      error={errors.item && errors.item.quantity}
+                      formItemLayout={null}
+                      inputRef={quanttiyField}
+                      onPressEnter={(e) => {
+                        e.preventDefault();
+                        addItemButton.current.click();
+                      }}
+                    />
+                  </Col>
 
-            {isEmpty(state.status) && isEmpty(state.deleted) && (
-              <ItemsNoCostField
-                item={item}
-                setItem={setItem}
-                setState={setState}
-                items_key="items"
-                options={options}
-                setOptions={setOptions}
-                errors={errors}
-                initialItemValues={initialItemValues}
-              />
-            )}
-
+                  <Col
+                    span={2}
+                    className="is-flex align-items-center add-button-height"
+                  >
+                    <input
+                      type="button"
+                      ref={addItemButton}
+                      className="button is-primary "
+                      onClick={() => {
+                        setState((prevState) => ({
+                          ...prevState,
+                          items: [
+                            ...prevState.items,
+                            {
+                              ...item,
+                              quantity: !isEmpty(item.quantity)
+                                ? parseFloat(item.quantity)
+                                : 0,
+                              case_quantity: !isEmpty(item.case_quantity)
+                                ? parseFloat(item.case_quantity)
+                                : 0,
+                              price: !isEmpty(item.price)
+                                ? parseFloat(item.price)
+                                : 0,
+                              case_price: !isEmpty(item.case_price)
+                                ? parseFloat(item.case_price)
+                                : 0,
+                            },
+                          ],
+                        }));
+                        setItem(initialItemValues);
+                        stockField.current.focus();
+                      }}
+                      value="Add"
+                    />
+                  </Col>
+                </Row>,
+              ]}
             <Table
-              dataSource={addKeysToArray(state.items)}
+              dataSource={addKeysToArray([
+                ...state.items,
+                {
+                  footer: 1,
+                  quantity: sumBy(state.items, (o) => round(o.quantity)),
+                  case_quantity: sumBy(state.items, (o) =>
+                    round(o.case_quantity)
+                  ),
+                  amount: sumBy(state.items, (o) => round(o.amount)),
+                },
+              ])}
               columns={items_column}
               pagination={false}
+              rowClassName={(record, index) => {
+                if (record.footer === 1) {
+                  return "footer-summary has-text-weight-bold";
+                }
+              }}
             />
 
-            {isEmpty(state.deleted) && (
-              <FormButtons
-                state={state}
-                auth={auth}
-                loading={loading}
-                url={url}
-                transaction="physical-counts"
-                onDelete={onDelete}
-                initialValues={initialValues}
-                initialItemValues={initialItemValues}
-                setState={setState}
-                setItem={setItem}
-                onFinalize={() => {
-                  console.log("here");
-                  onFinalize({
-                    id: state._id,
-                    url,
-                    user: auth.user,
-                    edit,
-                    setState,
-                    setErrors,
-                    setRecords,
-                    date_fields,
-                  });
-                }}
-                has_print={false}
-                onSearch={() => {
-                  onSearch({
-                    page: current_page,
-                    search_keyword,
-                    url,
-                    setRecords,
-                    setTotalRecords,
-                    setCurrentPage,
-                    setErrors,
-                    advance_search: search_state,
-                  });
-                }}
-                finalize_label="Count"
-              />
-            )}
-          </Form>
-        ) : (
-          <Table
-            dataSource={addKeysToArray(records)}
-            columns={records_column}
-            rowKey={(record) => record._id}
-            pagination={{
-              current: current_page,
-              defaultCurrent: current_page,
-              onChange: (page) =>
+            <FormButtons
+              state={state}
+              auth={auth}
+              loading={loading}
+              url={url}
+              initialValues={initialValues}
+              initialItemValues={initialItemValues}
+              setState={setState}
+              setItem={setItem}
+              onDelete={() => {
+                onDelete({
+                  id: state._id,
+                  url,
+                  user: auth.user,
+                  cb: () => {
+                    onSearch({
+                      page: current_page,
+                      page_size,
+                      search_keyword,
+                      url,
+                      setRecords,
+                      setTotalRecords,
+                      setCurrentPage,
+                      setErrors,
+                      advance_search: { ...search_state },
+                    });
+                  },
+                });
+              }}
+              onSearch={() => {
                 onSearch({
-                  page,
+                  page: current_page,
+                  page_size,
                   search_keyword,
                   url,
                   setRecords,
                   setTotalRecords,
                   setCurrentPage,
                   setErrors,
-                  advance_search: search_state,
-                }),
+                  advance_search: { ...search_state },
+                });
+              }}
+              onClose={() => {
+                onUpdateStatus({
+                  url,
+                  state,
+                  approval_status: STATUS_CLOSED,
+                  user: auth.user,
+                  cb: () => {
+                    edit({
+                      record: state,
+                      setState,
+                      setErrors,
+                      setRecords,
+                      url,
+                      date_fields,
+                    });
+                  },
+                });
+              }}
+              has_print={!isEmpty(state._id)}
+              has_cancel={!isEmpty(state._id)}
+              onPrint={() => console.log("Print")}
+              has_save={can_edit}
+            />
+          </Form>
+        ) : (
+          <Table
+            dataSource={addKeysToArray(records)}
+            columns={records_column}
+            rowKey={(record) => record._id}
+            onRow={(record, index) => {
+              return {
+                onDoubleClick: (e) => {
+                  if (
+                    hasAccess({
+                      auth,
+                      access: ACCESS_OPEN,
+                      location,
+                    })
+                  ) {
+                    edit({
+                      record,
+                      setState,
+                      setErrors,
+                      setRecords,
+                      url,
+                      date_fields,
+                    });
+                  }
+                },
+              };
+            }}
+            pagination={{
+              current: current_page,
+              defaultCurrent: current_page,
+              onChange: (page, page_size) => {
+                setPageSize(page_size);
+                onSearch({
+                  page,
+                  page_size,
+                  search_keyword,
+                  url,
+                  setRecords,
+                  setTotalRecords,
+                  setCurrentPage,
+                  setErrors,
+                });
+              },
               total: total_records,
-              pageSize: 60,
+              pageSize: page_size,
             }}
           />
         )}

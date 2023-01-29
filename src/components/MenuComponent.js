@@ -120,6 +120,7 @@ const MenuComponent = ({ component: Component, auth, logoutUser, ...rest }) => {
                 to="/inventory-adjustments"
                 label="Inventory Adjustments"
               />
+              <MenuPermission to="/physical-counts" label="Physical Count" />
             </SubMenu>
             <SubMenu
               key="inventory-reports"

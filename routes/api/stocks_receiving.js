@@ -423,6 +423,8 @@ router.post("/:id", (req, res) => {
         logs,
       };
 
+      delete body.__v;
+
       record.set({
         ...body,
         updated_by: user,

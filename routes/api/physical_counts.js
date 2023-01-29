@@ -33,9 +33,22 @@ const {
   getBranchInventoryBalance,
 } = require("../../library/inventory_functions");
 const { getBodegaWarehouse } = require("../../library/setting_functions");
-const { adjustActualCount } = require("../../library/update_functions");
+const {
+  adjustActualCount,
+  saveTransactionAuditTrail,
+} = require("../../library/update_functions");
 const { takeRight } = require("lodash");
-const { FINALIZED } = require("../../config/constants");
+const {
+  FINALIZED,
+  MODULE_PHYSICAL_COUNT,
+  OPEN,
+  ACTION_UPDATE,
+  ACTION_SAVE,
+  ACTION_CANCEL,
+  CLOSED,
+  CANCELLED,
+} = require("../../config/constants");
+const BranchCounter = require("../../models/BranchCounter");
 
 const Model = PhysicalCount;
 
@@ -153,15 +166,35 @@ router.put("/", (req, res) => {
     },
   ];
 
-  Counter.increment(seq_key).then((result) => {
+  const branch = req.body.branch;
+  BranchCounter.increment(seq_key, branch._id).then((result) => {
+    const branch_reference = `PC-${branch?.company?.company_code}-${
+      branch.name
+    }-${result.next.toString().padStart(6, "0")}`;
+
     const newRecord = new Model({
       ...body,
+      branch_reference,
       [seq_key]: result.next,
       logs,
+      status: {
+        approval_status: OPEN,
+        datetime,
+        user,
+      },
+      created_by: user,
+      updated_by: user,
     });
     newRecord
       .save()
       .then((record) => {
+        saveTransactionAuditTrail({
+          user,
+          module_name: MODULE_PHYSICAL_COUNT,
+          reference: record[seq_key],
+          action: ACTION_SAVE,
+        }).catch((err) => console.log(err));
+
         return res.json(record);
       })
       .catch((err) => console.log(err));
@@ -217,7 +250,7 @@ router.post("/:id/update-status", (req, res) => {
         //status,
       });
 
-      if (record.status?.approval_status === FINALIZED) {
+      if (record.status?.approval_status === CLOSED) {
         await adjustActualCount({ _id: record._id });
       }
 
@@ -1533,13 +1566,23 @@ router.post("/:id", (req, res) => {
         logs,
       };
 
+      delete body.__v;
+
       record.set({
         ...body,
+        updated_by: user,
       });
 
       record
         .save()
         .then((record) => {
+          saveTransactionAuditTrail({
+            user,
+            module_name: MODULE_PHYSICAL_COUNT,
+            reference: record[seq_key],
+            action: ACTION_UPDATE,
+          }).catch((err) => console.log(err));
+
           return res.json(record);
         })
         .catch((err) => console.log(err));
@@ -1550,12 +1593,18 @@ router.post("/:id", (req, res) => {
 });
 
 router.delete("/:id", (req, res) => {
+  const user = req.body.user;
   Model.findByIdAndUpdate(
     req.params.id,
     {
       $set: {
         deleted: {
           date: moment.tz(moment(), process.env.TIMEZONE),
+          user: req.body.user,
+        },
+        status: {
+          approval_status: CANCELLED,
+          datetime: moment().toDate(),
           user: req.body.user,
         },
       },
@@ -1565,6 +1614,12 @@ router.delete("/:id", (req, res) => {
     }
   )
     .then((record) => {
+      saveTransactionAuditTrail({
+        user,
+        module_name: MODULE_PHYSICAL_COUNT,
+        reference: record[seq_key],
+        action: ACTION_CANCEL,
+      }).catch((err) => console.log(err));
       return res.json({ success: 1 });
     })
     .catch((err) => console.log(err));

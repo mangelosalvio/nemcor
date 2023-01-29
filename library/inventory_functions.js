@@ -11,7 +11,7 @@ const mongoose = require("mongoose");
 const { getCurrentWarehouse } = require("./setting_functions.js");
 const round = require("../utils/round");
 const Sales = require("../models/Sales");
-const { CANCELLED, FINALIZED } = require("../config/constants");
+const { CANCELLED, FINALIZED, CLOSED } = require("../config/constants");
 
 const ObjectId = mongoose.Types.ObjectId;
 
@@ -323,6 +323,44 @@ module.exports.getBranchInventoryBalance = ({ stock, date, branch }) => {
                 _id: null,
                 quantity: {
                   $sum: "$items.quantity",
+                },
+              },
+            },
+          ],
+        },
+      },
+      {
+        $unionWith: {
+          coll: "physical_counts",
+          pipeline: [
+            {
+              $match: {
+                deleted: {
+                  $exists: false,
+                },
+                "status.approval_status": CLOSED,
+                "branch._id": ObjectId(branch._id),
+                application_date: {
+                  ...(from_date && {
+                    $gt: from_date,
+                  }),
+                  $lte: to_date,
+                },
+              },
+            },
+            {
+              $unwind: "$items",
+            },
+            {
+              $match: {
+                "items.stock._id": ObjectId(stock._id),
+              },
+            },
+            {
+              $group: {
+                _id: null,
+                quantity: {
+                  $sum: "$items.adjustment_quantity",
                 },
               },
             },
@@ -710,6 +748,52 @@ module.exports.getBranchStockCard = ({
         },
       },
       {
+        $unionWith: {
+          coll: "physical_counts",
+          pipeline: [
+            {
+              $match: {
+                deleted: {
+                  $exists: false,
+                },
+                "branch._id": ObjectId(branch._id),
+                "items.stock._id": ObjectId(stock._id),
+                "status.approval_status": CLOSED,
+                application_date: {
+                  ...(from_date && {
+                    $gt: from_date,
+                  }),
+                  $lte: to_date,
+                },
+              },
+            },
+            {
+              $unwind: "$items",
+            },
+            {
+              $match: {
+                "items.stock._id": ObjectId(stock._id),
+              },
+            },
+            {
+              $addFields: {
+                transaction: "Physical Count",
+              },
+            },
+            {
+              $project: {
+                date: "$application_date",
+                transaction: "$transaction",
+                reference: {
+                  $concat: ["PC#", { $toString: "$pc_no" }],
+                },
+                quantity: "$items.adjustment_quantity",
+              },
+            },
+          ],
+        },
+      },
+      {
         $sort: {
           date: 1,
         },
@@ -736,10 +820,17 @@ module.exports.getBranchStockCard = ({
   });
 };
 
-module.exports.getBranchInventoryBalanceList = ({ date, branch, ...rest }) => {
+module.exports.getBranchInventoryBalanceList = ({
+  date,
+  branch,
+  stock_ids = [],
+  ...rest
+}) => {
   return new Promise(async (resolve, reject) => {
     let from_date = null;
     let to_date = moment(date).endOf("day").toDate();
+
+    const _stock_ids = stock_ids.map((o) => ObjectId(o));
 
     StockReceiving.aggregate([
       {
@@ -757,10 +848,24 @@ module.exports.getBranchInventoryBalanceList = ({ date, branch, ...rest }) => {
             }),
             $lte: to_date,
           },
+          ...((_stock_ids || [])?.length > 0 && {
+            "items.stock._id": {
+              $in: _stock_ids,
+            },
+          }),
         },
       },
       {
         $unwind: "$items",
+      },
+      {
+        $match: {
+          ...((_stock_ids || [])?.length > 0 && {
+            "items.stock._id": {
+              $in: _stock_ids,
+            },
+          }),
+        },
       },
       {
         $group: {
@@ -792,10 +897,24 @@ module.exports.getBranchInventoryBalanceList = ({ date, branch, ...rest }) => {
                   }),
                   $lte: to_date,
                 },
+                ...((_stock_ids || [])?.length > 0 && {
+                  "items.stock._id": {
+                    $in: _stock_ids,
+                  },
+                }),
               },
             },
             {
               $unwind: "$items",
+            },
+            {
+              $match: {
+                ...((_stock_ids || [])?.length > 0 && {
+                  "items.stock._id": {
+                    $in: _stock_ids,
+                  },
+                }),
+              },
             },
             {
               $group: {
@@ -832,10 +951,24 @@ module.exports.getBranchInventoryBalanceList = ({ date, branch, ...rest }) => {
                   }),
                   $lte: to_date,
                 },
+                ...((_stock_ids || [])?.length > 0 && {
+                  "items.stock._id": {
+                    $in: _stock_ids,
+                  },
+                }),
               },
             },
             {
               $unwind: "$items",
+            },
+            {
+              $match: {
+                ...((_stock_ids || [])?.length > 0 && {
+                  "items.stock._id": {
+                    $in: _stock_ids,
+                  },
+                }),
+              },
             },
             {
               $group: {
@@ -872,10 +1005,24 @@ module.exports.getBranchInventoryBalanceList = ({ date, branch, ...rest }) => {
                   }),
                   $lte: to_date,
                 },
+                ...((_stock_ids || [])?.length > 0 && {
+                  "items.stock._id": {
+                    $in: _stock_ids,
+                  },
+                }),
               },
             },
             {
               $unwind: "$items",
+            },
+            {
+              $match: {
+                ...((_stock_ids || [])?.length > 0 && {
+                  "items.stock._id": {
+                    $in: _stock_ids,
+                  },
+                }),
+              },
             },
             {
               $group: {
@@ -912,10 +1059,24 @@ module.exports.getBranchInventoryBalanceList = ({ date, branch, ...rest }) => {
                   }),
                   $lte: to_date,
                 },
+                ...((_stock_ids || [])?.length > 0 && {
+                  "items.stock._id": {
+                    $in: _stock_ids,
+                  },
+                }),
               },
             },
             {
               $unwind: "$items",
+            },
+            {
+              $match: {
+                ...((_stock_ids || [])?.length > 0 && {
+                  "items.stock._id": {
+                    $in: _stock_ids,
+                  },
+                }),
+              },
             },
             {
               $group: {
@@ -952,10 +1113,24 @@ module.exports.getBranchInventoryBalanceList = ({ date, branch, ...rest }) => {
                   }),
                   $lte: to_date,
                 },
+                ...((_stock_ids || [])?.length > 0 && {
+                  "items.stock._id": {
+                    $in: _stock_ids,
+                  },
+                }),
               },
             },
             {
               $unwind: "$items",
+            },
+            {
+              $match: {
+                ...((_stock_ids || [])?.length > 0 && {
+                  "items.stock._id": {
+                    $in: _stock_ids,
+                  },
+                }),
+              },
             },
             {
               $group: {
@@ -990,10 +1165,24 @@ module.exports.getBranchInventoryBalanceList = ({ date, branch, ...rest }) => {
                   }),
                   $lte: to_date,
                 },
+                ...((_stock_ids || [])?.length > 0 && {
+                  "items.stock._id": {
+                    $in: _stock_ids,
+                  },
+                }),
               },
             },
             {
               $unwind: "$items",
+            },
+            {
+              $match: {
+                ...((_stock_ids || [])?.length > 0 && {
+                  "items.stock._id": {
+                    $in: _stock_ids,
+                  },
+                }),
+              },
             },
             {
               $group: {
@@ -1003,6 +1192,57 @@ module.exports.getBranchInventoryBalanceList = ({ date, branch, ...rest }) => {
                 },
                 quantity: {
                   $sum: "$items.quantity",
+                },
+              },
+            },
+          ],
+        },
+      },
+
+      {
+        $unionWith: {
+          coll: "physical_counts",
+          pipeline: [
+            {
+              $match: {
+                deleted: {
+                  $exists: false,
+                },
+                "status.approval_status": CLOSED,
+                "branch._id": ObjectId(branch._id),
+                date: {
+                  ...(from_date && {
+                    $gt: from_date,
+                  }),
+                  $lte: to_date,
+                },
+                ...((_stock_ids || [])?.length > 0 && {
+                  "items.stock._id": {
+                    $in: _stock_ids,
+                  },
+                }),
+              },
+            },
+            {
+              $unwind: "$items",
+            },
+            {
+              $match: {
+                ...((_stock_ids || [])?.length > 0 && {
+                  "items.stock._id": {
+                    $in: _stock_ids,
+                  },
+                }),
+              },
+            },
+            {
+              $group: {
+                _id: "$items.stock._id",
+                stock: {
+                  $first: "$items.stock",
+                },
+                quantity: {
+                  $sum: "$items.adjustment_quantity",
                 },
               },
             },
