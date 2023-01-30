@@ -119,9 +119,7 @@ export default function FormButtons({
 
         {onClose &&
           !isEmpty(state?._id) &&
-          ![STATUS_CLOSED, CANCELLED, STATUS_PAID].includes(
-            state.status?.approval_status
-          ) &&
+          [OPEN].includes(state.status?.approval_status) &&
           hasAccess({
             auth,
             access: ACCESS_APPROVE,

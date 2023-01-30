@@ -44,6 +44,9 @@ const {
   CREDIT_MEMO_CLAIMED,
   CREDIT_MEMO_PARTIALLY_CLAIMED,
   CLOSED,
+  PAYMENT_TYPE_CHARGE,
+  STATUS_CHARGED,
+  STATUS_RETURNED,
 } = require("../config/constants");
 const TankerWithdrawal = require("../models/TankerWithdrawal");
 const DeliveryReceipt = require("../models/DeliveryReceipt");
@@ -55,6 +58,10 @@ const CompanyCounter = require("../models/CompanyCounter");
 const CheckVoucher = require("../models/CheckVoucher");
 const SalesOrderCement = require("../models/SalesOrderCement");
 const TransactionAuditTrail = require("../models/TransactionAuditTrail");
+const DisplayDeliveryReceipt = require("../models/DisplayDeliveryReceipt");
+const BranchTransactionCounter = require("../models/BranchTransactionCounter");
+const BranchCounter = require("../models/BranchCounter");
+const SalesReturn = require("../models/SalesReturn");
 
 const ObjectId = mongoose.Types.ObjectId;
 
@@ -1728,6 +1735,142 @@ module.exports.saveTransactionAuditTrail = ({
       .save()
       .then(() => {
         resolve(true);
+      });
+  });
+};
+
+module.exports.chargeDisplayDeliveryReceipt = ({ _id, user }) => {
+  return new Promise(async (resolve, reject) => {
+    const record = await DisplayDeliveryReceipt.findOne({
+      _id: ObjectId(_id),
+    }).lean(true);
+
+    if (isEmpty(record)) {
+      return reject({ msg: "No records found" });
+    }
+
+    const branch = record.branch;
+    BranchTransactionCounter.increment(
+      "dr_no",
+      record.branch._id,
+      PAYMENT_TYPE_CHARGE
+    )
+      .then(async (result) => {
+        let branch_reference = `CSI-${branch?.company?.company_code}-${
+          branch.name
+        }-${result.next.toString().padStart(6, "0")}`;
+
+        const newRecord = new DeliveryReceipt({
+          date: moment().toDate(),
+          branch: record.branch,
+          account: record.account,
+          items: record.items,
+          branch_reference,
+          total_amount: round(sumBy(record.items, (o) => parseFloat(o.amount))),
+          gross_amount: round(sumBy(record.items, (o) => parseFloat(o.amount))),
+          payment_type: PAYMENT_TYPE_CHARGE,
+          total_payment_amount: 0,
+          dr_no: result.next,
+          logs: [],
+          status: {
+            approval_status: CLOSED,
+            datetime: moment().toDate(),
+            user,
+          },
+          created_by: user,
+          updated_by: user,
+          reference: record.reference,
+          display_delivery_receipt: {
+            _id: record._id,
+            date: record.date,
+            branch_reference: record.branch_reference,
+            reference: record.reference,
+          },
+        });
+
+        await newRecord.save();
+
+        await DisplayDeliveryReceipt.updateOne(
+          {
+            _id: ObjectId(record._id),
+          },
+          {
+            $set: {
+              "status.approval_status": STATUS_CHARGED,
+            },
+          }
+        );
+
+        resolve(true);
+      })
+      .catch((err) => {
+        reject(err);
+      });
+  });
+};
+
+module.exports.returnDisplayDeliveryReceipt = ({ _id, user }) => {
+  return new Promise(async (resolve, reject) => {
+    const record = await DisplayDeliveryReceipt.findOne({
+      _id: ObjectId(_id),
+    }).lean(true);
+
+    if (isEmpty(record)) {
+      return reject({ msg: "No records found" });
+    }
+
+    const branch = record.branch;
+    BranchCounter.increment("return_no", record.branch._id)
+      .then(async (result) => {
+        let branch_reference = `RET-${branch?.company?.company_code}-${
+          branch.name
+        }-${result.next.toString().padStart(6, "0")}`;
+
+        const newRecord = new SalesReturn({
+          date: moment().toDate(),
+          branch: record.branch,
+          account: record.account,
+          items: record.items,
+          branch_reference,
+          total_amount: round(sumBy(record.items, (o) => parseFloat(o.amount))),
+          gross_amount: round(sumBy(record.items, (o) => parseFloat(o.amount))),
+          return_stock_option: "Return Display",
+          total_payment_amount: 0,
+          return_no: result.next,
+          logs: [],
+          status: {
+            approval_status: CLOSED,
+            datetime: moment().toDate(),
+            user,
+          },
+          created_by: user,
+          updated_by: user,
+          reference: record.reference,
+          display_delivery_receipt: {
+            _id: record._id,
+            date: record.date,
+            branch_reference: record.branch_reference,
+            reference: record.reference,
+          },
+        });
+
+        await newRecord.save();
+
+        await DisplayDeliveryReceipt.updateOne(
+          {
+            _id: ObjectId(record._id),
+          },
+          {
+            $set: {
+              "status.approval_status": STATUS_RETURNED,
+            },
+          }
+        );
+
+        resolve(true);
+      })
+      .catch((err) => {
+        reject(err);
       });
   });
 };

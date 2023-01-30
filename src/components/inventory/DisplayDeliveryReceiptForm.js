@@ -16,6 +16,7 @@ import {
   Collapse,
   PageHeader,
   Button,
+  Modal,
 } from "antd";
 
 import {
@@ -73,6 +74,7 @@ import SimpleSelectFieldGroup from "../../commons/SimpleSelectFieldGroup";
 import AccountFormModal from "../modals/AccountFormModal";
 import ItemsField from "../../commons/ItemsField";
 import computeItemDetails from "../../utils/computeItemDetails";
+const { confirm } = Modal;
 const { Content } = Layout;
 const { Panel } = Collapse;
 const url = "/api/display-delivery-receipts/";
@@ -960,6 +962,96 @@ export default function DisplayDeliveryReceiptForm({}) {
               has_cancel={!isEmpty(state._id)}
               onPrint={() => console.log("Print")}
               has_save={can_edit}
+              additional_buttons={[
+                [OPEN].includes(state.status?.approval_status) && (
+                  <div className="control">
+                    <button
+                      className="button is-info"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        confirm({
+                          title: "Charge Transaction",
+                          content: "Would you like to confirm?",
+                          okText: "Charge",
+                          cancelText: "No",
+                          onOk: () => {
+                            axios
+                              .put("/api/display-delivery-receipts/charge", {
+                                user: auth.user,
+                                display_dr_id: state._id,
+                              })
+                              .then((response) => {
+                                onSearch({
+                                  page: current_page,
+                                  page_size,
+                                  search_keyword,
+                                  url,
+                                  setRecords,
+                                  setTotalRecords,
+                                  setCurrentPage,
+                                  setErrors,
+                                  advance_search: { ...search_state },
+                                });
+                              })
+                              .catch((err) =>
+                                message.error(
+                                  "There was an error processing your request"
+                                )
+                              );
+                          },
+                          onCancel: () => {},
+                        });
+                      }}
+                    >
+                      Charge
+                    </button>
+                  </div>
+                ),
+                [OPEN].includes(state.status?.approval_status) && (
+                  <div className="control">
+                    <button
+                      className="button is-info"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        confirm({
+                          title: "Return Stock",
+                          content: "Would you like to confirm?",
+                          okText: "Return",
+                          cancelText: "No",
+                          onOk: () => {
+                            axios
+                              .put("/api/display-delivery-receipts/return", {
+                                user: auth.user,
+                                display_dr_id: state._id,
+                              })
+                              .then((response) => {
+                                onSearch({
+                                  page: current_page,
+                                  page_size,
+                                  search_keyword,
+                                  url,
+                                  setRecords,
+                                  setTotalRecords,
+                                  setCurrentPage,
+                                  setErrors,
+                                  advance_search: { ...search_state },
+                                });
+                              })
+                              .catch((err) =>
+                                message.error(
+                                  "There was an error processing your request"
+                                )
+                              );
+                          },
+                          onCancel: () => {},
+                        });
+                      }}
+                    >
+                      Return
+                    </button>
+                  </div>
+                ),
+              ]}
             />
           </Form>
         ) : (

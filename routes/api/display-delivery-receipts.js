@@ -22,7 +22,11 @@ const {
   ACTION_CANCEL,
 } = require("../../config/constants");
 const BranchCounter = require("../../models/BranchCounter");
-const { saveTransactionAuditTrail } = require("../../library/update_functions");
+const {
+  saveTransactionAuditTrail,
+  chargeDisplayDeliveryReceipt,
+  returnDisplayDeliveryReceipt,
+} = require("../../library/update_functions");
 
 const Model = DisplayDeliveryReceipt;
 const ObjectId = mongoose.Types.ObjectId;
@@ -86,6 +90,26 @@ router.get("/", (req, res) => {
       return res.json(records);
     })
     .catch((err) => res.status(401).json(err));
+});
+
+//Charge Display DR
+router.put("/charge", async (req, res) => {
+  const display_dr_id = req.body.display_dr_id;
+  const user = req.body.user;
+
+  await chargeDisplayDeliveryReceipt({ _id: display_dr_id, user });
+
+  return res.json(true);
+});
+
+//Return Display DR
+router.put("/return", async (req, res) => {
+  const display_dr_id = req.body.display_dr_id;
+  const user = req.body.user;
+
+  await returnDisplayDeliveryReceipt({ _id: display_dr_id, user });
+
+  return res.json(true);
 });
 
 router.put("/", (req, res) => {

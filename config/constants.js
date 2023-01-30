@@ -40,6 +40,8 @@ module.exports = {
   DELIVERY_TYPE_PICKUP_DEPOT: "Pickup-Depot",
   STATUS_PARTIAL: "Partial",
   STATUS_FULL: "Full",
+  STATUS_CHARGED: "Charged",
+  STATUS_RETURNED: "Returned",
   SOURCE_DEPOT: "Tank Farm",
   SOURCE_SUPPLIER: "Depot",
   SOURCE_SUPPLIER_DEPOT: "Supplier/Depot",

@@ -77,6 +77,14 @@ const TableSchema = new Schema(
       id: mongoose.Schema.Types.ObjectId,
       name: String,
     },
+
+    //if from display delivery receipt
+    display_delivery_receipt: {
+      _id: mongoose.Schema.Types.ObjectId,
+      date: Date,
+      branch_reference: String,
+      reference: String,
+    },
   },
   {
     timestamps: {
