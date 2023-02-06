@@ -13,6 +13,7 @@ const TableSchema = new Schema(
   {
     dr_no: Number,
     date: Date,
+    due_date: Date,
     branch_reference: String,
     branch: {
       ...BranchModel,
@@ -85,6 +86,17 @@ const TableSchema = new Schema(
       branch_reference: String,
       reference: String,
     },
+
+    payments: [
+      {
+        payment_method: String,
+        amount: Number,
+        check_date: Date,
+        check_no: String,
+        bank: String,
+        reference: String,
+      },
+    ],
   },
   {
     timestamps: {

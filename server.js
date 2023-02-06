@@ -56,6 +56,7 @@ app.use("/api/unit-of-measures", require("./routes/api/unit-of-measures"));
 app.use("/api/areas", require("./routes/api/areas"));
 app.use("/api/vessels", require("./routes/api/vessels"));
 app.use("/api/companies", require("./routes/api/companies"));
+app.use("/api/payment-methods", require("./routes/api/payment-methods"));
 app.use("/api/departments", require("./routes/api/departments"));
 app.use("/api/tankers", require("./routes/api/tankers"));
 app.use("/api/sales-orders", require("./routes/api/sales-orders"));

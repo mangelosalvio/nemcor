@@ -16,6 +16,7 @@ import {
   Collapse,
   PageHeader,
   Button,
+  DatePicker,
 } from "antd";
 
 import { formItemLayout, smallFormItemLayout } from "./../../utils/Layouts";
@@ -131,17 +132,13 @@ export default function CustomerCollectionForm() {
       width: 50,
     },
     {
-      title: "Company",
-      dataIndex: ["company", "name"],
-    },
-    {
       title: "Date",
       dataIndex: "date",
       render: (date) => moment(date).format("MM/DD/YYYY"),
     },
     {
-      title: "Customer",
-      dataIndex: ["customer", "name"],
+      title: "Account",
+      dataIndex: ["account", "name"],
     },
     {
       title: "DR#s",
@@ -152,12 +149,6 @@ export default function CustomerCollectionForm() {
       title: "CM#s",
       dataIndex: ["credit_memo_items"],
       render: (items) => items.map((o) => o.cm_no).join(", "),
-    },
-
-    {
-      title: "Payment Type",
-      dataIndex: "payment_type",
-      align: "center",
     },
 
     {
@@ -200,14 +191,14 @@ export default function CustomerCollectionForm() {
       dataIndex: "dr_no",
     },
     {
-      title: "Ext DR#",
-      dataIndex: "external_dr_ref",
+      title: "Ext SI#",
+      dataIndex: "external_si_reference",
       width: 80,
       align: "center",
     },
     {
-      title: "SI#",
-      dataIndex: "si_no",
+      title: "Reference",
+      dataIndex: "reference",
       width: 80,
       align: "center",
     },
@@ -494,13 +485,12 @@ export default function CustomerCollectionForm() {
     },
   ];
 
-  const onChangeCustomer = (customer) => {
+  const onChangeCustomer = (account) => {
     const dr_loading = message.loading("Loading Charge Sales...");
 
     axios
       .post("/api/delivery-receipts/customer-accounts", {
-        customer: customer,
-        department: auth.user?.department,
+        account: account,
       })
       .then((response) => {
         dr_loading();
@@ -535,6 +525,35 @@ export default function CustomerCollectionForm() {
         cm_loading();
       }); */
   };
+
+  useEffect(() => {
+    axios
+      .get("/api/payment-methods")
+      .then((response) => {
+        if (response.data) {
+          setOptions((prevState) => ({
+            ...prevState,
+            payment_methods: response.data.map((o) => o.name),
+          }));
+        }
+      })
+      .catch((err) => {
+        return message.error("There was an error processing your request");
+      });
+
+    return () => {};
+  }, []);
+
+  useEffect(() => {
+    if ((state.payments || [])?.length <= 0) {
+      setState((prevState) => ({
+        ...prevState,
+        payments: [{}],
+      }));
+    }
+
+    return () => {};
+  }, [state.payments]);
 
   useEffect(() => {
     const department = auth?.user?.department;
@@ -607,6 +626,212 @@ export default function CustomerCollectionForm() {
     state.additional_rate_remarks,
     state.additional_value,
   ]);
+
+  const payments_column = [
+    {
+      title: "Payment Method",
+      dataIndex: ["payment_method"],
+      render: (payment_method, record, index) =>
+        record.footer !== 1 && (
+          <SimpleSelectFieldGroup
+            name="payment_method"
+            value={payment_method}
+            onChange={(value) => {
+              let payments = [...state.payments];
+              payments[index] = {
+                ...payments[index],
+                payment_method: value,
+              };
+
+              if (index === (state.payments || []).length - 1) {
+                payments = [...payments, {}];
+              }
+
+              setState((prevState) => ({
+                ...prevState,
+                payments,
+              }));
+            }}
+            error={errors?.approval_status}
+            options={options?.payment_methods || []}
+          />
+        ),
+    },
+
+    {
+      title: "Bank",
+      dataIndex: ["bank"],
+      render: (bank, record, index) =>
+        record.footer !== 1 &&
+        record.payment_method === "CHECK" && (
+          <Input
+            name="bank"
+            value={bank}
+            onChange={(e) => {
+              const target = e.target;
+              let payments = [...state.payments];
+              payments[index] = {
+                ...payments[index],
+                [target.name]: target.value?.toUpperCase(),
+              };
+
+              if (index === (state.payments || []).length - 1) {
+                payments = [...payments, {}];
+              }
+
+              setState((prevState) => ({
+                ...prevState,
+                payments,
+              }));
+            }}
+          />
+        ),
+    },
+    {
+      title: "Check No.",
+      dataIndex: ["check_no"],
+      render: (check_no, record, index) =>
+        record.footer !== 1 &&
+        record.payment_method === "CHECK" && (
+          <Input
+            name="check_no"
+            value={check_no}
+            onChange={(e) => {
+              const target = e.target;
+              let payments = [...state.payments];
+              payments[index] = {
+                ...payments[index],
+                [target.name]: target.value?.toUpperCase(),
+              };
+
+              if (index === (state.payments || []).length - 1) {
+                payments = [...payments, {}];
+              }
+
+              setState((prevState) => ({
+                ...prevState,
+                payments,
+              }));
+            }}
+          />
+        ),
+    },
+    {
+      title: "Check Date",
+      dataIndex: ["check_date"],
+      render: (check_date, record, index) =>
+        record.footer !== 1 &&
+        record.payment_method === "CHECK" && (
+          <DatePicker
+            onChange={(date) => {
+              let payments = [...state.payments];
+              payments[index] = {
+                ...payments[index],
+                check_date: date,
+              };
+
+              if (index === (state.payments || []).length - 1) {
+                payments = [...payments, {}];
+              }
+
+              setState((prevState) => ({
+                ...prevState,
+                payments,
+              }));
+            }}
+            value={check_date ? moment(check_date) : null}
+          />
+        ),
+    },
+
+    {
+      title: "Reference",
+      dataIndex: ["reference"],
+      render: (reference, record, index) =>
+        record.footer !== 1 && (
+          <Input
+            name="reference"
+            value={reference}
+            onChange={(e) => {
+              const target = e.target;
+              let payments = [...state.payments];
+              payments[index] = {
+                ...payments[index],
+                [target.name]: target.value?.toUpperCase(),
+              };
+
+              if (index === (state.payments || []).length - 1) {
+                payments = [...payments, {}];
+              }
+
+              setState((prevState) => ({
+                ...prevState,
+                payments,
+              }));
+            }}
+          />
+        ),
+    },
+
+    {
+      title: "Amount",
+      dataIndex: ["amount"],
+      align: "right",
+      render: (amount, record, index) =>
+        record.footer !== 1 ? (
+          <Input
+            className="has-text-right"
+            type="number"
+            step={0.01}
+            name="amount"
+            value={amount}
+            onChange={(e) => {
+              const target = e.target;
+              let payments = [...state.payments];
+              payments[index] = {
+                ...payments[index],
+                [target.name]: target.value?.toUpperCase(),
+              };
+
+              if (index === (state.payments || []).length - 1) {
+                payments = [...payments, {}];
+              }
+
+              setState((prevState) => ({
+                ...prevState,
+                payments,
+              }));
+            }}
+          />
+        ) : (
+          numberFormat(amount)
+        ),
+    },
+    {
+      title: "",
+      key: "action",
+      width: 80,
+      align: "center",
+      render: (text, record, index) => (
+        <span>
+          {record.footer !== 1 &&
+            [undefined, OPEN].includes(state.status?.approval_status) && (
+              <span
+                onClick={() =>
+                  onDeleteItem({
+                    field: "payments",
+                    index,
+                    setState,
+                  })
+                }
+              >
+                <i className="fas fa-trash-alt"></i>
+              </span>
+            )}
+        </span>
+      ),
+    },
+  ];
 
   const can_edit =
     (isEmpty(state.status) || [OPEN].includes(state.status?.approval_status)) &&
@@ -828,7 +1053,15 @@ export default function CustomerCollectionForm() {
             onFinish={(values) => {
               //double check that total payment amount is equals total amount
 
-              const payment_amount = round(state.payment_amount);
+              const payments = state.payments || [];
+              const payment_amount = round(
+                sumBy(
+                  payments.filter(
+                    (o) => !isEmpty(o.payment_method) && !isEmpty(o.amount)
+                  ),
+                  (o) => parseFloat(o.amount || 0)
+                )
+              );
 
               const expected_payment_amount = round(
                 state.expected_payment_amount
@@ -849,6 +1082,9 @@ export default function CustomerCollectionForm() {
                   credit_memo_items: state.credit_memo_items.filter(
                     (o) => round(o.credit_amount) !== 0
                   ),
+                  payments: (state.payments || [])?.filter((o) => {
+                    return !isEmpty(o.payment_method) && !isEmpty(o.amount);
+                  }),
                 },
                 auth,
                 url,
@@ -884,42 +1120,23 @@ export default function CustomerCollectionForm() {
             />
 
             <SelectFieldGroup
-              label="Company"
-              value={state.company?.name}
-              onSearch={(value) =>
-                onCompanySearch({ value, options, setOptions })
-              }
-              onChange={(index) => {
-                const company = options.companies?.[index] || null;
-                setState((prevState) => ({
-                  ...prevState,
-                  company,
-                }));
-              }}
-              error={errors.company}
-              formItemLayout={formItemLayout}
-              data={options.companies}
-              column="name"
-            />
-
-            <SelectFieldGroup
-              label="Customer"
-              value={state.customer?.name}
+              label="Account"
+              value={state.account?.name}
               onSearch={(value) =>
                 onCustomerSearch({ value, options, setOptions })
               }
               disabled={!isEmpty(state._id)}
               onChange={(index) => {
-                const customer = options.customers[index];
+                const account = options.accounts[index];
                 setState((prevState) => ({
                   ...prevState,
-                  customer,
+                  account,
                 }));
-                onChangeCustomer(customer);
+                onChangeCustomer(account);
               }}
-              error={errors.customer}
+              error={errors.account}
               formItemLayout={formItemLayout}
-              data={options.customers}
+              data={options.accounts}
               column="name"
             />
 
@@ -961,7 +1178,7 @@ export default function CustomerCollectionForm() {
                   <Col span={5}></Col>
                   <Col span={16}>Reason</Col>
                 </Row>
-                <Row gutter={4} className="ant-form-item">
+                {/* <Row gutter={4} className="ant-form-item">
                   <Col span={3} className="ant-form-item-label has-text-right">
                     <label>Add %</label>
                   </Col>
@@ -995,10 +1212,10 @@ export default function CustomerCollectionForm() {
                       }}
                     />
                   </Col>
-                </Row>
+                </Row> */}
                 <Row gutter={4} className="ant-form-item">
                   <Col span={3} className="ant-form-item-label has-text-right">
-                    <label>₱</label>
+                    <label>Add ₱</label>
                   </Col>
                   <Col span={5}>
                     <Input
@@ -1039,7 +1256,7 @@ export default function CustomerCollectionForm() {
                   <Col span={5}></Col>
                   <Col span={16}>Reason</Col>
                 </Row>
-                <Row gutter={4} className="ant-form-item">
+                {/* <Row gutter={4} className="ant-form-item">
                   <Col span={3} className="ant-form-item-label has-text-right">
                     <label>Less %</label>
                   </Col>
@@ -1073,10 +1290,10 @@ export default function CustomerCollectionForm() {
                       }}
                     />
                   </Col>
-                </Row>
+                </Row> */}
                 <Row gutter={4} className="ant-form-item">
                   <Col span={3} className="ant-form-item-label has-text-right">
-                    <label>₱</label>
+                    <label>Less ₱</label>
                   </Col>
                   <Col span={5}>
                     <Input
@@ -1111,149 +1328,27 @@ export default function CustomerCollectionForm() {
                 </Row>
               </Col>
             </Row>
-
-            <SimpleSelectFieldGroup
-              label="Payment Type"
-              name="payment_type"
-              value={state.payment_type}
-              onChange={(value) =>
-                setState((prevState) => ({
-                  ...prevState,
-                  payment_type: value,
-                }))
-              }
-              error={errors.payment_type}
-              formItemLayout={formItemLayout}
-              options={payment_type_options}
-            />
-            {state.payment_type === PAYMENT_TYPE_TELEGRAPHIC_TRANSFER && (
-              <div>
-                <Divider orientation="left" key="label">
-                  TT Details
-                </Divider>
-                <SelectFieldGroup
-                  label="Bank"
-                  value={state.bank?.name}
-                  onSearch={(value) => onBankSearch({ value, setOptions })}
-                  onChange={(index) => {
-                    const bank = options.banks[index];
-                    setState((prevState) => ({
-                      ...prevState,
-                      bank,
-                    }));
+            <div>
+              <div className="m-t-1">
+                Payments
+                <Table
+                  dataSource={addKeysToArray([
+                    ...(state.payments || []),
+                    {
+                      footer: 1,
+                      amount: sumBy(state.payments, (o) => round(o.amount)),
+                    },
+                  ])}
+                  columns={payments_column}
+                  pagination={false}
+                  rowClassName={(record, index) => {
+                    if (record.footer === 1) {
+                      return "footer-summary has-text-weight-bold";
+                    }
                   }}
-                  error={errors.customer}
-                  formItemLayout={formItemLayout}
-                  data={options.banks}
-                  column="name"
-                  help="BANK/ACCOUNT NAME ; E.G. BDO/HENGJI COMMERCIAL"
-                  onAddItem={() => {
-                    bankFormModal.current.open();
-                  }}
-                />
-                <DatePickerFieldGroup
-                  label="Transfer Date"
-                  name="transfer_date"
-                  value={state.transfer_date}
-                  onChange={(value) => {
-                    onChange({
-                      key: "transfer_date",
-                      value: value,
-                      setState,
-                    });
-                  }}
-                  error={errors.transfer_date}
-                  formItemLayout={formItemLayout}
                 />
               </div>
-            )}
-
-            {state.payment_type === PAYMENT_TYPE_CHECK && [
-              <Divider orientation="left" key="label">
-                Check Details
-              </Divider>,
-              <SelectFieldGroup
-                key="bank"
-                label="Bank"
-                value={state.bank?.name}
-                onSearch={(value) => onBankSearch({ value, setOptions })}
-                onChange={(index) => {
-                  const bank = options.banks[index];
-                  setState((prevState) => ({
-                    ...prevState,
-                    bank,
-                  }));
-                }}
-                error={errors.customer}
-                formItemLayout={formItemLayout}
-                data={options.banks}
-                column="name"
-                onAddItem={() => {
-                  bankFormModal.current.open();
-                }}
-              />,
-              <TextFieldGroup
-                key="account_name"
-                label="Account"
-                name="account_name"
-                value={state.account_name}
-                error={errors.account_name}
-                onChange={(e) => {
-                  onChange({
-                    key: e.target.name,
-                    value: e.target.value,
-                    setState,
-                  });
-                }}
-                formItemLayout={formItemLayout}
-              />,
-
-              <DatePickerFieldGroup
-                key="check_date"
-                label="Check Date"
-                name="check_date"
-                value={state.check_date}
-                onChange={(value) => {
-                  onChange({
-                    key: "check_date",
-                    value: value,
-                    setState,
-                  });
-                }}
-                error={errors.check_date}
-                formItemLayout={formItemLayout}
-              />,
-              <TextFieldGroup
-                key="check_no"
-                label="Check No"
-                name="check_no"
-                value={state.check_no}
-                error={errors.check_no}
-                onChange={(e) => {
-                  onChange({
-                    key: e.target.name,
-                    value: e.target.value,
-                    setState,
-                  });
-                }}
-                formItemLayout={formItemLayout}
-              />,
-            ]}
-
-            <TextFieldGroup
-              label="Amount"
-              name="payment_amount"
-              value={state.payment_amount}
-              error={errors.payment_amount}
-              onChange={(e) => {
-                onChange({
-                  key: e.target.name,
-                  value: e.target.value,
-                  setState,
-                });
-              }}
-              formItemLayout={formItemLayout}
-            />
+            </div>
 
             <TextAreaGroup
               label="Remarks"
@@ -1443,7 +1538,12 @@ export default function CustomerCollectionForm() {
                   cb: () => {
                     edit({
                       record: state,
-                      setState,
+                      setState: (record) => {
+                        setState({
+                          ...record,
+                          payments: [...(record.payments || []), {}],
+                        });
+                      },
                       setErrors,
                       setRecords,
                       url,
@@ -1470,7 +1570,12 @@ export default function CustomerCollectionForm() {
                 onDoubleClick: (e) => {
                   edit({
                     record,
-                    setState,
+                    setState: (record) => {
+                      setState({
+                        ...record,
+                        payments: [...(record.payments || []), {}],
+                      });
+                    },
                     setErrors,
                     setRecords,
                     url,

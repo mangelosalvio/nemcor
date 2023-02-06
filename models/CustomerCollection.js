@@ -1,5 +1,6 @@
 const mongoose = require("mongoose");
 const mongoose_paginate = require("mongoose-paginate");
+const AccountModel = require("./AccountModel");
 const BankModel = require("./BankModel");
 
 const CustomerModel = require("./CustomerModel");
@@ -35,11 +36,16 @@ const TableSchema = new Schema({
     _id: mongoose.Schema.Types.ObjectId,
   },
 
-  payment_type: String,
-  account_name: String,
-  check_date: Date,
-  check_no: String,
-  payment_amount: Number,
+  payments: [
+    {
+      payment_method: String,
+      amount: Number,
+      check_date: Date,
+      check_no: String,
+      bank: String,
+      reference: String,
+    },
+  ],
 
   transfer_date: Date,
 
@@ -71,21 +77,18 @@ const TableSchema = new Schema({
   delivery_items: [
     {
       _id: mongoose.Schema.Types.ObjectId,
-      tanker_withdrawal: {
-        _id: mongoose.Schema.Types.ObjectId,
-        tw_no: Number,
-      },
-      external_dr_ref: String,
+
+      external_si_reference: String,
+      reference: String,
+      branch_reference: String,
       dr_no: Number,
-      si_no: String,
       date: Date,
       due_date: Date,
-      customer: {
-        ...CustomerModel,
+      account: {
+        ...AccountModel,
         _id: mongoose.Schema.Types.ObjectId,
       },
       adjustment_amount: Number,
-      delivery_type: String,
       total_amount: Number,
       payment_amount: Number,
       balance: Number,
@@ -96,9 +99,16 @@ const TableSchema = new Schema({
       _id: mongoose.Schema.Types.ObjectId,
       cm_no: Number,
       date: Date,
-      customer: {
-        ...CustomerModel,
+      account: {
+        ...AccountModel,
         _id: mongoose.Schema.Types.ObjectId,
+      },
+      branch_reference: String,
+      sales_return: {
+        return_no: Number,
+        _id: mongoose.Schema.Types.ObjectId,
+        date: Date,
+        branch_reference: String,
       },
       total_amount: Number,
       credit_amount: Number,

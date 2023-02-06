@@ -106,8 +106,8 @@ export default function StatementOfAccountForm() {
       width: 100,
     },
     {
-      title: "Customer",
-      dataIndex: ["customer", "name"],
+      title: "Account",
+      dataIndex: ["account", "name"],
     },
     {
       title: "Aging",
@@ -128,7 +128,8 @@ export default function StatementOfAccountForm() {
   useEffect(() => {
     const form_data = {
       date: state.date,
-      customer: state.customer,
+      account: state.account,
+      branch: state.branch,
     };
 
     if (state.date) {
@@ -152,7 +153,7 @@ export default function StatementOfAccountForm() {
 
       return () => {};
     }
-  }, [state.date, state.customer]);
+  }, [state.date, state.account, state.branch]);
 
   return (
     <Content className="content-padding">
@@ -169,7 +170,7 @@ export default function StatementOfAccountForm() {
         <span className="module-title">{title}</span>
         <Divider />
         <Row>
-          <Col span={8}>
+          <Col span={12}>
             <DatePickerFieldGroup
               label="Date"
               name="date"
@@ -185,37 +186,60 @@ export default function StatementOfAccountForm() {
               formItemLayout={formItemLayout}
             />
           </Col>
-          <Col span={8}>
+          <Col span={12}>
             <SelectFieldGroup
-              label="Customer"
-              value={state.customer?.name}
+              label="Account"
+              value={state.account?.name}
               onSearch={(value) =>
                 onCustomerSearch({ value, options, setOptions })
               }
               onChange={(index) => {
-                const customer = options.customers[index];
+                const account = options.accounts[index];
                 setState((prevState) => ({
                   ...prevState,
-                  customer,
+                  account,
                 }));
               }}
-              error={errors.customer}
+              error={errors.account}
               formItemLayout={formItemLayout}
-              data={options.customers}
+              data={options.accounts}
               column="name"
             />
           </Col>
         </Row>
         <Row>
-          <Col span={8}>
+          <Col span={12}>
+            <SelectFieldGroup
+              label="Branch"
+              value={
+                state.branch &&
+                `${state.branch?.company?.name}-${state.branch?.name}`
+              }
+              onChange={(index) => {
+                const branch = auth.user?.branches?.[index] || null;
+                setState((prevState) => ({
+                  ...prevState,
+                  branch,
+                }));
+              }}
+              formItemLayout={formItemLayout}
+              data={(auth.user?.branches || []).map((o) => {
+                return {
+                  ...o,
+                  display_name: `${o.company?.name}-${o?.name}`,
+                };
+              })}
+              column="display_name"
+              error={errors.branch}
+            />
+          </Col>
+        </Row>
+        <Row>
+          <Col span={12}>
             <Form.Item {...tailFormItemLayout} className="field is-grouped">
               <ReactToPrint
                 trigger={() => (
-                  <Button
-                    type="primary"
-                    icon={<PrinterOutlined />}
-                    className="m-l-1"
-                  >
+                  <Button type="primary" icon={<PrinterOutlined />}>
                     Print
                   </Button>
                 )}
@@ -230,9 +254,8 @@ export default function StatementOfAccountForm() {
             return (
               <div className="page-break-after">
                 <div className="has-text-centered">
-                  HENG JI COMMERCIAL CORPORATION <br />
-                  Rizal-Mabini Street <br />
-                  Bacolod City, Neg. Occ.
+                  {record?.items?.[0]?.branch?.company?.name} <br />
+                  {record?.items?.[0]?.branch?.address} <br />
                 </div>
 
                 <div className="has-text-right">
@@ -241,11 +264,11 @@ export default function StatementOfAccountForm() {
                 <div>
                   <Row>
                     <Col span={2}>Account of:</Col>
-                    <Col span={10}>{record.customer?.name}</Col>
+                    <Col span={10}>{record.account?.name}</Col>
                   </Row>
                   <Row>
                     <Col span={2}></Col>
-                    <Col span={10}>{record.customer?.address}</Col>
+                    <Col span={10}>{record.account?.address}</Col>
                   </Row>
                 </div>
 
@@ -254,10 +277,10 @@ export default function StatementOfAccountForm() {
                     <thead>
                       <tr>
                         <th>Del Date</th>
-                        <th>SI#</th>
-                        <th>Destination</th>
-                        <th>SO#</th>
-                        <th className="has-text-right">Qty</th>
+                        <th>DR#</th>
+                        <th>Ext SI</th>
+                        <th>Ref</th>
+                        <th className="has-text-centered">Qty</th>
                         <th>Product</th>
                         <th className="has-text-centered">U/P</th>
                         <th className="has-text-right">Amount</th>
@@ -274,10 +297,11 @@ export default function StatementOfAccountForm() {
                               return (
                                 <tr>
                                   <td>{moment(dr.date).format("MM/DD/YY")}</td>
-                                  <td>{dr.si_no}</td>
-                                  <td>{dr.delivery_area?.name}</td>
-                                  <td>{dr.sales_order?.so_no}</td>
-                                  <td className="has-text-right">
+                                  <td>{dr.dr_no}</td>
+
+                                  <td>{dr.external_si_reference}</td>
+                                  <td>{dr.reference}</td>
+                                  <td className="has-text-centered">
                                     {numberFormatInt(item.quantity)}
                                   </td>
                                   <td>{item.stock?.name}</td>
@@ -305,7 +329,7 @@ export default function StatementOfAccountForm() {
                                   <td></td>
                                   <td></td>
                                   <td></td>
-                                  <td className="has-text-right">
+                                  <td className="has-text-centered">
                                     {numberFormatInt(item.quantity)}
                                   </td>
                                   <td>{item.stock?.name}</td>
@@ -354,7 +378,7 @@ export default function StatementOfAccountForm() {
                   <Col offset={6} span={6}>
                     <div>
                       Certified correct & payment not received <br />
-                      Heng Ji Commercial Corp. <br />
+                      {record?.items?.[0]?.branch?.company?.name} <br />
                       By: ______________________
                     </div>
                   </Col>

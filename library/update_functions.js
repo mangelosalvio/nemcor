@@ -1318,9 +1318,7 @@ module.exports.updateCreditMemoStatusFromPayment = ({ _id }) => {
             });
 
             //get total amount
-            const total_amount = round(
-              sumBy(credit_memo.items, (o) => o.amount)
-            );
+            const total_amount = credit_memo.total_amount;
 
             const total_credit_amount = round(
               credit_memo.total_credit_amount || 0

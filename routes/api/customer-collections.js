@@ -142,16 +142,12 @@ router.put("/", (req, res) => {
   ];
 
   let counter_promise;
-  if (user?.department?._id) {
-    counter_promise = CompanyCounter.increment(seq_key, user?.department?._id);
-  } else {
-    counter_promise = Counter.increment(seq_key);
-  }
+
+  counter_promise = Counter.increment(seq_key);
 
   counter_promise.then((result) => {
     const newRecord = new Model({
       ...body,
-      department: user?.department,
       [seq_key]: result.next,
       logs,
       status: {
@@ -247,7 +243,27 @@ router.post("/:id/update-status", (req, res) => {
 
       record
         .save()
-        .then((record) => {
+        .then(async (record) => {
+          if (record.status?.approval_status === CANCELLED) {
+            await updateDeliveriesFromCollection({
+              delivery_items: record.delivery_items,
+              is_inc: false,
+            });
+
+            await updateCreditMemosFromCollection({
+              credit_memo_items: record.credit_memo_items,
+              is_inc: false,
+            });
+
+            await updateDeliveryStatusFromPayment({
+              _id: record._id,
+            }).catch((err) => console.log(err));
+
+            await updateCreditMemoStatusFromPayment({
+              _id: record._id,
+            }).catch((err) => console.log(err));
+          }
+
           return res.json(record);
         })
         .catch((err) => console.log(err));

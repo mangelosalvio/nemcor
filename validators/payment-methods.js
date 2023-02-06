@@ -1,14 +1,11 @@
+const Validator = require("validator");
 const isEmpty = require("./is-empty");
 
 module.exports = function validateInput(data) {
   let errors = {};
 
-  if (isEmpty(data.date)) {
-    errors.date = "Date is required";
-  }
-
-  if (isEmpty(data.account)) {
-    errors.account = "Account is required";
+  if (Validator.isEmpty(data.name)) {
+    errors.name = "Name is required";
   }
 
   return {

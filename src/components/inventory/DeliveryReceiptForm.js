@@ -16,6 +16,7 @@ import {
   Collapse,
   PageHeader,
   Button,
+  DatePicker,
 } from "antd";
 
 import {
@@ -94,7 +95,7 @@ const transaction_counter = {
   key: "dr_no",
 };
 
-const date_fields = ["date"];
+const date_fields = ["date", "due_date"];
 
 export default function DeliveryReceiptForm({ payment_type }) {
   const params = useParams();
@@ -351,12 +352,12 @@ export default function DeliveryReceiptForm({ payment_type }) {
     {
       title: "",
       key: "action",
-      width: 100,
+      width: 80,
+      align: "center",
       render: (text, record, index) => (
         <span>
           {record.footer !== 1 &&
-            isEmpty(state.status) &&
-            isEmpty(state.deleted) && (
+            [undefined, OPEN].includes(state.status?.approval_status) && (
               <span
                 onClick={() =>
                   onDeleteItem({
@@ -373,6 +374,241 @@ export default function DeliveryReceiptForm({ payment_type }) {
       ),
     },
   ];
+
+  const payments_column = [
+    {
+      title: "Payment Method",
+      dataIndex: ["payment_method"],
+      render: (payment_method, record, index) =>
+        record.footer !== 1 && (
+          <SimpleSelectFieldGroup
+            name="payment_method"
+            value={payment_method}
+            onChange={(value) => {
+              let payments = [...state.payments];
+              payments[index] = {
+                ...payments[index],
+                payment_method: value,
+              };
+
+              if (index === (state.payments || []).length - 1) {
+                payments = [...payments, {}];
+              }
+
+              setState((prevState) => ({
+                ...prevState,
+                payments,
+              }));
+            }}
+            error={errors?.approval_status}
+            options={options?.payment_methods || []}
+          />
+        ),
+    },
+
+    {
+      title: "Bank",
+      dataIndex: ["bank"],
+      render: (bank, record, index) =>
+        record.footer !== 1 &&
+        record.payment_method === "CHECK" && (
+          <Input
+            name="bank"
+            value={bank}
+            onChange={(e) => {
+              const target = e.target;
+              let payments = [...state.payments];
+              payments[index] = {
+                ...payments[index],
+                [target.name]: target.value?.toUpperCase(),
+              };
+
+              if (index === (state.payments || []).length - 1) {
+                payments = [...payments, {}];
+              }
+
+              setState((prevState) => ({
+                ...prevState,
+                payments,
+              }));
+            }}
+          />
+        ),
+    },
+    {
+      title: "Check No.",
+      dataIndex: ["check_no"],
+      render: (check_no, record, index) =>
+        record.footer !== 1 &&
+        record.payment_method === "CHECK" && (
+          <Input
+            name="check_no"
+            value={check_no}
+            onChange={(e) => {
+              const target = e.target;
+              let payments = [...state.payments];
+              payments[index] = {
+                ...payments[index],
+                [target.name]: target.value?.toUpperCase(),
+              };
+
+              if (index === (state.payments || []).length - 1) {
+                payments = [...payments, {}];
+              }
+
+              setState((prevState) => ({
+                ...prevState,
+                payments,
+              }));
+            }}
+          />
+        ),
+    },
+    {
+      title: "Check Date",
+      dataIndex: ["check_date"],
+      render: (check_date, record, index) =>
+        record.footer !== 1 &&
+        record.payment_method === "CHECK" && (
+          <DatePicker
+            onChange={(date) => {
+              let payments = [...state.payments];
+              payments[index] = {
+                ...payments[index],
+                check_date: date,
+              };
+
+              if (index === (state.payments || []).length - 1) {
+                payments = [...payments, {}];
+              }
+
+              setState((prevState) => ({
+                ...prevState,
+                payments,
+              }));
+            }}
+            value={check_date ? moment(check_date) : null}
+          />
+        ),
+    },
+
+    {
+      title: "Reference",
+      dataIndex: ["reference"],
+      render: (reference, record, index) =>
+        record.footer !== 1 && (
+          <Input
+            name="reference"
+            value={reference}
+            onChange={(e) => {
+              const target = e.target;
+              let payments = [...state.payments];
+              payments[index] = {
+                ...payments[index],
+                [target.name]: target.value?.toUpperCase(),
+              };
+
+              if (index === (state.payments || []).length - 1) {
+                payments = [...payments, {}];
+              }
+
+              setState((prevState) => ({
+                ...prevState,
+                payments,
+              }));
+            }}
+          />
+        ),
+    },
+
+    {
+      title: "Amount",
+      dataIndex: ["amount"],
+      align: "right",
+      render: (amount, record, index) =>
+        record.footer !== 1 ? (
+          <Input
+            className="has-text-right"
+            type="number"
+            step={0.01}
+            name="amount"
+            value={amount}
+            onChange={(e) => {
+              const target = e.target;
+              let payments = [...state.payments];
+              payments[index] = {
+                ...payments[index],
+                [target.name]: target.value?.toUpperCase(),
+              };
+
+              if (index === (state.payments || []).length - 1) {
+                payments = [...payments, {}];
+              }
+
+              setState((prevState) => ({
+                ...prevState,
+                payments,
+              }));
+            }}
+          />
+        ) : (
+          numberFormat(amount)
+        ),
+    },
+    {
+      title: "",
+      key: "action",
+      width: 80,
+      align: "center",
+      render: (text, record, index) => (
+        <span>
+          {record.footer !== 1 &&
+            [undefined, OPEN].includes(state.status?.approval_status) && (
+              <span
+                onClick={() =>
+                  onDeleteItem({
+                    field: "payments",
+                    index,
+                    setState,
+                  })
+                }
+              >
+                <i className="fas fa-trash-alt"></i>
+              </span>
+            )}
+        </span>
+      ),
+    },
+  ];
+
+  useEffect(() => {
+    axios
+      .get("/api/payment-methods")
+      .then((response) => {
+        if (response.data) {
+          setOptions((prevState) => ({
+            ...prevState,
+            payment_methods: response.data.map((o) => o.name),
+          }));
+        }
+      })
+      .catch((err) => {
+        return message.error("There was an error processing your request");
+      });
+
+    return () => {};
+  }, []);
+
+  useEffect(() => {
+    if ((state.payments || [])?.length <= 0) {
+      setState((prevState) => ({
+        ...prevState,
+        payments: [{}],
+      }));
+    }
+
+    return () => {};
+  }, [state.payments]);
 
   useEffect(() => {
     setSearchState((prevState) => {
@@ -433,9 +669,18 @@ export default function DeliveryReceiptForm({ payment_type }) {
 
   useEffect(() => {
     const total_amount = state.total_amount;
-    const cash_payment_amount = state.cash_payment_amount || 0;
+    const payments = state.payments || [];
+    const total_payment = round(
+      sumBy(
+        payments.filter(
+          (o) => !isEmpty(o.payment_method) && !isEmpty(o.amount)
+        ),
+        (o) => parseFloat(o.amount || 0)
+      )
+    );
 
-    const change = round(cash_payment_amount - total_amount);
+    const change = round(total_payment - total_amount);
+    // console.log(total_amount, total_payment);
 
     setState((prevState) => ({
       ...prevState,
@@ -443,7 +688,7 @@ export default function DeliveryReceiptForm({ payment_type }) {
     }));
 
     return () => {};
-  }, [state.total_amount, state.cash_payment_amount]);
+  }, [state.total_amount, state.payments]);
 
   useEffect(() => {
     setState((prevState) => {
@@ -478,7 +723,12 @@ export default function DeliveryReceiptForm({ payment_type }) {
         record: {
           _id: params.id,
         },
-        setState,
+        setState: (record) => {
+          setState({
+            ...record,
+            payments: [...(record.payments || []), {}],
+          });
+        },
         setErrors,
         setRecords,
         url,
@@ -744,6 +994,9 @@ export default function DeliveryReceiptForm({ payment_type }) {
                 values: {
                   ...state,
                   payment_type,
+                  payments: state.payments.filter((o) => {
+                    return !isEmpty(o.payment_method) && !isEmpty(o.amount);
+                  }),
                 },
                 auth,
                 url,
@@ -775,20 +1028,43 @@ export default function DeliveryReceiptForm({ payment_type }) {
                 </Col>
               </Row>
             )}
-            <DatePickerFieldGroup
-              label="Date"
-              name="date"
-              value={state.date || null}
-              onChange={(value) => {
-                onChange({
-                  key: "date",
-                  value: value,
-                  setState,
-                });
-              }}
-              error={errors.date}
-              formItemLayout={formItemLayout}
-            />
+
+            <Row>
+              <Col span={12}>
+                <DatePickerFieldGroup
+                  label="Date"
+                  name="date"
+                  value={state.date || null}
+                  onChange={(value) => {
+                    onChange({
+                      key: "date",
+                      value: value,
+                      setState,
+                    });
+                  }}
+                  error={errors.date}
+                  formItemLayout={smallFormItemLayout}
+                />
+              </Col>
+              {payment_type === PAYMENT_TYPE_CHARGE && (
+                <Col span={12}>
+                  <DatePickerFieldGroup
+                    label="Due Date"
+                    name="due_date"
+                    value={state.due_date || null}
+                    onChange={(value) => {
+                      onChange({
+                        key: "due_date",
+                        value: value,
+                        setState,
+                      });
+                    }}
+                    error={errors.due_date}
+                    formItemLayout={smallFormItemLayout}
+                  />
+                </Col>
+              )}
+            </Row>
 
             <Row>
               <Col span={12}>
@@ -841,7 +1117,6 @@ export default function DeliveryReceiptForm({ payment_type }) {
                 />
               </Col>
             </Row>
-
             <Row>
               <Col span={12}>
                 <TextFieldGroup
@@ -874,7 +1149,6 @@ export default function DeliveryReceiptForm({ payment_type }) {
                 />
               </Col>
             </Row>
-
             <Row>
               <Col span={12}>
                 <TextFieldGroup
@@ -909,7 +1183,6 @@ export default function DeliveryReceiptForm({ payment_type }) {
                 />
               </Col>
             </Row>
-
             <TextAreaGroup
               label="Remarks"
               name="remarks"
@@ -983,35 +1256,41 @@ export default function DeliveryReceiptForm({ payment_type }) {
               }}
             />
 
-            {payment_type === PAYMENT_TYPE_CASH && (
-              <Row className="m-t-3">
-                <Col span={12}>
-                  <TextFieldGroup
-                    label="Cash"
-                    name="cash_payment_amount"
-                    value={state.cash_payment_amount}
-                    error={errors.cash_payment_amount}
-                    onChange={(e) => {
-                      onChange({
-                        key: e.target.name,
-                        value: e.target.value,
-                        setState,
-                      });
+            {payment_type !== PAYMENT_TYPE_CHARGE && (
+              <div>
+                <div className="m-t-1">
+                  Payments
+                  <Table
+                    dataSource={addKeysToArray([
+                      ...(state.payments || []),
+                      {
+                        footer: 1,
+                        amount: sumBy(state.payments, (o) => round(o.amount)),
+                      },
+                    ])}
+                    columns={payments_column}
+                    pagination={false}
+                    rowClassName={(record, index) => {
+                      if (record.footer === 1) {
+                        return "footer-summary has-text-weight-bold";
+                      }
                     }}
-                    formItemLayout={smallFormItemLayout}
                   />
-                </Col>
-                <Col span={12}>
-                  <TextFieldGroup
-                    label="Change"
-                    name="change"
-                    value={state.change}
-                    error={errors.change}
-                    disabled
-                    formItemLayout={smallFormItemLayout}
-                  />
-                </Col>
-              </Row>
+                </div>
+                <Row className="m-t-3">
+                  <Col span={12}></Col>
+                  <Col span={12}>
+                    <TextFieldGroup
+                      label="Change"
+                      name="change"
+                      value={state.change}
+                      error={errors.change}
+                      disabled
+                      formItemLayout={smallFormItemLayout}
+                    />
+                  </Col>
+                </Row>
+              </div>
             )}
 
             <FormButtons
@@ -1065,7 +1344,12 @@ export default function DeliveryReceiptForm({ payment_type }) {
                   cb: () => {
                     edit({
                       record: state,
-                      setState,
+                      setState: (record) => {
+                        setState({
+                          ...record,
+                          payments: [...(record.payments || []), {}],
+                        });
+                      },
                       setErrors,
                       setRecords,
                       url,
@@ -1097,7 +1381,12 @@ export default function DeliveryReceiptForm({ payment_type }) {
                   ) {
                     edit({
                       record,
-                      setState,
+                      setState: (record) => {
+                        setState({
+                          ...record,
+                          payments: [...(record.payments || []), {}],
+                        });
+                      },
                       setErrors,
                       setRecords,
                       url,

@@ -21,10 +21,14 @@ const {
   ACTION_SAVE,
   ACTION_CANCEL,
   PAYMENT_TYPE_CASH,
+  PAYMENT_TYPE_CHARGE,
+  STATUS_PAID,
 } = require("../../config/constants");
 const BranchCounter = require("../../models/BranchCounter");
 const { saveTransactionAuditTrail } = require("../../library/update_functions");
 const BranchTransactionCounter = require("../../models/BranchTransactionCounter");
+const CreditMemo = require("../../models/CreditMemo");
+const { getStatementOfAccount } = require("../../library/report_functions");
 
 const Model = DeliveryReceipt;
 const ObjectId = mongoose.Types.ObjectId;
@@ -252,6 +256,144 @@ router.post("/:id/print-status", (req, res) => {
       console.log("ID not found");
     }
   });
+});
+
+router.post("/statement-of-account", async (req, res) => {
+  const { date, account, branch } = req.body;
+
+  const records = await getStatementOfAccount({ date, account, branch });
+  let _records = records.map((record) => {
+    const balance = record.items.reduce((acc, item) => {
+      const _balance = round(
+        item.total_amount - (item.total_payment_amount || 0)
+      );
+
+      return acc + _balance;
+    }, 0);
+
+    return {
+      ...record,
+      balance,
+    };
+  });
+
+  return res.json(_records);
+});
+
+router.post("/customer-accounts", (req, res) => {
+  const { account } = req.body;
+
+  async.parallel(
+    {
+      deliveries: (cb) =>
+        DeliveryReceipt.aggregate([
+          {
+            $match: {
+              payment_type: PAYMENT_TYPE_CHARGE,
+              "status.approval_status": {
+                $nin: [CANCELLED, STATUS_PAID],
+              },
+              "account._id": ObjectId(account._id),
+            },
+          },
+          {
+            $addFields: {
+              total_amount: {
+                $reduce: {
+                  input: "$items",
+                  initialValue: 0,
+                  in: {
+                    $add: ["$$this.amount", "$$value"],
+                  },
+                },
+              },
+            },
+          },
+          {
+            $addFields: {
+              balance: {
+                $round: [
+                  {
+                    $subtract: [
+                      "$total_amount",
+                      {
+                        $ifNull: ["$total_payment_amount", 0],
+                      },
+                    ],
+                  },
+                  2,
+                ],
+              },
+            },
+          },
+          {
+            $match: {
+              balance: {
+                $ne: 0,
+              },
+            },
+          },
+          {
+            $sort: {
+              date: 1,
+            },
+          },
+        ])
+          .allowDiskUse(true)
+          .exec(cb),
+      credit_memos: (cb) =>
+        CreditMemo.aggregate([
+          {
+            $match: {
+              "status.approval_status": {
+                $nin: [CANCELLED, STATUS_PAID],
+              },
+              "account._id": ObjectId(account._id),
+            },
+          },
+          {
+            $addFields: {
+              balance: {
+                $round: [
+                  {
+                    $subtract: [
+                      "$total_amount",
+                      {
+                        $ifNull: ["$total_credit_amount", 0],
+                      },
+                    ],
+                  },
+                  2,
+                ],
+              },
+            },
+          },
+          {
+            $match: {
+              balance: {
+                $ne: 0,
+              },
+            },
+          },
+          {
+            $sort: {
+              date: 1,
+            },
+          },
+        ])
+          .allowDiskUse(true)
+          .exec(cb),
+    },
+
+    (err, results) => {
+      if (err) {
+        console.log(err);
+        return res.status(401).json(err);
+      }
+
+      return res.json(results);
+    }
+  );
 });
 
 router.post("/history", (req, res) => {

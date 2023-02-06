@@ -848,7 +848,7 @@ module.exports.purchaseOrderToCollectionReport = ({ period_covered }) => {
   });
 };
 
-module.exports.getStatementOfAccount = ({ date, customer }) => {
+module.exports.getStatementOfAccount = ({ date, account, branch }) => {
   return new Promise((resolve, reject) => {
     DeliveryReceipt.aggregate([
       {
@@ -859,8 +859,11 @@ module.exports.getStatementOfAccount = ({ date, customer }) => {
           "status.approval_status": {
             $nin: [CANCELLED, STATUS_PAID],
           },
-          ...(customer?._id && {
-            "customer._id": ObjectId(customer._id),
+          ...(account?._id && {
+            "account._id": ObjectId(account._id),
+          }),
+          ...(branch?._id && {
+            "branch._id": ObjectId(branch._id),
           }),
         },
       },
@@ -871,9 +874,9 @@ module.exports.getStatementOfAccount = ({ date, customer }) => {
       },
       {
         $group: {
-          _id: "$customer._id",
-          customer: {
-            $first: "$customer",
+          _id: "$account._id",
+          account: {
+            $first: "$account",
           },
           items: {
             $push: "$$ROOT",
@@ -882,7 +885,7 @@ module.exports.getStatementOfAccount = ({ date, customer }) => {
       },
       {
         $sort: {
-          "customer.name": 1,
+          "account.name": 1,
         },
       },
     ])

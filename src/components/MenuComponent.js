@@ -89,6 +89,7 @@ const MenuComponent = ({ component: Component, auth, logoutUser, ...rest }) => {
               {/* <MenuPermission to="/customers" label="Customers" /> */}
               <MenuPermission to="/branches" label="Branches" />
               <MenuPermission to="/accounts" label="Accounts" />
+              <MenuPermission to="/payment-methods" label="Payment Methods" />
             </SubMenu>
 
             <SubMenu
@@ -121,6 +122,10 @@ const MenuComponent = ({ component: Component, auth, logoutUser, ...rest }) => {
                 label="Inventory Adjustments"
               />
               <MenuPermission to="/physical-counts" label="Physical Count" />
+              <MenuPermission
+                to="/customer-collections"
+                label="Customer Collections"
+              />
             </SubMenu>
             <SubMenu
               key="inventory-reports"
@@ -140,6 +145,10 @@ const MenuComponent = ({ component: Component, auth, logoutUser, ...rest }) => {
               <MenuPermission
                 to="/reports/stock-card-report"
                 label="Stock Card Report"
+              />
+              <MenuPermission
+                to="/reports/statement-of-account"
+                label="Statement of Accounts"
               />
             </SubMenu>
             <SubMenu

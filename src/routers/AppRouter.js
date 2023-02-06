@@ -54,6 +54,9 @@ import BranchInventoryBalanceList from "../components/inventory/BranchInventoryB
 import StockCardReport from "../components/inventory/StockCardReport";
 import InventoryAdjustmentForm from "../components/inventory/InventoryAdjustmentForm";
 import PhysicalCountForm from "../components/inventory/PhysicalCountForm";
+import PaymentMethodForm from "../components/inventory/PaymentMethodForm";
+import CustomerCollectionForm from "../components/inventory/CustomerCollectionForm";
+import StatementOfAccountForm from "../components/inventory/StatementOfAccountForm";
 
 const AppRouter = () => (
   <div className="is-full-height">
@@ -193,6 +196,12 @@ const AppRouter = () => (
             element={<MenuComponent component={CompanyForm} />}
           ></Route>
         </Route>
+        <Route path="/payment-methods" element={<PrivateRoute />} exact={true}>
+          <Route
+            path=""
+            element={<MenuComponent component={PaymentMethodForm} />}
+          ></Route>
+        </Route>
 
         {/* INVENTORY */}
         <Route path="/stocks-receiving" element={<PrivateRoute />} exact={true}>
@@ -205,6 +214,16 @@ const AppRouter = () => (
           <Route
             path=""
             element={<MenuComponent component={PhysicalCountForm} />}
+          ></Route>
+        </Route>
+        <Route
+          path="/customer-collections"
+          element={<PrivateRoute />}
+          exact={true}
+        >
+          <Route
+            path=""
+            element={<MenuComponent component={CustomerCollectionForm} />}
           ></Route>
         </Route>
         <Route path="/stock-transfers" element={<PrivateRoute />} exact={true}>
@@ -243,6 +262,16 @@ const AppRouter = () => (
           <Route
             path=""
             element={<MenuComponent component={InventoryAdjustmentForm} />}
+          ></Route>
+        </Route>
+        <Route
+          path="/reports/statement-of-account"
+          element={<PrivateRoute />}
+          exact={true}
+        >
+          <Route
+            path=""
+            element={<MenuComponent component={StatementOfAccountForm} />}
           ></Route>
         </Route>
         {/* <Route path="/cash-sales" element={<PrivateRoute />} exact={true}>

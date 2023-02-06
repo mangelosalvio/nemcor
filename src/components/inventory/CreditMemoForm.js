@@ -649,6 +649,35 @@ export default function CreditMemoForm({}) {
               </Col>
             </Row>
 
+            <Row>
+              <Col span={12}>
+                <TextFieldGroup
+                  disabled
+                  label="RET#"
+                  name="return_no"
+                  value={state.sales_return?.return_no || ""}
+                  formItemLayout={smallFormItemLayout}
+                />
+              </Col>
+              <Col span={12}>
+                <TextFieldGroup
+                  disabled={!isEmpty(state.sales_return?._id)}
+                  label="Total Amount"
+                  name="total_amount"
+                  value={state.total_amount}
+                  error={errors.total_amount}
+                  formItemLayout={smallFormItemLayout}
+                  onChange={(e) => {
+                    onChange({
+                      key: e.target.name,
+                      value: e.target.value,
+                      setState,
+                    });
+                  }}
+                />
+              </Col>
+            </Row>
+
             <TextAreaGroup
               label="Remarks"
               name="remarks"
@@ -685,26 +714,9 @@ export default function CreditMemoForm({}) {
                 readOnly
               />
             )}
-            {[undefined, null, OPEN].includes(
-              state.status?.approval_status
-            ) && (
-              <ItemsField
-                item={item}
-                setItem={setItem}
-                state={state}
-                setState={setState}
-                items_key="items"
-                options={options}
-                setOptions={setOptions}
-                errors={errors}
-                initialItemValues={initialItemValues}
-                has_discount={false}
-                has_open_quantity={false}
-                auth={auth}
-              />
-            )}
+
             <Row>
-              <Col offset={4} span={20}>
+              <Col span={20}>
                 <FormButtons
                   state={state}
                   auth={auth}
