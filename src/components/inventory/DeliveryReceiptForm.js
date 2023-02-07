@@ -164,8 +164,12 @@ export default function DeliveryReceiptForm({ payment_type }) {
       render: (date) => moment(date).format("MM/DD/YYYY"),
     },
     {
-      title: "Branch Ref.",
-      dataIndex: "branch_reference",
+      title: "EXT SI",
+      dataIndex: "external_si_reference",
+    },
+    {
+      title: "Ref",
+      dataIndex: "reference",
     },
     {
       title: "Branch",
