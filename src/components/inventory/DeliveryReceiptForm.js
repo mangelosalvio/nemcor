@@ -787,6 +787,10 @@ export default function DeliveryReceiptForm({ payment_type }) {
                     setState({
                       ...initialValues,
                       date: moment(),
+                      ...(payment_type === PAYMENT_TYPE_CHARGE && {
+                        due_date: moment(),
+                      }),
+
                       branch: auth.user?.branches?.[0] || null,
                     });
                     setItem(initialItemValues);
@@ -1040,11 +1044,13 @@ export default function DeliveryReceiptForm({ payment_type }) {
                   name="date"
                   value={state.date || null}
                   onChange={(value) => {
-                    onChange({
-                      key: "date",
-                      value: value,
-                      setState,
-                    });
+                    setState((prevState) => ({
+                      ...prevState,
+                      date: value,
+                      ...(payment_type === PAYMENT_TYPE_CHARGE && {
+                        due_date: value,
+                      }),
+                    }));
                   }}
                   error={errors.date}
                   formItemLayout={smallFormItemLayout}

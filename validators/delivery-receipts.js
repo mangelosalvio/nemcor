@@ -14,9 +14,9 @@ module.exports = function validateInput(data) {
     errors.account = "Account is required";
   }
 
-  if (data.payment_type === PAYMENT_TYPE_CHARGE && isEmpty(data.due_date)) {
-    errors.due_date = "Due Date is required";
-  }
+  // if (data.payment_type === PAYMENT_TYPE_CHARGE && isEmpty(data.due_date)) {
+  //   errors.due_date = "Due Date is required";
+  // }
 
   return {
     errors,
