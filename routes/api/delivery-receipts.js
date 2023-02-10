@@ -262,9 +262,13 @@ router.post("/:id/print-status", (req, res) => {
 });
 
 router.post("/statement-of-account", async (req, res) => {
-  const { date, account, branch } = req.body;
+  const { period_covered, account, branch } = req.body;
 
-  const records = await getStatementOfAccount({ date, account, branch });
+  const records = await getStatementOfAccount({
+    period_covered,
+    account,
+    branch,
+  });
   let _records = records.map((record) => {
     const balance = record.items.reduce((acc, item) => {
       const _balance = round(

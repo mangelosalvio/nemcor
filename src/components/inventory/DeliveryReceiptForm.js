@@ -1056,7 +1056,7 @@ export default function DeliveryReceiptForm({ payment_type }) {
                   formItemLayout={smallFormItemLayout}
                 />
               </Col>
-              {payment_type === PAYMENT_TYPE_CHARGE && (
+              {/* {payment_type === PAYMENT_TYPE_CHARGE && (
                 <Col span={12}>
                   <DatePickerFieldGroup
                     label="Due Date"
@@ -1073,7 +1073,7 @@ export default function DeliveryReceiptForm({ payment_type }) {
                     formItemLayout={smallFormItemLayout}
                   />
                 </Col>
-              )}
+              )} */}
             </Row>
 
             <Row>

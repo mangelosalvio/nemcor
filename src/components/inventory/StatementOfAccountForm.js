@@ -53,7 +53,7 @@ const url = "/api/delivery-receipts/";
 const title = "Statement of Account";
 
 const initialValues = {
-  date: moment(),
+  period_covered: null,
   customer: null,
 };
 export default function StatementOfAccountForm() {
@@ -127,12 +127,12 @@ export default function StatementOfAccountForm() {
 
   useEffect(() => {
     const form_data = {
-      date: state.date,
+      period_covered: state.period_covered,
       account: state.account,
       branch: state.branch,
     };
 
-    if (state.date) {
+    if (state.period_covered) {
       const loading = message.loading("Loading...");
       axios
         .post(`${url}statement-of-account`, form_data)
@@ -153,7 +153,7 @@ export default function StatementOfAccountForm() {
 
       return () => {};
     }
-  }, [state.date, state.account, state.branch]);
+  }, [state.period_covered, state.account, state.branch]);
 
   return (
     <Content className="content-padding">
@@ -171,18 +171,17 @@ export default function StatementOfAccountForm() {
         <Divider />
         <Row>
           <Col span={12}>
-            <DatePickerFieldGroup
-              label="Date"
-              name="date"
-              value={state.date}
-              onChange={(value) => {
-                onChange({
-                  key: "date",
-                  value: value,
-                  setState,
-                });
-              }}
-              error={errors.date}
+            <RangeDatePickerFieldGroup
+              label="Period Covered"
+              name="period_covered"
+              value={state.period_covered}
+              onChange={(dates) =>
+                setState((prevState) => ({
+                  ...prevState,
+                  period_covered: dates,
+                }))
+              }
+              error={errors.period_covered}
               formItemLayout={formItemLayout}
             />
           </Col>
@@ -290,8 +289,7 @@ export default function StatementOfAccountForm() {
                     <thead>
                       <tr>
                         <th>Del Date</th>
-                        <th>DR#</th>
-                        <th>Ext SI</th>
+
                         <th>Ref</th>
                         <th className="has-text-centered">Qty</th>
                         <th>Product</th>
@@ -299,7 +297,6 @@ export default function StatementOfAccountForm() {
                         <th className="has-text-right">Amount</th>
                         <th className="has-text-right">Total Amount</th>
                         <th className="has-text-right">Payment Amount</th>
-                        <th className="has-text-centered">Due Date</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -310,9 +307,7 @@ export default function StatementOfAccountForm() {
                               return (
                                 <tr>
                                   <td>{moment(dr.date).format("MM/DD/YY")}</td>
-                                  <td>{dr.dr_no}</td>
 
-                                  <td>{dr.external_si_reference}</td>
                                   <td>{dr.reference}</td>
                                   <td className="has-text-centered">
                                     {numberFormatInt(item.quantity)}
@@ -330,17 +325,16 @@ export default function StatementOfAccountForm() {
                                   <td className="has-text-right">
                                     {numberFormat(dr.total_payment_amount)}
                                   </td>
-                                  <td className="has-text-centered">
+                                  {/* <td className="has-text-centered">
                                     {moment(dr.due_date).format("MM/DD/YY")}
-                                  </td>
+                                  </td> */}
                                 </tr>
                               );
                             } else {
                               return (
                                 <tr>
                                   <td></td>
-                                  <td></td>
-                                  <td></td>
+
                                   <td></td>
                                   <td className="has-text-centered">
                                     {numberFormatInt(item.quantity)}
@@ -364,8 +358,6 @@ export default function StatementOfAccountForm() {
                     </tbody>
                     <tfoot>
                       <tr>
-                        <th></th>
-                        <th></th>
                         <th></th>
                         <th></th>
                         <th></th>

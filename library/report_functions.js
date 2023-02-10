@@ -849,13 +849,18 @@ module.exports.purchaseOrderToCollectionReport = ({ period_covered }) => {
   });
 };
 
-module.exports.getStatementOfAccount = ({ date, account, branch }) => {
+module.exports.getStatementOfAccount = ({
+  period_covered,
+  account,
+  branch,
+}) => {
   return new Promise((resolve, reject) => {
     DeliveryReceipt.aggregate([
       {
         $match: {
-          due_date: {
-            $lte: moment(date).endOf("day").toDate(),
+          date: {
+            $gte: moment(period_covered?.[0]).startOf("day").toDate(),
+            $lte: moment(period_covered?.[1]).endOf("day").toDate(),
           },
           "status.approval_status": {
             $nin: [CANCELLED, STATUS_PAID],
