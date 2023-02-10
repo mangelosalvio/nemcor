@@ -59,6 +59,7 @@ import CustomerCollectionForm from "../components/inventory/CustomerCollectionFo
 import StatementOfAccountForm from "../components/inventory/StatementOfAccountForm";
 import CashSalesReport from "../components/inventory/CashSalesReport";
 import ChargeSalesReport from "../components/inventory/ChargeSalesReport";
+import CustomerCollectionReport from "../components/inventory/CustomerCollectionReport";
 
 const AppRouter = () => (
   <div className="is-full-height">
@@ -274,6 +275,16 @@ const AppRouter = () => (
           <Route
             path=""
             element={<MenuComponent component={StatementOfAccountForm} />}
+          ></Route>
+        </Route>
+        <Route
+          path="/reports/customer-collection-report"
+          element={<PrivateRoute />}
+          exact={true}
+        >
+          <Route
+            path=""
+            element={<MenuComponent component={CustomerCollectionReport} />}
           ></Route>
         </Route>
         <Route

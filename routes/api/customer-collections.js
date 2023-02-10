@@ -24,6 +24,7 @@ const {
 } = require("../../library/update_functions");
 const { OPEN, CANCELLED } = require("../../config/constants");
 const CompanyCounter = require("../../models/CompanyCounter");
+const { getCollectionReport } = require("../../library/report_functions");
 
 const Model = CustomerCollection;
 
@@ -272,6 +273,19 @@ router.post("/:id/update-status", (req, res) => {
     }
   });
 });
+
+router.post("/customer-collection-report", async (req, res) => {
+  const { period_covered, account, branch } = req.body;
+
+  const records = await getCollectionReport({
+    period_covered,
+    account,
+    branch,
+  });
+
+  return res.json(records);
+});
+
 router.post("/pending-checks", (req, res) => {
   const query = {
     deleted: {

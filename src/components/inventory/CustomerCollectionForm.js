@@ -490,29 +490,31 @@ export default function CustomerCollectionForm() {
     },
   ];
 
-  const onChangeCustomer = (account) => {
-    const dr_loading = message.loading("Loading Charge Sales...");
-
-    axios
-      .post("/api/delivery-receipts/customer-accounts", {
-        account: account,
-      })
-      .then((response) => {
-        dr_loading();
-        if (response.data) {
-          setState((prevState) => {
-            return {
-              ...prevState,
-              delivery_items: [...(response.data.deliveries || [])],
-              credit_memo_items: [...(response.data.credit_memos || [])],
-            };
-          });
-        }
-      })
-      .catch((err) => {
-        dr_loading();
-        message.error("There was a problem processing your transaction.");
-      });
+  const onChangeCustomer = ({ account, branch }) => {
+    if (account?._id && branch?._id) {
+      const dr_loading = message.loading("Loading Charge Sales...", 0);
+      axios
+        .post("/api/delivery-receipts/customer-accounts", {
+          account,
+          branch,
+        })
+        .then((response) => {
+          dr_loading();
+          if (response.data) {
+            setState((prevState) => {
+              return {
+                ...prevState,
+                delivery_items: [...(response.data.deliveries || [])],
+                credit_memo_items: [...(response.data.credit_memos || [])],
+              };
+            });
+          }
+        })
+        .catch((err) => {
+          dr_loading();
+          message.error("There was a problem processing your transaction.");
+        });
+    }
 
     /* const cm_loading = message.loading("Loading Credit Memos...");
     axios
@@ -1153,7 +1155,7 @@ export default function CustomerCollectionForm() {
             <Row>
               <Col span={12}>
                 <SelectFieldGroup
-                  // disabled={!isEmpty(state._id)}
+                  disabled={!isEmpty(state._id)}
                   label="Branch"
                   value={
                     state.branch &&
@@ -1161,6 +1163,9 @@ export default function CustomerCollectionForm() {
                   }
                   onChange={(index) => {
                     const branch = auth.user?.branches?.[index] || null;
+
+                    onChangeCustomer({ account: state.account, branch });
+
                     setState((prevState) => ({
                       ...prevState,
                       branch,
@@ -1191,7 +1196,7 @@ export default function CustomerCollectionForm() {
                       ...prevState,
                       account,
                     }));
-                    onChangeCustomer(account);
+                    onChangeCustomer({ account, branch: state.branch });
                   }}
                   error={errors.account}
                   formItemLayout={formItemLayout}
@@ -1410,6 +1415,21 @@ export default function CustomerCollectionForm() {
                 />
               </div>
             </div>
+
+            <TextFieldGroup
+              label="Reference"
+              name="reference"
+              value={state.reference}
+              error={errors.reference}
+              onChange={(e) => {
+                onChange({
+                  key: e.target.name,
+                  value: e.target.value,
+                  setState,
+                });
+              }}
+              formItemLayout={formItemLayout}
+            />
 
             <TextAreaGroup
               label="Remarks"

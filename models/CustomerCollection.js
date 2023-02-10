@@ -62,6 +62,7 @@ const TableSchema = new Schema({
   },
 
   remarks: String,
+  reference: String,
   items: [Object],
   logs: [
     {

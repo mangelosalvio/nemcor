@@ -158,6 +158,10 @@ const MenuComponent = ({ component: Component, auth, logoutUser, ...rest }) => {
                 to="/reports/charge-sales-report"
                 label="Charge Sales Report"
               />
+              <MenuPermission
+                to="/reports/customer-collection-report"
+                label="Collection Report"
+              />
             </SubMenu>
             <SubMenu
               key="payroll"

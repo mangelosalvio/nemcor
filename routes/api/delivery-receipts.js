@@ -310,7 +310,9 @@ router.post("/charge-sales-report", async (req, res) => {
 });
 
 router.post("/customer-accounts", (req, res) => {
-  const { account } = req.body;
+  const { account, branch } = req.body;
+
+  console.log(branch?._id);
 
   async.parallel(
     {
@@ -318,6 +320,9 @@ router.post("/customer-accounts", (req, res) => {
         DeliveryReceipt.aggregate([
           {
             $match: {
+              ...(branch?._id && {
+                "branch._id": ObjectId(branch._id),
+              }),
               payment_type: PAYMENT_TYPE_CHARGE,
               "status.approval_status": {
                 $nin: [CANCELLED, STATUS_PAID],
@@ -378,6 +383,9 @@ router.post("/customer-accounts", (req, res) => {
                 $nin: [CANCELLED, STATUS_PAID],
               },
               "account._id": ObjectId(account._id),
+              ...(branch?._id && {
+                "branch._id": ObjectId(branch._id),
+              }),
             },
           },
           {
