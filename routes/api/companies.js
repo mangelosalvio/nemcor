@@ -12,6 +12,7 @@ const fs = require("fs");
 const Branch = require("../../models/Branch");
 const Payroll = require("../../models/Payroll");
 const Attendance = require("../../models/Attendance");
+const DeliveryReceipt = require("../../models/DeliveryReceipt");
 
 const Model = Company;
 const ObjectId = mongoose.Types.ObjectId;
@@ -184,6 +185,16 @@ router.post("/:id/upload", upload.single("file"), async (req, res) => {
     {
       $set: {
         logo,
+      },
+    }
+  ).exec();
+
+  //update delivery receipts
+  await DeliveryReceipt.updateMany(
+    { "branch.company._id": mongoose.Types.ObjectId(req.params.id) },
+    {
+      $set: {
+        "branch.company.logo": logo,
       },
     }
   ).exec();

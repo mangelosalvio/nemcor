@@ -639,7 +639,9 @@ module.exports.getBranchStockCard = ({
             },
             {
               $addFields: {
-                transaction: "Purchase Returns",
+                transaction: {
+                  $concat: ["$payment_type", " ", "Sales Invoice"],
+                },
               },
             },
             {

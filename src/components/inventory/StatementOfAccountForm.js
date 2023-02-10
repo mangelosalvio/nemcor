@@ -254,8 +254,19 @@ export default function StatementOfAccountForm() {
             return (
               <div className="page-break-after">
                 <div className="has-text-centered">
-                  {record?.items?.[0]?.branch?.company?.name} <br />
-                  {record?.items?.[0]?.branch?.address} <br />
+                  {record.items?.[0]?.branch?.company?.logo && (
+                    <div className="checkout-image">
+                      <img
+                        src={`/public/images/${record.items?.[0]?.branch?.company?.logo?.filename}`}
+                        style={{ height: "60px" }}
+                      />
+                    </div>
+                  )}
+                  {/* {record?.items?.[0]?.branch?.company?.name} <br /> */}
+                  <span className="has-text-weight-bold">
+                    {record?.items?.[0]?.branch?.address}
+                  </span>{" "}
+                  <br />
                 </div>
 
                 <div className="has-text-right">
@@ -264,7 +275,9 @@ export default function StatementOfAccountForm() {
                 <div>
                   <Row>
                     <Col span={2}>Account of:</Col>
-                    <Col span={10}>{record.account?.name}</Col>
+                    <Col span={10} className="has-text-weight-bold">
+                      {record.account?.name}
+                    </Col>
                   </Row>
                   <Row>
                     <Col span={2}></Col>
@@ -367,22 +380,24 @@ export default function StatementOfAccountForm() {
                     </tfoot>
                   </table>
                 </div>
-                <Row>
-                  <Col span={12}>
-                    <div>
-                      Received Original Invoices <br />
-                      {record.customer?.name} <br />
-                      By: ______________________
-                    </div>
-                  </Col>
-                  <Col offset={6} span={6}>
-                    <div>
-                      Certified correct & payment not received <br />
-                      {record?.items?.[0]?.branch?.company?.name} <br />
-                      By: ______________________
-                    </div>
-                  </Col>
-                </Row>
+                <div className="signatories-container">
+                  <Row gutter={48}>
+                    <Col span={8}>Prepared by</Col>
+                    <Col span={8}>Approved by</Col>
+                    <Col span={8}>Received by</Col>
+                  </Row>
+                  <Row gutter={48}>
+                    <Col span={8}>
+                      <div className="signatory">{auth?.user?.name}</div>
+                    </Col>
+                    <Col span={8} className="has-text-centered">
+                      <div className="signatory">&nbsp;</div>
+                    </Col>
+                    <Col span={8}>
+                      <div className="signatory">&nbsp;</div>
+                    </Col>
+                  </Row>
+                </div>
               </div>
             );
           })}
