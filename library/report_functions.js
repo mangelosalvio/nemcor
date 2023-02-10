@@ -22,6 +22,7 @@ const {
 const SupplierWithdrawal = require("../models/SupplierWithdrawal");
 const TankerWithdrawal = require("../models/TankerWithdrawal");
 const DeliveryReceipt = require("../models/DeliveryReceipt");
+const CustomerCollection = require("../models/CustomerCollection");
 const sumBy = require("lodash").sumBy;
 const uniqBy = require("lodash").uniqBy;
 const union = require("lodash").union;
@@ -908,6 +909,43 @@ module.exports.getSalesReport = ({
 }) => {
   return new Promise((resolve, reject) => {
     DeliveryReceipt.aggregate([
+      {
+        $match: {
+          date: {
+            $gte: moment(period_covered?.[0]).startOf("day").toDate(),
+            $lte: moment(period_covered?.[1]).endOf("day").toDate(),
+          },
+          "status.approval_status": {
+            $nin: [CANCELLED],
+          },
+          ...(account?._id && {
+            "account._id": ObjectId(account._id),
+          }),
+          ...(branch?._id && {
+            "branch._id": ObjectId(branch._id),
+          }),
+        },
+      },
+      {
+        $sort: {
+          date: 1,
+        },
+      },
+    ])
+      .allowDiskUse(true)
+      .then((records) => {
+        // console.log(records);
+        return resolve(records);
+      })
+      .catch((err) => {
+        return reject(err);
+      });
+  });
+};
+
+module.exports.getCollectionReport = ({ period_covered, account, branch }) => {
+  return new Promise((resolve, reject) => {
+    CustomerCollection.aggregate([
       {
         $match: {
           date: {

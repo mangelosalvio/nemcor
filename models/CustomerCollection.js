@@ -2,6 +2,7 @@ const mongoose = require("mongoose");
 const mongoose_paginate = require("mongoose-paginate");
 const AccountModel = require("./AccountModel");
 const BankModel = require("./BankModel");
+const BranchModel = require("./BranchModel");
 
 const CustomerModel = require("./CustomerModel");
 const NameModel = require("./NameModel");
@@ -16,15 +17,15 @@ const TableSchema = new Schema({
     ...NameModel,
     _id: mongoose.Schema.Types.ObjectId,
   },
+  branch: {
+    ...BranchModel,
+    _id: mongoose.Schema.Types.ObjectId,
+  },
   collection_no: Number,
   date: Date,
-  customer: {
+  account: {
+    ...AccountModel,
     _id: mongoose.Schema.Types.ObjectId,
-    name: String,
-    address: String,
-    owner: String,
-    contact_no: String,
-    terms: String,
   },
 
   wtax_type: String, //Rate or value

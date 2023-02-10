@@ -137,6 +137,11 @@ export default function CustomerCollectionForm() {
       render: (date) => moment(date).format("MM/DD/YYYY"),
     },
     {
+      title: "Branch",
+      dataIndex: "branch",
+      render: (branch) => `${branch?.company?.name}-${branch?.name}`,
+    },
+    {
       title: "Account",
       dataIndex: ["account", "name"],
     },
@@ -525,6 +530,28 @@ export default function CustomerCollectionForm() {
         cm_loading();
       }); */
   };
+
+  useEffect(() => {
+    const branch = auth?.user?.branches?.[0] || null;
+
+    if (branch?._id) {
+      setSearchState((prevState) => {
+        return {
+          ...prevState,
+          branch,
+        };
+      });
+    }
+
+    setOptions((prevState) => {
+      return {
+        ...prevState,
+        branches: auth?.user?.branches || [],
+      };
+    });
+
+    return () => {};
+  }, [auth.user.branches]);
 
   useEffect(() => {
     axios
@@ -1051,6 +1078,10 @@ export default function CustomerCollectionForm() {
         {isEmpty(records) ? (
           <Form
             onFinish={(values) => {
+              if (state.delivery_items?.length <= 0) {
+                return message.error("At least 1 DR has to be selected");
+              }
+
               //double check that total payment amount is equals total amount
 
               const payments = state.payments || [];
@@ -1119,26 +1150,56 @@ export default function CustomerCollectionForm() {
               formItemLayout={formItemLayout}
             />
 
-            <SelectFieldGroup
-              label="Account"
-              value={state.account?.name}
-              onSearch={(value) =>
-                onCustomerSearch({ value, options, setOptions })
-              }
-              disabled={!isEmpty(state._id)}
-              onChange={(index) => {
-                const account = options.accounts[index];
-                setState((prevState) => ({
-                  ...prevState,
-                  account,
-                }));
-                onChangeCustomer(account);
-              }}
-              error={errors.account}
-              formItemLayout={formItemLayout}
-              data={options.accounts}
-              column="name"
-            />
+            <Row>
+              <Col span={12}>
+                <SelectFieldGroup
+                  // disabled={!isEmpty(state._id)}
+                  label="Branch"
+                  value={
+                    state.branch &&
+                    `${state.branch?.company?.name}-${state.branch?.name}`
+                  }
+                  onChange={(index) => {
+                    const branch = auth.user?.branches?.[index] || null;
+                    setState((prevState) => ({
+                      ...prevState,
+                      branch,
+                    }));
+                  }}
+                  formItemLayout={smallFormItemLayout}
+                  data={(auth.user?.branches || []).map((o) => {
+                    return {
+                      ...o,
+                      display_name: `${o.company?.name}-${o?.name}`,
+                    };
+                  })}
+                  column="display_name"
+                  error={errors.branch}
+                />
+              </Col>
+              <Col span={12}>
+                <SelectFieldGroup
+                  label="Account"
+                  value={state.account?.name}
+                  onSearch={(value) =>
+                    onCustomerSearch({ value, options, setOptions })
+                  }
+                  disabled={!isEmpty(state._id)}
+                  onChange={(index) => {
+                    const account = options.accounts[index];
+                    setState((prevState) => ({
+                      ...prevState,
+                      account,
+                    }));
+                    onChangeCustomer(account);
+                  }}
+                  error={errors.account}
+                  formItemLayout={formItemLayout}
+                  data={options.accounts}
+                  column="name"
+                />
+              </Col>
+            </Row>
 
             <TextFieldGroup
               disabled
