@@ -57,6 +57,8 @@ import PhysicalCountForm from "../components/inventory/PhysicalCountForm";
 import PaymentMethodForm from "../components/inventory/PaymentMethodForm";
 import CustomerCollectionForm from "../components/inventory/CustomerCollectionForm";
 import StatementOfAccountForm from "../components/inventory/StatementOfAccountForm";
+import CashSalesReport from "../components/inventory/CashSalesReport";
+import ChargeSalesReport from "../components/inventory/ChargeSalesReport";
 
 const AppRouter = () => (
   <div className="is-full-height">
@@ -272,6 +274,26 @@ const AppRouter = () => (
           <Route
             path=""
             element={<MenuComponent component={StatementOfAccountForm} />}
+          ></Route>
+        </Route>
+        <Route
+          path="/reports/cash-sales-report"
+          element={<PrivateRoute />}
+          exact={true}
+        >
+          <Route
+            path=""
+            element={<MenuComponent component={CashSalesReport} />}
+          ></Route>
+        </Route>
+        <Route
+          path="/reports/charge-sales-report"
+          element={<PrivateRoute />}
+          exact={true}
+        >
+          <Route
+            path=""
+            element={<MenuComponent component={ChargeSalesReport} />}
           ></Route>
         </Route>
         {/* <Route path="/cash-sales" element={<PrivateRoute />} exact={true}>

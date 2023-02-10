@@ -150,6 +150,14 @@ const MenuComponent = ({ component: Component, auth, logoutUser, ...rest }) => {
                 to="/reports/statement-of-account"
                 label="Statement of Accounts"
               />
+              <MenuPermission
+                to="/reports/cash-sales-report"
+                label="Cash Sales Report"
+              />
+              <MenuPermission
+                to="/reports/charge-sales-report"
+                label="Charge Sales Report"
+              />
             </SubMenu>
             <SubMenu
               key="payroll"

@@ -924,3 +924,19 @@ div.first-page.payroll-check-voucher {
     background-color: #fff !important;
   }
 }
+.tr-head td,
+.tr-footer {
+  font-weight: bold;
+}
+table.sales-report-table td,
+table.sales-report-table th {
+  font-size: 11px !important;
+  padding: 0px;
+}
+.sales-report-table tbody .tr-footer td {
+  border-top: 1px solid #000 !important;
+}
+
+.sales-report-table .footer th {
+  border-top: 3px double #000 !important;
+}

@@ -28,7 +28,10 @@ const BranchCounter = require("../../models/BranchCounter");
 const { saveTransactionAuditTrail } = require("../../library/update_functions");
 const BranchTransactionCounter = require("../../models/BranchTransactionCounter");
 const CreditMemo = require("../../models/CreditMemo");
-const { getStatementOfAccount } = require("../../library/report_functions");
+const {
+  getStatementOfAccount,
+  getSalesReport,
+} = require("../../library/report_functions");
 
 const Model = DeliveryReceipt;
 const ObjectId = mongoose.Types.ObjectId;
@@ -278,6 +281,32 @@ router.post("/statement-of-account", async (req, res) => {
   });
 
   return res.json(_records);
+});
+
+router.post("/cash-sales-report", async (req, res) => {
+  const { period_covered, account, branch } = req.body;
+
+  const records = await getSalesReport({
+    period_covered,
+    account,
+    branch,
+    payment_type: PAYMENT_TYPE_CASH,
+  });
+
+  return res.json(records);
+});
+
+router.post("/charge-sales-report", async (req, res) => {
+  const { period_covered, account, branch } = req.body;
+
+  const records = await getSalesReport({
+    period_covered,
+    account,
+    branch,
+    payment_type: PAYMENT_TYPE_CHARGE,
+  });
+
+  return res.json(records);
 });
 
 router.post("/customer-accounts", (req, res) => {

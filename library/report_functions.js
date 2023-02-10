@@ -899,3 +899,45 @@ module.exports.getStatementOfAccount = ({ date, account, branch }) => {
       });
   });
 };
+
+module.exports.getSalesReport = ({
+  period_covered,
+  account,
+  branch,
+  payment_type,
+}) => {
+  return new Promise((resolve, reject) => {
+    DeliveryReceipt.aggregate([
+      {
+        $match: {
+          date: {
+            $gte: moment(period_covered?.[0]).startOf("day").toDate(),
+            $lte: moment(period_covered?.[1]).endOf("day").toDate(),
+          },
+          "status.approval_status": {
+            $nin: [CANCELLED],
+          },
+          ...(account?._id && {
+            "account._id": ObjectId(account._id),
+          }),
+          ...(branch?._id && {
+            "branch._id": ObjectId(branch._id),
+          }),
+        },
+      },
+      {
+        $sort: {
+          date: 1,
+        },
+      },
+    ])
+      .allowDiskUse(true)
+      .then((records) => {
+        // console.log(records);
+        return resolve(records);
+      })
+      .catch((err) => {
+        return reject(err);
+      });
+  });
+};
