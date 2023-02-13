@@ -929,6 +929,9 @@ module.exports.getSalesReport = ({
           ...(branch?._id && {
             "branch._id": ObjectId(branch._id),
           }),
+          ...(payment_type && {
+            payment_type,
+          }),
         },
       },
       {
