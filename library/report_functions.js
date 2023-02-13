@@ -936,7 +936,7 @@ module.exports.getSalesReport = ({
       },
       {
         $sort: {
-          date: 1,
+          dr_no: 1,
         },
       },
     ])
