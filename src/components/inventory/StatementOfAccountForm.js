@@ -79,7 +79,7 @@ export default function StatementOfAccountForm() {
       width: 100,
       render: (date, record) => (
         <span>
-          {record.footer !== 1 && date && moment(date).format("M/D/YY")}
+          {record.footer !== 1 && date && moment(date).format("M/D/YYYY")}
         </span>
       ),
     },
@@ -95,7 +95,7 @@ export default function StatementOfAccountForm() {
       width: 100,
       render: (date, record) => (
         <span>
-          {record.footer !== 1 && date && moment(date).format("M/D/YY")}
+          {record.footer !== 1 && date && moment(date).format("M/D/YYYY")}
         </span>
       ),
     },
@@ -395,14 +395,12 @@ export default function StatementOfAccountForm() {
                     <Row>
                       <Col span={8}>Prepared By:</Col>
                       <Col span={14} className="b-b-1">
-                        &nbsp;
+                        {auth?.user?.name || ""}
                       </Col>
                     </Row>
                     <Row>
-                      <Col span={8}>Checked By:</Col>
-                      <Col span={14} className="b-b-1">
-                        &nbsp;
-                      </Col>
+                      <Col span={8}>&nbsp;</Col>
+                      <Col span={14}>&nbsp;</Col>
                     </Row>
                     <Row>
                       <Col span={8}>Approved By:</Col>
@@ -410,7 +408,11 @@ export default function StatementOfAccountForm() {
                         &nbsp;
                       </Col>
                     </Row>
-                    <Row className="m-t-1">
+                    <Row>
+                      <Col span={8}>&nbsp;</Col>
+                      <Col span={14}>&nbsp;</Col>
+                    </Row>
+                    <Row>
                       <Col span={8}>Received By:</Col>
                       <Col span={10} className="b-b-1">
                         &nbsp;
