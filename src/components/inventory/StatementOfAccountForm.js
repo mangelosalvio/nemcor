@@ -253,17 +253,17 @@ export default function StatementOfAccountForm() {
             return (
               <div className="page-break-after">
                 <div className="has-text-centered">
-                  {record.items?.[0]?.branch?.company?.logo && (
+                  {state?.branch?.company?.logo && (
                     <div className="checkout-image">
                       <img
-                        src={`/public/images/${record.items?.[0]?.branch?.company?.logo?.filename}`}
+                        src={`/public/images/${state?.branch?.company?.logo?.filename}`}
                         style={{ height: "60px" }}
                       />
                     </div>
                   )}
                   {/* {record?.items?.[0]?.branch?.company?.name} <br /> */}
                   <span className="has-text-weight-bold">
-                    {record?.items?.[0]?.branch?.address}
+                    {state?.branch?.address}
                   </span>{" "}
                   <br />
                 </div>

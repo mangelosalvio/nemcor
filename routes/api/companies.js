@@ -13,6 +13,7 @@ const Branch = require("../../models/Branch");
 const Payroll = require("../../models/Payroll");
 const Attendance = require("../../models/Attendance");
 const DeliveryReceipt = require("../../models/DeliveryReceipt");
+const User = require("../../models/User");
 
 const Model = Company;
 const ObjectId = mongoose.Types.ObjectId;
@@ -199,6 +200,23 @@ router.post("/:id/upload", upload.single("file"), async (req, res) => {
     }
   ).exec();
 
+  //update delivery receipts
+  await User.updateMany(
+    { "branches.company._id": mongoose.Types.ObjectId(req.params.id) },
+    {
+      $set: {
+        "branches.$[elem].company.logo": logo,
+      },
+    },
+    {
+      arrayFilters: [
+        {
+          "elem.company._id": ObjectId(req.params.id),
+        },
+      ],
+    }
+  ).exec();
+
   return res.json({ success: 1 });
 });
 
@@ -239,6 +257,34 @@ router.post("/:id", (req, res) => {
         .save()
         .then(async (record) => {
           const _record = { ...record.toObject() };
+
+          const logo = record.logo;
+          //update delivery receipts
+          await DeliveryReceipt.updateMany(
+            { "branch.company._id": mongoose.Types.ObjectId(req.params.id) },
+            {
+              $set: {
+                "branch.company.logo": logo,
+              },
+            }
+          ).exec();
+
+          //update delivery receipts
+          await User.updateMany(
+            { "branches.company._id": mongoose.Types.ObjectId(req.params.id) },
+            {
+              $set: {
+                "branches.$[elem].company.logo": logo,
+              },
+            },
+            {
+              arrayFilters: [
+                {
+                  "elem.company._id": ObjectId(req.params.id),
+                },
+              ],
+            }
+          ).exec();
 
           return res.json(record);
         })
