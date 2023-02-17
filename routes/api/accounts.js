@@ -175,7 +175,7 @@ router.post("/paginate", (req, res) => {
 
   const form_data = {
     ...(!isEmpty(req.body.s) && {
-      account: {
+      name: {
         $regex: new RegExp(req.body.s, "i"),
       },
     }),
@@ -186,7 +186,7 @@ router.post("/paginate", (req, res) => {
 
   Model.paginate(form_data, {
     sort: {
-      account: 1,
+      name: 1,
     },
     page,
     limit: req.body?.page_size || 10,

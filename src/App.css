@@ -945,3 +945,18 @@ table.sales-report-table th {
 .sales-report-table .footer th {
   border-top: 3px double #000 !important;
 }
+
+.soa * {
+  font-size: 16px;
+}
+.soa table {
+  border-collapse: collapse;
+}
+.soa table td,
+.soa table th {
+  border: 1px solid #000;
+}
+
+.b-1 {
+  border: 1px solid #000;
+}

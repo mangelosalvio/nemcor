@@ -95,7 +95,7 @@ const transaction_counter = {
   key: "dr_no",
 };
 
-const date_fields = ["date", "due_date"];
+const date_fields = ["date", "due_date", "invoice_date"];
 
 export default function DeliveryReceiptForm({ payment_type }) {
   const params = useParams();
@@ -164,8 +164,9 @@ export default function DeliveryReceiptForm({ payment_type }) {
       render: (date) => moment(date).format("MM/DD/YYYY"),
     },
     {
-      title: "EXT SI",
-      dataIndex: "external_si_reference",
+      title: "Invoice Date",
+      dataIndex: "invoice_date",
+      render: (date) => date && moment(date).format("MM/DD/YYYY"),
     },
     {
       title: "Ref",
@@ -1158,14 +1159,29 @@ export default function DeliveryReceiptForm({ payment_type }) {
                   formItemLayout={smallFormItemLayout}
                 />
               </Col>
+              <Col span={12}>
+                <DatePickerFieldGroup
+                  label="Invoice Date"
+                  name="invoice_date"
+                  value={state.invoice_date || null}
+                  onChange={(value) => {
+                    setState((prevState) => ({
+                      ...prevState,
+                      invoice_date: value,
+                    }));
+                  }}
+                  error={errors.invoice_date}
+                  formItemLayout={smallFormItemLayout}
+                />
+              </Col>
             </Row>
             <Row>
               <Col span={12}>
                 <TextFieldGroup
-                  label="Ext SI"
-                  name="external_si_reference"
-                  value={state.external_si_reference}
-                  error={errors.external_si_reference}
+                  label="Reference"
+                  name="reference"
+                  value={state.reference}
+                  error={errors.reference}
                   onChange={(e) => {
                     onChange({
                       key: e.target.name,
@@ -1178,10 +1194,10 @@ export default function DeliveryReceiptForm({ payment_type }) {
               </Col>
               <Col span={12}>
                 <TextFieldGroup
-                  label="Reference"
-                  name="reference"
-                  value={state.reference}
-                  error={errors.reference}
+                  label="PO & DR Notes"
+                  name="po_notes"
+                  value={state.po_notes}
+                  error={errors.po_notes}
                   onChange={(e) => {
                     onChange({
                       key: e.target.name,

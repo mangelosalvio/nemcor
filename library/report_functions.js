@@ -857,6 +857,13 @@ module.exports.getStatementOfAccount = ({
   return new Promise((resolve, reject) => {
     DeliveryReceipt.aggregate([
       {
+        $addFields: {
+          date: {
+            $ifNull: ["$invoice_date", "$date"],
+          },
+        },
+      },
+      {
         $match: {
           date: {
             $gte: moment(period_covered?.[0]).startOf("day").toDate(),
@@ -876,6 +883,21 @@ module.exports.getStatementOfAccount = ({
       {
         $sort: {
           date: 1,
+        },
+      },
+      {
+        $lookup: {
+          from: "accounts",
+          localField: "account._id",
+          foreignField: "_id",
+          as: "account",
+        },
+      },
+      {
+        $addFields: {
+          account: {
+            $arrayElemAt: ["$account", 0],
+          },
         },
       },
       {
@@ -934,6 +956,21 @@ module.exports.getSalesReport = ({
           }),
         },
       },
+      // {
+      //   $lookup: {
+      //     from: "accounts",
+      //     localField: "_id",
+      //     foreignField: "account._id",
+      //     as: "account",
+      //   },
+      // },
+      // {
+      //   $addFields: {
+      //     account: {
+      //       $arrayElemAt: ["$account", 0],
+      //     },
+      //   },
+      // },
       {
         $sort: {
           dr_no: 1,

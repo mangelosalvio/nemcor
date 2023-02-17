@@ -248,39 +248,61 @@ export default function StatementOfAccountForm() {
             </Form.Item>
           </Col>
         </Row>
-        <div ref={report}>
+        <div ref={report} className="soa">
           {records.map((record) => {
             return (
               <div className="page-break-after">
-                <div className="has-text-centered">
-                  {state?.branch?.company?.logo && (
-                    <div className="checkout-image">
-                      <img
-                        src={`/public/images/${state?.branch?.company?.logo?.filename}`}
-                        style={{ height: "60px" }}
-                      />
+                <Row>
+                  <Col span={18}>
+                    <div>
+                      {state?.branch?.company?.logo && (
+                        <div className="checkout-image">
+                          <img
+                            src={`/public/images/${state?.branch?.company?.logo?.filename}`}
+                            style={{ height: "60px" }}
+                          />
+                        </div>
+                      )}
+                      {/* {record?.items?.[0]?.branch?.company?.name} <br /> */}
+                      <div className="has-text-weight-bold">
+                        {state?.branch?.address}
+                      </div>{" "}
+                      <div className="has-text-weight-bold">
+                        {state?.branch?.contact_no}
+                      </div>{" "}
+                      <br />
                     </div>
-                  )}
-                  {/* {record?.items?.[0]?.branch?.company?.name} <br /> */}
-                  <span className="has-text-weight-bold">
-                    {state?.branch?.address}
-                  </span>{" "}
-                  <br />
-                </div>
+                  </Col>
+                  <Col span={6}>
+                    <div className="has-text-right has-text-weight-bold">
+                      STATEMENT OF ACCOUNTS
+                    </div>
+                    <div className="has-text-right">
+                      From:{" "}
+                      {moment(state.period_covered?.[0])?.format("MM/DD/YYYY")}{" "}
+                      To:{" "}
+                      {moment(state.period_covered?.[1])?.format("MM/DD/YYYY")}
+                    </div>
+                  </Col>
+                </Row>
 
-                <div className="has-text-right">
+                {/* <div className="has-text-right">
                   {moment(state.date).format("MM/DD/YYYY")}
-                </div>
+                </div> */}
                 <div>
                   <Row>
-                    <Col span={2}>Account of:</Col>
+                    <Col span={3}>Account of:</Col>
                     <Col span={10} className="has-text-weight-bold">
                       {record.account?.name}
                     </Col>
                   </Row>
                   <Row>
-                    <Col span={2}></Col>
+                    <Col span={3}>Address:</Col>
                     <Col span={10}>{record.account?.address}</Col>
+                  </Row>
+                  <Row>
+                    <Col span={3}>Contact No:</Col>
+                    <Col span={10}>{record.account?.contact_no}</Col>
                   </Row>
                 </div>
 
@@ -288,9 +310,10 @@ export default function StatementOfAccountForm() {
                   <table className="full-width">
                     <thead>
                       <tr>
-                        <th>Del Date</th>
+                        <th>Invoice Date</th>
 
-                        <th>Ref</th>
+                        <th>Reference</th>
+                        <th>PO & DR Notes</th>
                         <th className="has-text-centered">Qty</th>
                         <th>Product</th>
                         <th className="has-text-centered">U/P</th>
@@ -309,6 +332,7 @@ export default function StatementOfAccountForm() {
                                   <td>{moment(dr.date).format("MM/DD/YY")}</td>
 
                                   <td>{dr.reference}</td>
+                                  <td>{dr.po_notes}</td>
                                   <td className="has-text-centered">
                                     {numberFormatInt(item.quantity)}
                                   </td>
@@ -336,6 +360,7 @@ export default function StatementOfAccountForm() {
                                   <td></td>
 
                                   <td></td>
+                                  <td></td>
                                   <td className="has-text-centered">
                                     {numberFormatInt(item.quantity)}
                                   </td>
@@ -348,7 +373,6 @@ export default function StatementOfAccountForm() {
                                   </td>
                                   <td></td>
                                   <td></td>
-                                  <td></td>
                                 </tr>
                               );
                             }
@@ -356,23 +380,70 @@ export default function StatementOfAccountForm() {
                         }
                       })}
                     </tbody>
-                    <tfoot>
-                      <tr>
-                        <th></th>
-                        <th></th>
-                        <th></th>
-                        <th></th>
-                        <th></th>
-                        <th></th>
-                        <th className="has-text-right">Balance</th>
-                        <th className="has-text-right">
-                          {numberFormat(record.balance)}
-                        </th>
-                      </tr>
-                    </tfoot>
                   </table>
                 </div>
-                <div className="signatories-container">
+                <Row>
+                  <Col span={12}>
+                    <Row>
+                      <Col span={8}>Prepared By:</Col>
+                      <Col span={14} className="b-b-1">
+                        &nbsp;
+                      </Col>
+                    </Row>
+                    <Row>
+                      <Col span={8}>Checked By:</Col>
+                      <Col span={14} className="b-b-1">
+                        &nbsp;
+                      </Col>
+                    </Row>
+                    <Row>
+                      <Col span={8}>Approved By:</Col>
+                      <Col span={14} className="b-b-1">
+                        &nbsp;
+                      </Col>
+                    </Row>
+                    <Row className="m-t-1">
+                      <Col span={8}>Received By:</Col>
+                      <Col span={10} className="b-b-1">
+                        &nbsp;
+                      </Col>
+                      <Col span={2}>Date:</Col>
+                      <Col span={4} className="b-b-1">
+                        &nbsp;
+                      </Col>
+                      <Col
+                        offset={8}
+                        span={10}
+                        className="is-italic has-text-centered"
+                        style={{ fontSize: "10px" }}
+                      >
+                        Signature over printed name
+                      </Col>
+                      <Col span={24} className="is-italic">
+                        Received original invoices for payment
+                      </Col>
+                    </Row>
+                  </Col>
+                  <Col span={12}>
+                    <div className="has-text-centered has-text-weight-bold b-1">
+                      SUMMARY OF ACCOUNTS
+                    </div>
+                    <Row>
+                      <Col span={12} className="has-text-right">
+                        Current Due:
+                      </Col>
+                      <Col
+                        span={12}
+                        className="has-text-right has-text-weight-bold"
+                      >
+                        <span style={{ borderBottom: "3px double #000" }}>
+                          {numberFormat(record.balance)}
+                        </span>
+                      </Col>
+                    </Row>
+                  </Col>
+                </Row>
+                {/* <div className="signatories-container">
                   <Row gutter={48}>
                     <Col span={8}>Prepared by</Col>
                     <Col span={8}>Approved by</Col>
@@ -386,10 +457,12 @@ export default function StatementOfAccountForm() {
                       <div className="signatory">&nbsp;</div>
                     </Col>
                     <Col span={8}>
-                      <div className="signatory">&nbsp;</div>
+                      <div className="signatory">
+                        Signature over Printed Name
+                      </div>
                     </Col>
                   </Row>
-                </div>
+                </div> */}
               </div>
             );
           })}
