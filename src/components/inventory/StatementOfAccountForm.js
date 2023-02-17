@@ -331,7 +331,7 @@ export default function StatementOfAccountForm() {
                                 <tr>
                                   <td>{moment(dr.date).format("MM/DD/YY")}</td>
 
-                                  <td>{dr.reference}</td>
+                                  <td className="red">{dr.reference}</td>
                                   <td>{dr.po_notes}</td>
                                   <td className="has-text-centered">
                                     {numberFormatInt(item.quantity)}
@@ -344,11 +344,11 @@ export default function StatementOfAccountForm() {
                                     {numberFormat(item.amount)}
                                   </td>
                                   <td
-                                    className="has-text-centered"
+                                    className="has-text-centered red has-text-weight-bold"
                                     style={{ verticalAlign: "middle" }}
                                     rowSpan={dr.items.length}
                                   >
-                                    {numberFormat(dr.total_amount)}
+                                    <p>{numberFormat(dr.total_amount)}</p>
                                   </td>
                                   <td
                                     className="has-text-centered"
@@ -443,7 +443,13 @@ export default function StatementOfAccountForm() {
                         className=" 
                       has-text-right has-text-weight-bold"
                       >
-                        <span style={{ borderBottom: "3px double #000" }}>
+                        <span
+                          style={{
+                            borderBottom: "3px double #000",
+                            color: "#f00",
+                            fontSize: "18px",
+                          }}
+                        >
                           {numberFormat(record.balance)}
                         </span>
                       </Col>
