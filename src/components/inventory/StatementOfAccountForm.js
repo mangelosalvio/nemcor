@@ -318,8 +318,8 @@ export default function StatementOfAccountForm() {
                         <th>Product</th>
                         <th className="has-text-centered">U/P</th>
                         <th className="has-text-right">Amount</th>
-                        <th className="has-text-right">Total Amount</th>
-                        <th className="has-text-right">Payment Amount</th>
+                        <th className="has-text-centered">Total Amount</th>
+                        <th className="has-text-centered">Payment Amount</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -343,10 +343,18 @@ export default function StatementOfAccountForm() {
                                   <td className="has-text-right">
                                     {numberFormat(item.amount)}
                                   </td>
-                                  <td className="has-text-right">
+                                  <td
+                                    className="has-text-centered"
+                                    style={{ verticalAlign: "middle" }}
+                                    rowSpan={dr.items.length}
+                                  >
                                     {numberFormat(dr.total_amount)}
                                   </td>
-                                  <td className="has-text-right">
+                                  <td
+                                    className="has-text-centered"
+                                    style={{ verticalAlign: "middle" }}
+                                    rowSpan={dr.items.length}
+                                  >
                                     {numberFormat(dr.total_payment_amount)}
                                   </td>
                                   {/* <td className="has-text-centered">
@@ -371,8 +379,6 @@ export default function StatementOfAccountForm() {
                                   <td className="has-text-right">
                                     {numberFormat(item.amount)}
                                   </td>
-                                  <td></td>
-                                  <td></td>
                                 </tr>
                               );
                             }
@@ -434,7 +440,8 @@ export default function StatementOfAccountForm() {
                       </Col>
                       <Col
                         span={12}
-                        className="has-text-right has-text-weight-bold"
+                        className=" 
+                      has-text-right has-text-weight-bold"
                       >
                         <span style={{ borderBottom: "3px double #000" }}>
                           {numberFormat(record.balance)}
