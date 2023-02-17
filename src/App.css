@@ -917,18 +917,6 @@ div.first-page.payroll-check-voucher {
   padding-right: 0.25in;
 }
 
-@media print {
-  div {
-    background-color: #fff !important;
-  }
-  .report-container {
-    padding: 1rem 3rem;
-  }
-  .print {
-    padding: 1rem;
-    background-color: #fff !important;
-  }
-}
 .tr-head td,
 .tr-footer {
   font-weight: bold;
@@ -963,4 +951,25 @@ table.sales-report-table th {
 
 .red {
   color: red;
+}
+
+.print .red {
+  color: red !important;
+}
+
+@media print {
+  div {
+    background-color: #fff !important;
+  }
+  .report-container {
+    padding: 1rem 3rem;
+  }
+  .print {
+    padding: 1rem;
+    background-color: #fff !important;
+  }
+
+  .red {
+    color: red !important;
+  }
 }

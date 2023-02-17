@@ -344,11 +344,13 @@ export default function StatementOfAccountForm() {
                                     {numberFormat(item.amount)}
                                   </td>
                                   <td
-                                    className="has-text-centered red has-text-weight-bold"
+                                    className="has-text-centered  has-text-weight-bold"
                                     style={{ verticalAlign: "middle" }}
                                     rowSpan={dr.items.length}
                                   >
-                                    <p>{numberFormat(dr.total_amount)}</p>
+                                    <span className="red">
+                                      {numberFormat(dr.total_amount)}
+                                    </span>
                                   </td>
                                   <td
                                     className="has-text-centered"
@@ -444,9 +446,9 @@ export default function StatementOfAccountForm() {
                       has-text-right has-text-weight-bold"
                       >
                         <span
+                          className="red"
                           style={{
                             borderBottom: "3px double #000",
-                            color: "#f00",
                             fontSize: "18px",
                           }}
                         >
