@@ -743,7 +743,7 @@ module.exports.adjustActualCount = ({ _id }) => {
       .toDate();
 
     const inventory_list = await getBranchInventoryBalanceList({
-      date: application_date,
+      date: moment(application_date).subtract({ day: 1 }),
       branch: record.branch,
       stock_ids,
     });

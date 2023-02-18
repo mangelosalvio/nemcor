@@ -435,9 +435,9 @@ export default function StatementOfAccountForm() {
                     </Row>
                   </Col>
                   <Col span={12}>
-                    <div className="has-text-centered has-text-weight-bold b-1">
+                    {/* <div className="has-text-centered has-text-weight-bold b-1">
                       SUMMARY OF ACCOUNTS
-                    </div>
+                    </div> */}
                     <Row>
                       <Col span={12} className="has-text-right">
                         Current Due:
