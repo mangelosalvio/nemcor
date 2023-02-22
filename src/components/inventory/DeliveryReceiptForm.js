@@ -1436,6 +1436,7 @@ export default function DeliveryReceiptForm({ payment_type }) {
                   setTotalRecords,
                   setCurrentPage,
                   setErrors,
+                  advance_search: { ...search_state },
                 });
               },
               total: total_records,
