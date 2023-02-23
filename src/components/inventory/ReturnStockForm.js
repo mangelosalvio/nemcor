@@ -700,6 +700,7 @@ export default function ReturnStockForm({}) {
                 setErrors,
                 setState,
                 date_fields,
+                setLoading,
               });
             }}
             initialValues={initialValues}

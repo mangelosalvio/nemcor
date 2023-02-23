@@ -668,6 +668,7 @@ export default function InventoryAdjustmentForm({}) {
                 setErrors,
                 setState,
                 date_fields,
+                setLoading,
               });
             }}
             initialValues={initialValues}

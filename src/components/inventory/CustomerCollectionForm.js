@@ -1124,6 +1124,7 @@ export default function CustomerCollectionForm() {
                 setErrors,
                 setState,
                 date_fields,
+                setLoading,
               });
             }}
             initialValues={initialValues}

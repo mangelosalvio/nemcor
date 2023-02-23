@@ -17,6 +17,7 @@ import {
   PageHeader,
   Button,
   DatePicker,
+  Checkbox,
 } from "antd";
 
 import {
@@ -353,6 +354,33 @@ export default function DeliveryReceiptForm({ payment_type }) {
       render: (value, record, index) => (
         <span>{`${numberFormat(record.amount)}`}</span>
       ),
+    },
+    {
+      title: "Damaged",
+      dataIndex: ["is_damaged"],
+      width: 80,
+      align: "center",
+      render: (checked, record, index) =>
+        record.footer !== 1 && (
+          <Checkbox
+            disabled={record.quantity > 0}
+            name="is_damaged"
+            checked={checked}
+            onChange={(e) => {
+              const target = e.target;
+              const items = [...state.items];
+
+              items[index] = {
+                ...items[index],
+                [target.name]: target.checked,
+              };
+              setState((prevState) => ({
+                ...prevState,
+                items,
+              }));
+            }}
+          />
+        ),
     },
     {
       title: "",
@@ -1012,6 +1040,7 @@ export default function DeliveryReceiptForm({ payment_type }) {
                 setErrors,
                 setState,
                 date_fields,
+                setLoading,
               });
             }}
             initialValues={initialValues}

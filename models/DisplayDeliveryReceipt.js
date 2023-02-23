@@ -34,6 +34,7 @@ const TableSchema = new Schema(
         quantity: Number,
         price: Number,
         amount: Number,
+        is_damaged: Boolean, //if checked, do not add to inventory
       },
     ],
     logs: [

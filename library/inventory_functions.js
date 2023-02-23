@@ -234,6 +234,9 @@ module.exports.getBranchInventoryBalance = ({ stock, date, branch }) => {
             {
               $match: {
                 "items.stock._id": ObjectId(stock._id),
+                "items.is_damaged": {
+                  $ne: true,
+                },
               },
             },
             {
@@ -635,6 +638,9 @@ module.exports.getBranchStockCard = ({
             {
               $match: {
                 "items.stock._id": ObjectId(stock._id),
+                "items.is_damaged": {
+                  $ne: true,
+                },
               },
             },
             {
@@ -1086,6 +1092,9 @@ module.exports.getBranchInventoryBalanceList = ({
                     $in: _stock_ids,
                   },
                 }),
+                "items.is_damaged": {
+                  $ne: true,
+                },
               },
             },
             {

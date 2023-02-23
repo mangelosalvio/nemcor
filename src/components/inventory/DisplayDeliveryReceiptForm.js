@@ -719,6 +719,7 @@ export default function DisplayDeliveryReceiptForm({}) {
                 setErrors,
                 setState,
                 date_fields,
+                setLoading,
               });
             }}
             initialValues={initialValues}

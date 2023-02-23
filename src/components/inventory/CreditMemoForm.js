@@ -523,6 +523,7 @@ export default function CreditMemoForm({}) {
                 setErrors,
                 setState,
                 date_fields,
+                setLoading,
               });
             }}
             initialValues={initialValues}

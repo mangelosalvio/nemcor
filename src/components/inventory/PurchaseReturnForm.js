@@ -636,6 +636,7 @@ export default function PurchaseReturnForm({}) {
                 setErrors,
                 setState,
                 date_fields,
+                setLoading,
               });
             }}
             initialValues={initialValues}
