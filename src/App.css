@@ -975,6 +975,7 @@ table.sales-report-table th {
 }
 .collection-table {
   border-collapse: collapse;
+  width: 100%;
 }
 
 .collection-table tr:first-child td {
