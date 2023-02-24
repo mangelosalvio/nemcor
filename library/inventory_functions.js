@@ -254,6 +254,48 @@ module.exports.getBranchInventoryBalance = ({ stock, date, branch }) => {
       },
       {
         $unionWith: {
+          coll: "replacement_receipts",
+          pipeline: [
+            {
+              $match: {
+                deleted: {
+                  $exists: false,
+                },
+                "status.approval_status": {
+                  $ne: CANCELLED,
+                },
+                "branch._id": ObjectId(branch._id),
+                date: {
+                  ...(from_date && {
+                    $gt: from_date,
+                  }),
+                  $lte: to_date,
+                },
+              },
+            },
+            {
+              $unwind: "$items",
+            },
+            {
+              $match: {
+                "items.stock._id": ObjectId(stock._id),
+              },
+            },
+            {
+              $group: {
+                _id: null,
+                quantity: {
+                  $sum: {
+                    $subtract: [0, "$items.quantity"],
+                  },
+                },
+              },
+            },
+          ],
+        },
+      },
+      {
+        $unionWith: {
           coll: "sales_returns",
           pipeline: [
             {
@@ -648,6 +690,56 @@ module.exports.getBranchStockCard = ({
                 transaction: {
                   $concat: ["$payment_type", " ", "Sales Invoice"],
                 },
+              },
+            },
+            {
+              $project: {
+                date: "$date",
+                transaction: "$transaction",
+                reference: "$branch_reference",
+                quantity: {
+                  $subtract: [0, "$items.quantity"],
+                },
+                external_reference: "$reference",
+              },
+            },
+          ],
+        },
+      },
+
+      {
+        $unionWith: {
+          coll: "replacement_receipts",
+          pipeline: [
+            {
+              $match: {
+                deleted: {
+                  $exists: false,
+                },
+                "branch._id": ObjectId(branch._id),
+                "items.stock._id": ObjectId(stock._id),
+                "status.approval_status": {
+                  $ne: CANCELLED,
+                },
+                date: {
+                  ...(from_date && {
+                    $gt: from_date,
+                  }),
+                  $lte: to_date,
+                },
+              },
+            },
+            {
+              $unwind: "$items",
+            },
+            {
+              $match: {
+                "items.stock._id": ObjectId(stock._id),
+              },
+            },
+            {
+              $addFields: {
+                transaction: "Replacement Form",
               },
             },
             {
@@ -1095,6 +1187,60 @@ module.exports.getBranchInventoryBalanceList = ({
                 "items.is_damaged": {
                   $ne: true,
                 },
+              },
+            },
+            {
+              $group: {
+                _id: "$items.stock._id",
+                stock: {
+                  $first: "$items.stock",
+                },
+                quantity: {
+                  $sum: {
+                    $subtract: [0, "$items.quantity"],
+                  },
+                },
+              },
+            },
+          ],
+        },
+      },
+      {
+        $unionWith: {
+          coll: "replacement_receipts",
+          pipeline: [
+            {
+              $match: {
+                deleted: {
+                  $exists: false,
+                },
+                "status.approval_status": {
+                  $ne: CANCELLED,
+                },
+                "branch._id": ObjectId(branch._id),
+                date: {
+                  ...(from_date && {
+                    $gt: from_date,
+                  }),
+                  $lte: to_date,
+                },
+                ...((_stock_ids || [])?.length > 0 && {
+                  "items.stock._id": {
+                    $in: _stock_ids,
+                  },
+                }),
+              },
+            },
+            {
+              $unwind: "$items",
+            },
+            {
+              $match: {
+                ...((_stock_ids || [])?.length > 0 && {
+                  "items.stock._id": {
+                    $in: _stock_ids,
+                  },
+                }),
               },
             },
             {
