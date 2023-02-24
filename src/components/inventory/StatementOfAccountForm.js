@@ -354,10 +354,27 @@ export default function StatementOfAccountForm() {
                                   </td>
                                   <td
                                     className="has-text-centered"
-                                    style={{ verticalAlign: "middle" }}
+                                    style={{ verticalAlign: "top" }}
                                     rowSpan={dr.items.length}
                                   >
-                                    {numberFormat(dr.total_payment_amount)}
+                                    <table className="collection-table">
+                                      {dr.collections.map((col) => {
+                                        return (
+                                          <tr>
+                                            <td>
+                                              {moment(col.date).format(
+                                                "MM/DD/YYYY"
+                                              )}
+                                            </td>
+                                            <td>{col.reference}</td>
+                                            <td>
+                                              {numberFormat(col.payment_amount)}
+                                            </td>
+                                          </tr>
+                                        );
+                                      })}
+                                    </table>
+                                    {/* {numberFormat(dr.total_payment_amount)} */}
                                   </td>
                                   {/* <td className="has-text-centered">
                                     {moment(dr.due_date).format("MM/DD/YY")}

@@ -246,6 +246,7 @@ export default function CustomerCollectionReport() {
                 <th>Check No.</th>
                 <th>Check Date</th>
                 <th>Reference</th>
+                <th className="has-text-centered">Deductions</th>
                 <th className="has-text-right">Amount</th>
               </tr>
             </thead>
@@ -268,6 +269,14 @@ export default function CustomerCollectionReport() {
                     </td>
                     <td />
                     <td />
+                    <td />
+                    <td className="has-text-centered">
+                      {record.deduct_value_remarks}
+                    </td>
+                    <td className="has-text-right">
+                      {record.deduct_value > 0 &&
+                        numberFormat(record.deduct_value)}
+                    </td>
                   </tr>,
                   (record.payments || []).map((item) => {
                     return (
@@ -282,6 +291,7 @@ export default function CustomerCollectionReport() {
                             moment(item.check_date).format("MM/DD/YYYY")}
                         </td>
                         <td>{item.reference}</td>
+                        <td></td>
 
                         <td className="has-text-right">
                           {numberFormat(item.amount)}
@@ -297,15 +307,20 @@ export default function CustomerCollectionReport() {
                     <td></td>
                     <td></td>
                     <td></td>
+                    <td></td>
 
                     <td />
                     <td className="has-text-right">
                       {numberFormat(sumBy(record.payments, (o) => o.amount))}
                     </td>
                   </tr>,
+                  <tr key="space">
+                    <td colSpan={11}>&nbsp;</td>
+                  </tr>,
                 ];
               })}
               <tr className="footer">
+                <th></th>
                 <th></th>
                 <th></th>
                 <th></th>

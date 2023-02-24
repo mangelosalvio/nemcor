@@ -918,9 +918,26 @@ module.exports.getStatementOfAccount = ({
       },
     ])
       .allowDiskUse(true)
-      .then((records) => {
-        // console.log(records);
-        return resolve(records);
+      .then(async (records) => {
+        const _records = await async.mapLimit(records, 10, async (record) => {
+          const items = await async.mapLimit(record.items, 10, async (item) => {
+            const collections = await this.getPaymentReferenceFromDR({
+              _id: item._id,
+            });
+            return {
+              ...item,
+              collections,
+            };
+          });
+
+          return {
+            ...record,
+            items,
+          };
+        });
+
+        console.log("exit");
+        return resolve(_records);
       })
       .catch((err) => {
         return reject(err);
@@ -1022,5 +1039,45 @@ module.exports.getCollectionReport = ({ period_covered, account, branch }) => {
       .catch((err) => {
         return reject(err);
       });
+  });
+};
+
+module.exports.getPaymentReferenceFromDR = ({ _id }) => {
+  return new Promise((resolve, reject) => {
+    CustomerCollection.aggregate([
+      {
+        $match: {
+          "status.approval_status": {
+            $ne: CANCELLED,
+          },
+          "delivery_items._id": ObjectId(_id),
+        },
+      },
+      {
+        $unwind: "$delivery_items",
+      },
+      {
+        $match: {
+          "delivery_items._id": ObjectId(_id),
+        },
+      },
+      {
+        $addFields: {
+          "delivery_items.date": "$date",
+          "delivery_items.reference": "$reference",
+        },
+      },
+      {
+        $replaceRoot: {
+          newRoot: "$delivery_items",
+        },
+      },
+    ])
+      .allowDiskUse(true)
+      .then((records) => {
+        // console.log(records);
+        return resolve(records);
+      })
+      .catch((err) => reject(err));
   });
 };

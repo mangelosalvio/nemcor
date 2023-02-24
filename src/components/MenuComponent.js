@@ -115,6 +115,10 @@ const MenuComponent = ({ component: Component, auth, logoutUser, ...rest }) => {
               />
               <MenuPermission to="/cash-sales" label="Cash Sales" />
               <MenuPermission to="/charge-sales" label="Charge Sales" />
+              <MenuPermission
+                to="/replacement-receipts"
+                label="Replacement Form"
+              />
               <MenuPermission to="/sales-returns" label="Return Stock" />
               <MenuPermission to="/credit-memos" label="Credit Memos" />
               <MenuPermission

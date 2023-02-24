@@ -60,6 +60,7 @@ import StatementOfAccountForm from "../components/inventory/StatementOfAccountFo
 import CashSalesReport from "../components/inventory/CashSalesReport";
 import ChargeSalesReport from "../components/inventory/ChargeSalesReport";
 import CustomerCollectionReport from "../components/inventory/CustomerCollectionReport";
+import ReplacementForm from "../components/inventory/ReplacementForm";
 
 const AppRouter = () => (
   <div className="is-full-height">
@@ -236,6 +237,16 @@ const AppRouter = () => (
           ></Route>
         </Route>
         <Route
+          path="/replacement-receipts"
+          element={<PrivateRoute />}
+          exact={true}
+        >
+          <Route
+            path=""
+            element={<MenuComponent component={ReplacementForm} />}
+          ></Route>
+        </Route>
+        <Route
           path="/display-delivery-receipts"
           element={<PrivateRoute />}
           exact={true}
@@ -307,6 +318,7 @@ const AppRouter = () => (
             element={<MenuComponent component={ChargeSalesReport} />}
           ></Route>
         </Route>
+
         {/* <Route path="/cash-sales" element={<PrivateRoute />} exact={true}>
           <Route
             path=""

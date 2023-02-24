@@ -16,6 +16,8 @@ import {
   Collapse,
   PageHeader,
   Button,
+  DatePicker,
+  Checkbox,
 } from "antd";
 
 import {
@@ -40,7 +42,7 @@ import moment from "moment";
 import SelectFieldGroup from "../../commons/SelectFieldGroup";
 import SupplierFormModal from "../modals/SupplierFormModal";
 import {
-  onSupplierSearch,
+  onCustomerSearch,
   onStockSearch,
   addKeysToArray,
   onWarehouseSearch,
@@ -63,17 +65,23 @@ import {
   ACCESS_ADD,
   ACCESS_ADVANCE_SEARCH,
   ACCESS_OPEN,
+  ACCESS_PRICE_CHANGE,
   CANCELLED,
   OPEN,
+  PAYMENT_TYPE_CASH,
+  PAYMENT_TYPE_CHARGE,
   STATUS_CLOSED,
 } from "../../utils/constants";
 import RangeDatePickerFieldGroup from "../../commons/RangeDatePickerFieldGroup";
 import SimpleSelectFieldGroup from "../../commons/SimpleSelectFieldGroup";
 import AccountFormModal from "../modals/AccountFormModal";
+import ItemsField from "../../commons/ItemsField";
+import computeItemDetails from "../../utils/computeItemDetails";
+import ItemsNoPriceField from "../../commons/ItemsNoPriceField";
 const { Content } = Layout;
 const { Panel } = Collapse;
-const url = "/api/stock-transfers/";
-const title = "Stock Transfers";
+const url = "/api/replacement-receipts/";
+const title = "Replacement Form";
 
 const initialItemValues = {
   stock: null,
@@ -85,43 +93,13 @@ const initialItemValues = {
 };
 
 const transaction_counter = {
-  label: "ST #",
-  key: "stock_transfer_no",
+  label: "RR #",
+  key: "replacement_no",
 };
 
-const date_fields = ["date", "invoice_date"];
+const date_fields = ["date", "due_date", "invoice_date"];
 
-const onGenerateStockRelease = ({
-  state,
-  user,
-  history,
-  setProcessing,
-  processing,
-}) => {
-  if (processing) return;
-
-  const form_data = {
-    _id: state._id,
-    user,
-  };
-
-  const loading = message.loading("Processing....");
-  setProcessing(true);
-  axios
-    .put(`${url}stock-releasing`, form_data)
-    .then((response) => {
-      setProcessing(false);
-      loading();
-      navigate(`/stock-releasing/${response.data._id}`);
-    })
-    .catch((err) => {
-      loading();
-      setProcessing(false);
-      message.error("There was an error processing your request");
-    });
-};
-
-export default function StockTransferForm({}) {
+export default function ReplacementForm({ payment_type }) {
   const params = useParams();
   const [errors, setErrors] = useState({});
   const [records, setRecords] = useState([]);
@@ -152,7 +130,9 @@ export default function StockTransferForm({}) {
   const stockField = useRef(null);
 
   const navigate = useNavigate();
-  const [search_state, setSearchState] = useState({});
+  const [search_state, setSearchState] = useState({
+    payment_type,
+  });
 
   const initialValues = {
     _id: null,
@@ -177,8 +157,8 @@ export default function StockTransferForm({}) {
 
   const records_column = [
     {
-      title: "ST #",
-      dataIndex: "stock_transfer_no",
+      title: transaction_counter.label,
+      dataIndex: transaction_counter.key,
     },
     {
       title: "Date",
@@ -186,32 +166,24 @@ export default function StockTransferForm({}) {
       render: (date) => moment(date).format("MM/DD/YYYY"),
     },
     {
-      title: "Invoice Date",
+      title: "DR Date",
       dataIndex: "invoice_date",
       render: (date) => date && moment(date).format("MM/DD/YYYY"),
     },
     {
-      title: "Reference",
+      title: "Ref",
       dataIndex: "reference",
     },
     {
-      title: "From Branch",
+      title: "Branch",
       dataIndex: "branch",
-      render: (branch) => `${branch?.company?.company_code}-${branch?.name}`,
+      render: (branch) => `${branch?.company?.name}-${branch?.name}`,
     },
     {
-      title: "To Branch",
-      dataIndex: "to_branch",
-      render: (branch) => `${branch?.company?.company_code}-${branch?.name}`,
+      title: "Account",
+      dataIndex: ["account", "name"],
     },
-    {
-      title: "Driver",
-      dataIndex: ["driver"],
-    },
-    {
-      title: "Plate No.",
-      dataIndex: ["plate_no"],
-    },
+
     {
       title: "Items",
       dataIndex: "items",
@@ -255,8 +227,7 @@ export default function StockTransferForm({}) {
       render: (value, record, index) => (
         <span>
           {record.footer !== 1 &&
-          [undefined, null, OPEN].includes(state.status?.approval_status) &&
-          isEmpty(state.deleted) ? (
+          [undefined, null, OPEN].includes(state.status?.approval_status) ? (
             <Row gutter={8}>
               <Col span={24}>
                 <Input
@@ -270,12 +241,13 @@ export default function StockTransferForm({}) {
                       let items = [...state.items];
                       let item = items[index];
                       const quantity = value;
-                      const amount = round(quantity * item.price);
 
                       items[index] = {
                         ...items[index],
-                        quantity,
-                        amount,
+                        ...computeItemDetails({
+                          ...items[index],
+                          quantity,
+                        }),
                       };
 
                       return {
@@ -294,15 +266,110 @@ export default function StockTransferForm({}) {
         </span>
       ),
     },
+    /* {
+      title: "Price",
+      dataIndex: "price",
+      align: "right",
+      width: 200,
+      render: (value, record, index) => (
+        <span>
+          {record.footer !== 1 &&
+          [undefined, null, OPEN].includes(state.status?.approval_status) &&
+          hasAccess({
+            auth,
+            access: ACCESS_PRICE_CHANGE,
+            location,
+          }) ? (
+            <Row gutter={8}>
+              <Col span={24}>
+                <Input
+                  disabled={
+                    !hasAccess({
+                      auth,
+                      access: ACCESS_PRICE_CHANGE,
+                      location,
+                    })
+                  }
+                  type="number"
+                  step={0.01}
+                  className="has-text-right"
+                  value={record.price}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    setState((prevState) => {
+                      let items = [...state.items];
+                      let item = items[index];
+                      const price = value;
+
+                      items[index] = {
+                        ...items[index],
+                        ...computeItemDetails({
+                          ...items[index],
+                          price,
+                        }),
+                      };
+
+                      return {
+                        ...prevState,
+                        items,
+                      };
+                    });
+                  }}
+                  align="right"
+                />
+              </Col>
+            </Row>
+          ) : (
+            record.footer !== 1 && `${numberFormat(record.price)}`
+          )}
+        </span>
+      ),
+    },
+    {
+      title: "Amount",
+      dataIndex: "amount",
+      align: "right",
+      width: 200,
+      render: (value, record, index) => (
+        <span>{`${numberFormat(record.amount)}`}</span>
+      ),
+    },
+    {
+      title: "Damaged",
+      dataIndex: ["is_damaged"],
+      width: 80,
+      align: "center",
+      render: (checked, record, index) =>
+        record.footer !== 1 && (
+          <Checkbox
+            disabled={record.quantity > 0}
+            name="is_damaged"
+            checked={checked}
+            onChange={(e) => {
+              const target = e.target;
+              const items = [...state.items];
+
+              items[index] = {
+                ...items[index],
+                [target.name]: target.checked,
+              };
+              setState((prevState) => ({
+                ...prevState,
+                items,
+              }));
+            }}
+          />
+        ),
+    }, */
     {
       title: "",
       key: "action",
+      width: 80,
       align: "center",
-      width: 100,
       render: (text, record, index) => (
         <span>
           {record.footer !== 1 &&
-            [undefined, null, OPEN].includes(state.status?.approval_status) && (
+            [undefined, OPEN].includes(state.status?.approval_status) && (
               <span
                 onClick={() =>
                   onDeleteItem({
@@ -319,6 +386,252 @@ export default function StockTransferForm({}) {
       ),
     },
   ];
+
+  const payments_column = [
+    {
+      title: "Payment Method",
+      dataIndex: ["payment_method"],
+      render: (payment_method, record, index) =>
+        record.footer !== 1 && (
+          <SimpleSelectFieldGroup
+            name="payment_method"
+            value={payment_method}
+            onChange={(value) => {
+              let payments = [...state.payments];
+              payments[index] = {
+                ...payments[index],
+                payment_method: value,
+              };
+
+              if (index === (state.payments || []).length - 1) {
+                payments = [...payments, {}];
+              }
+
+              setState((prevState) => ({
+                ...prevState,
+                payments,
+              }));
+            }}
+            error={errors?.approval_status}
+            options={options?.payment_methods || []}
+          />
+        ),
+    },
+
+    {
+      title: "Bank",
+      dataIndex: ["bank"],
+      render: (bank, record, index) =>
+        record.footer !== 1 &&
+        record.payment_method === "CHECK" && (
+          <Input
+            name="bank"
+            value={bank}
+            onChange={(e) => {
+              const target = e.target;
+              let payments = [...state.payments];
+              payments[index] = {
+                ...payments[index],
+                [target.name]: target.value?.toUpperCase(),
+              };
+
+              if (index === (state.payments || []).length - 1) {
+                payments = [...payments, {}];
+              }
+
+              setState((prevState) => ({
+                ...prevState,
+                payments,
+              }));
+            }}
+          />
+        ),
+    },
+    {
+      title: "Check No.",
+      dataIndex: ["check_no"],
+      render: (check_no, record, index) =>
+        record.footer !== 1 &&
+        record.payment_method === "CHECK" && (
+          <Input
+            name="check_no"
+            value={check_no}
+            onChange={(e) => {
+              const target = e.target;
+              let payments = [...state.payments];
+              payments[index] = {
+                ...payments[index],
+                [target.name]: target.value?.toUpperCase(),
+              };
+
+              if (index === (state.payments || []).length - 1) {
+                payments = [...payments, {}];
+              }
+
+              setState((prevState) => ({
+                ...prevState,
+                payments,
+              }));
+            }}
+          />
+        ),
+    },
+    {
+      title: "Check Date",
+      dataIndex: ["check_date"],
+      render: (check_date, record, index) =>
+        record.footer !== 1 &&
+        record.payment_method === "CHECK" && (
+          <DatePicker
+            onChange={(date) => {
+              let payments = [...state.payments];
+              payments[index] = {
+                ...payments[index],
+                check_date: date,
+              };
+
+              if (index === (state.payments || []).length - 1) {
+                payments = [...payments, {}];
+              }
+
+              setState((prevState) => ({
+                ...prevState,
+                payments,
+              }));
+            }}
+            value={check_date ? moment(check_date) : null}
+          />
+        ),
+    },
+
+    {
+      title: "Reference",
+      dataIndex: ["reference"],
+      render: (reference, record, index) =>
+        record.footer !== 1 && (
+          <Input
+            name="reference"
+            value={reference}
+            onChange={(e) => {
+              const target = e.target;
+              let payments = [...state.payments];
+              payments[index] = {
+                ...payments[index],
+                [target.name]: target.value?.toUpperCase(),
+              };
+
+              if (index === (state.payments || []).length - 1) {
+                payments = [...payments, {}];
+              }
+
+              setState((prevState) => ({
+                ...prevState,
+                payments,
+              }));
+            }}
+          />
+        ),
+    },
+
+    {
+      title: "Amount",
+      dataIndex: ["amount"],
+      align: "right",
+      render: (amount, record, index) =>
+        record.footer !== 1 ? (
+          <Input
+            className="has-text-right"
+            type="number"
+            step={0.01}
+            name="amount"
+            value={amount}
+            onChange={(e) => {
+              const target = e.target;
+              let payments = [...state.payments];
+              payments[index] = {
+                ...payments[index],
+                [target.name]: target.value?.toUpperCase(),
+              };
+
+              if (index === (state.payments || []).length - 1) {
+                payments = [...payments, {}];
+              }
+
+              setState((prevState) => ({
+                ...prevState,
+                payments,
+              }));
+            }}
+          />
+        ) : (
+          numberFormat(amount)
+        ),
+    },
+    {
+      title: "",
+      key: "action",
+      width: 80,
+      align: "center",
+      render: (text, record, index) => (
+        <span>
+          {record.footer !== 1 &&
+            [undefined, OPEN].includes(state.status?.approval_status) && (
+              <span
+                onClick={() =>
+                  onDeleteItem({
+                    field: "payments",
+                    index,
+                    setState,
+                  })
+                }
+              >
+                <i className="fas fa-trash-alt"></i>
+              </span>
+            )}
+        </span>
+      ),
+    },
+  ];
+
+  useEffect(() => {
+    axios
+      .get("/api/payment-methods")
+      .then((response) => {
+        if (response.data) {
+          setOptions((prevState) => ({
+            ...prevState,
+            payment_methods: response.data.map((o) => o.name),
+          }));
+        }
+      })
+      .catch((err) => {
+        return message.error("There was an error processing your request");
+      });
+
+    return () => {};
+  }, []);
+
+  useEffect(() => {
+    if ((state.payments || [])?.length <= 0) {
+      setState((prevState) => ({
+        ...prevState,
+        payments: [{}],
+      }));
+    }
+
+    return () => {};
+  }, [state.payments]);
+
+  useEffect(() => {
+    setSearchState((prevState) => {
+      return {
+        ...prevState,
+        payment_type,
+      };
+    });
+
+    return () => {};
+  }, [payment_type]);
 
   useEffect(() => {
     const branch = auth?.user?.branches?.[0] || null;
@@ -364,7 +677,30 @@ export default function StockTransferForm({}) {
     })();
 
     return () => {};
-  }, [search_state.branch]);
+  }, [search_state.branch, search_state.payment_type]);
+
+  useEffect(() => {
+    const total_amount = state.total_amount;
+    const payments = state.payments || [];
+    const total_payment = round(
+      sumBy(
+        payments.filter(
+          (o) => !isEmpty(o.payment_method) && !isEmpty(o.amount)
+        ),
+        (o) => parseFloat(o.amount || 0)
+      )
+    );
+
+    const change = round(total_payment - total_amount);
+    // console.log(total_amount, total_payment);
+
+    setState((prevState) => ({
+      ...prevState,
+      change,
+    }));
+
+    return () => {};
+  }, [state.total_amount, state.payments]);
 
   useEffect(() => {
     setState((prevState) => {
@@ -399,7 +735,12 @@ export default function StockTransferForm({}) {
         record: {
           _id: params.id,
         },
-        setState,
+        setState: (record) => {
+          setState({
+            ...record,
+            payments: [...(record.payments || []), {}],
+          });
+        },
         setErrors,
         setRecords,
         url,
@@ -408,22 +749,6 @@ export default function StockTransferForm({}) {
     }
     return () => {};
   }, []);
-
-  useEffect(() => {
-    const amount = round(
-      round(round(item.case_quantity) * round(item.case_price)) +
-        round(round(item.quantity) * round(item.price))
-    );
-
-    setItem((prevState) => {
-      return {
-        ...prevState,
-        amount,
-      };
-    });
-
-    return () => {};
-  }, [item.case_quantity, item.quantity, item.case_price, item.price]);
 
   const can_edit =
     isEmpty(state.status) || [OPEN].includes(state.status?.approval_status);
@@ -452,7 +777,7 @@ export default function StockTransferForm({}) {
         <div className="column">
           <Breadcrumb style={{ margin: "16px 0" }}>
             <Breadcrumb.Item>Home</Breadcrumb.Item>
-            <Breadcrumb.Item>{title}</Breadcrumb.Item>
+            <Breadcrumb.Item>{payment_type} Replacement Form</Breadcrumb.Item>
           </Breadcrumb>
         </div>
         <div className="column">
@@ -470,6 +795,10 @@ export default function StockTransferForm({}) {
                     setState({
                       ...initialValues,
                       date: moment(),
+                      ...(payment_type === PAYMENT_TYPE_CHARGE && {
+                        due_date: moment(),
+                      }),
+
                       branch: auth.user?.branches?.[0] || null,
                     });
                     setItem(initialItemValues);
@@ -517,7 +846,7 @@ export default function StockTransferForm({}) {
                       </Col>
                       <Col span={8}>
                         <SelectFieldGroup
-                          label="From Branch"
+                          label="Branch"
                           value={
                             search_state.branch &&
                             `${search_state.branch?.company?.name}-${search_state.branch?.name}`
@@ -541,27 +870,24 @@ export default function StockTransferForm({}) {
                       </Col>
                       <Col span={8}>
                         <SelectFieldGroup
-                          label="To Branch"
-                          value={
-                            search_state.to_branch &&
-                            `${search_state.to_branch?.company?.name}-${search_state.to_branch?.name}`
-                          }
-                          onFocus={(value) =>
-                            onBranchSearch({ value: "", options, setOptions })
-                          }
+                          label="Account"
+                          value={search_state.account?.name}
+                          onFocus={() => {
+                            onCustomerSearch({ value: "", setOptions });
+                          }}
                           onSearch={(value) =>
-                            onBranchSearch({ value, options, setOptions })
+                            onCustomerSearch({ value, setOptions })
                           }
                           onChange={(index) => {
-                            const branch = options.branches?.[index] || null;
+                            const account = options.accounts?.[index] || null;
                             setSearchState((prevState) => ({
                               ...prevState,
-                              to_branch: branch,
+                              account,
                             }));
                           }}
                           formItemLayout={smallFormItemLayout}
-                          data={options.branches}
-                          column="display_name"
+                          data={options.accounts}
+                          column="name"
                         />
                       </Col>
                     </Row>
@@ -662,7 +988,9 @@ export default function StockTransferForm({}) {
       <div style={{ background: "#fff", padding: 24 }}>
         <Row>
           <Col span={12}>
-            <span className="module-title">{title}</span>
+            <span className="module-title">
+              {payment_type} Replacement Form
+            </span>
           </Col>
           {/* <Col span={12} className="has-text-right">
             <Button
@@ -680,12 +1008,14 @@ export default function StockTransferForm({}) {
         {isEmpty(records) ? (
           <Form
             onFinish={() => {
-              if ((state.items || []).length <= 0) {
-                return message.error("Item(s) is/are required");
-              }
-
               onSubmit({
-                values: state,
+                values: {
+                  ...state,
+                  payment_type,
+                  payments: state.payments.filter((o) => {
+                    return !isEmpty(o.payment_method) && !isEmpty(o.amount);
+                  }),
+                },
                 auth,
                 url,
                 setErrors,
@@ -717,20 +1047,45 @@ export default function StockTransferForm({}) {
                 </Col>
               </Row>
             )}
-            <DatePickerFieldGroup
-              label="Date"
-              name="date"
-              value={state.date || null}
-              onChange={(value) => {
-                onChange({
-                  key: "date",
-                  value: value,
-                  setState,
-                });
-              }}
-              error={errors.date}
-              formItemLayout={formItemLayout}
-            />
+
+            <Row>
+              <Col span={12}>
+                <DatePickerFieldGroup
+                  label="Date"
+                  name="date"
+                  value={state.date || null}
+                  onChange={(value) => {
+                    setState((prevState) => ({
+                      ...prevState,
+                      date: value,
+                      ...(payment_type === PAYMENT_TYPE_CHARGE && {
+                        due_date: value,
+                      }),
+                    }));
+                  }}
+                  error={errors.date}
+                  formItemLayout={smallFormItemLayout}
+                />
+              </Col>
+              {/* {payment_type === PAYMENT_TYPE_CHARGE && (
+                <Col span={12}>
+                  <DatePickerFieldGroup
+                    label="Due Date"
+                    name="due_date"
+                    value={state.due_date || null}
+                    onChange={(value) => {
+                      onChange({
+                        key: "due_date",
+                        value: value,
+                        setState,
+                      });
+                    }}
+                    error={errors.due_date}
+                    formItemLayout={smallFormItemLayout}
+                  />
+                </Col>
+              )} */}
+            </Row>
 
             <Row>
               <Col span={12}>
@@ -756,74 +1111,58 @@ export default function StockTransferForm({}) {
                     };
                   })}
                   column="display_name"
+                  error={errors.branch}
                 />
               </Col>
               <Col span={12}>
                 <SelectFieldGroup
                   disabled={(state.items || []).length > 0}
-                  label="To Branch"
-                  value={
-                    state.to_branch &&
-                    `${state.to_branch?.company?.name}-${state.to_branch?.name}`
-                  }
-                  onFocus={(value) =>
-                    onBranchSearch({ value: "", options, setOptions })
-                  }
-                  onSearch={(value) =>
-                    onBranchSearch({ value, options, setOptions })
-                  }
+                  label="Account"
+                  value={state.account?.name}
+                  onFocus={() => {
+                    onCustomerSearch({ value: "", setOptions });
+                  }}
+                  onSearch={(value) => onCustomerSearch({ value, setOptions })}
                   onChange={(index) => {
-                    const branch = options.branches?.[index] || null;
+                    const account = options.accounts?.[index] || null;
                     setState((prevState) => ({
                       ...prevState,
-                      to_branch: branch,
+                      account,
                     }));
                   }}
                   formItemLayout={smallFormItemLayout}
-                  data={options.branches}
-                  column="display_name"
+                  data={options.accounts}
+                  column="name"
+                  error={errors.account}
+                  onAddItem={() => accountFormModal.current.open()}
                 />
               </Col>
             </Row>
+            <Row>
+              <Col span={12}>
+                <TextFieldGroup
+                  readOnly
+                  label="Address"
+                  name="address"
+                  value={state.account?.address}
+                  error={errors.address}
+                  formItemLayout={smallFormItemLayout}
+                />
+              </Col>
+              <Col span={12}>
+                <TextFieldGroup
+                  readOnly
+                  label="TIN"
+                  name="tin"
+                  value={state.account?.tin}
+                  error={errors.tin}
+                  formItemLayout={smallFormItemLayout}
+                />
+              </Col>
 
-            <Row>
-              <Col span={12}>
-                <TextFieldGroup
-                  label="Driver"
-                  name="driver"
-                  value={state.driver}
-                  error={errors.driver}
-                  onChange={(e) => {
-                    onChange({
-                      key: e.target.name,
-                      value: e.target.value,
-                      setState,
-                    });
-                  }}
-                  formItemLayout={smallFormItemLayout}
-                />
-              </Col>
-              <Col span={12}>
-                <TextFieldGroup
-                  label="Plate No."
-                  name="plate_no"
-                  value={state.plate_no}
-                  error={errors.plate_no}
-                  onChange={(e) => {
-                    onChange({
-                      key: e.target.name,
-                      value: e.target.value,
-                      setState,
-                    });
-                  }}
-                  formItemLayout={smallFormItemLayout}
-                />
-              </Col>
-            </Row>
-            <Row>
               <Col span={12}>
                 <DatePickerFieldGroup
-                  label="Invoice Date"
+                  label="DR Date"
                   name="invoice_date"
                   value={state.invoice_date || null}
                   onChange={(value) => {
@@ -890,104 +1229,31 @@ export default function StockTransferForm({}) {
                 readOnly
               />
             )}
-            {isEmpty(state.status) &&
-              isEmpty(state.deleted) && [
-                <Divider orientation="left" key="divider">
-                  Items
-                </Divider>,
-                <Row key="form" className="ant-form-vertical" gutter="4">
-                  <Col span={12}>
-                    <SelectFieldGroup
-                      key="1"
-                      inputRef={stockField}
-                      label="Item"
-                      value={item.stock?.name}
-                      onSearch={(value) =>
-                        onStockSearch({ value, options, setOptions })
-                      }
-                      onChange={(index) => {
-                        const stock = options.stocks?.[index] || null;
-                        setItem({
-                          ...item,
-                          stock,
-                          price: stock?.price || "",
-                        });
-                        quanttiyField.current.focus();
-                      }}
-                      error={errors.stock?.name}
-                      formItemLayout={null}
-                      data={options.stocks}
-                      column="display_name"
-                    />
-                  </Col>
-                  <Col span={4}>
-                    <TextFieldGroup
-                      type="number"
-                      label="Qty"
-                      value={item.quantity}
-                      onChange={(e) => {
-                        setItem({
-                          ...item,
-                          quantity: parseFloat(e.target.value),
-                        });
-                      }}
-                      error={errors.item && errors.item.quantity}
-                      formItemLayout={null}
-                      inputRef={quanttiyField}
-                      onPressEnter={(e) => {
-                        e.preventDefault();
-                        addItemButton.current.click();
-                      }}
-                    />
-                  </Col>
-
-                  <Col
-                    span={2}
-                    className="is-flex align-items-center add-button-height"
-                  >
-                    <input
-                      type="button"
-                      ref={addItemButton}
-                      className="button is-primary "
-                      onClick={() => {
-                        setState((prevState) => ({
-                          ...prevState,
-                          items: [
-                            ...prevState.items,
-                            {
-                              ...item,
-                              quantity: !isEmpty(item.quantity)
-                                ? parseFloat(item.quantity)
-                                : 0,
-                              case_quantity: !isEmpty(item.case_quantity)
-                                ? parseFloat(item.case_quantity)
-                                : 0,
-                              price: !isEmpty(item.price)
-                                ? parseFloat(item.price)
-                                : 0,
-                              case_price: !isEmpty(item.case_price)
-                                ? parseFloat(item.case_price)
-                                : 0,
-                            },
-                          ],
-                        }));
-                        setItem(initialItemValues);
-                        stockField.current.focus();
-                      }}
-                      value="Add"
-                    />
-                  </Col>
-                </Row>,
-              ]}
+            {[undefined, null, OPEN].includes(
+              state.status?.approval_status
+            ) && (
+              <ItemsNoPriceField
+                item={item}
+                setItem={setItem}
+                state={state}
+                setState={setState}
+                items_key="items"
+                options={options}
+                setOptions={setOptions}
+                errors={errors}
+                initialItemValues={initialItemValues}
+                has_discount={false}
+                has_open_quantity={false}
+                auth={auth}
+              />
+            )}
             <Table
               dataSource={addKeysToArray([
                 ...state.items,
                 {
                   footer: 1,
                   quantity: sumBy(state.items, (o) => round(o.quantity)),
-                  case_quantity: sumBy(state.items, (o) =>
-                    round(o.case_quantity)
-                  ),
+
                   amount: sumBy(state.items, (o) => round(o.amount)),
                 },
               ])}
@@ -1051,7 +1317,12 @@ export default function StockTransferForm({}) {
                   cb: () => {
                     edit({
                       record: state,
-                      setState,
+                      setState: (record) => {
+                        setState({
+                          ...record,
+                          payments: [...(record.payments || []), {}],
+                        });
+                      },
                       setErrors,
                       setRecords,
                       url,
@@ -1083,7 +1354,12 @@ export default function StockTransferForm({}) {
                   ) {
                     edit({
                       record,
-                      setState,
+                      setState: (record) => {
+                        setState({
+                          ...record,
+                          payments: [...(record.payments || []), {}],
+                        });
+                      },
                       setErrors,
                       setRecords,
                       url,
@@ -1107,6 +1383,7 @@ export default function StockTransferForm({}) {
                   setTotalRecords,
                   setCurrentPage,
                   setErrors,
+                  advance_search: { ...search_state },
                 });
               },
               total: total_records,

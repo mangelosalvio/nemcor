@@ -6,6 +6,9 @@ module.exports = function validateInput(data) {
   if (isEmpty(data.date)) {
     errors.date = "Date is required";
   }
+  if (isEmpty(data.invoice_date)) {
+    errors.invoice_date = "Invoice Date is required";
+  }
   if (isEmpty(data.branch)) {
     errors.branch = "Branch is required";
   }

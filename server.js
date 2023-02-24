@@ -101,6 +101,10 @@ app.use("/api/branches", require("./routes/api/branches"));
 app.use("/api/claim-types", require("./routes/api/claim-types"));
 
 app.use("/api/delivery-receipts", require("./routes/api/delivery-receipts"));
+app.use(
+  "/api/replacement-receipts",
+  require("./routes/api/replacement-receipts")
+);
 app.use("/api/purchase-orders", require("./routes/api/purchase_orders"));
 app.use(
   "/api/purchase-orders-cement",

@@ -9,6 +9,7 @@ const StockTransferSchema = new Schema(
     stock_transfer_no: Number,
     branch_reference: String,
     date: Date,
+    invoice_date: Date,
     remarks: String,
     reference: String,
     branch: {

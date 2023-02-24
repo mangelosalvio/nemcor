@@ -973,3 +973,16 @@ table.sales-report-table th {
     color: red !important;
   }
 }
+.collection-table {
+  border-collapse: collapse;
+}
+
+.collection-table tr:first-child td {
+  border-top: none;
+}
+.collection-table td:first-child {
+  border-left: none;
+}
+.collection-table td:last-child {
+  border-right: none;
+}
