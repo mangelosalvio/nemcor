@@ -189,6 +189,10 @@ const MenuComponent = ({ component: Component, auth, logoutUser, ...rest }) => {
                 to="/reports/payroll-check-voucher-form"
                 label="Payslip"
               />
+              <MenuPermission
+                to="/reports/leaves-availed-report"
+                label="Leaves Availed Report"
+              />
             </SubMenu>
 
             {/* <MenuPermission

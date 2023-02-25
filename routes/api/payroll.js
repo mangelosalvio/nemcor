@@ -1078,6 +1078,86 @@ router.post("/attendance-summary", async (req, res) => {
   });
 });
 
+router.post("/leave-availment-report", async (req, res) => {
+  const period_covered = [
+    moment(req.body.period_covered[0]).startOf("day"),
+    moment(req.body.period_covered[1]).endOf("day"),
+  ];
+  const branch = req.body.branch;
+
+  Payroll.aggregate([
+    {
+      $match: {
+        "days.leave_availed": true,
+        "days.date": {
+          $gte: period_covered[0].clone().toISOString(),
+          $lte: period_covered[1].clone().toISOString(),
+        },
+        ...(!isEmpty(branch?._id) && {
+          "employee.branch._id": ObjectId(branch._id),
+        }),
+      },
+    },
+    {
+      $unwind: "$days",
+    },
+    {
+      $match: {
+        "days.leave_availed": true,
+        "days.date": {
+          $gte: period_covered[0].clone().toISOString(),
+          $lte: period_covered[1].clone().toISOString(),
+        },
+      },
+    },
+    {
+      $sort: {
+        "days.date": 1,
+        "employee.name": 1,
+      },
+    },
+    {
+      $group: {
+        _id: "$employee._id",
+        employee: {
+          $first: "$employee",
+        },
+        days: {
+          $push: {
+            date: "$days.date",
+            hours: "$days.hours",
+          },
+        },
+      },
+    },
+    {
+      $sort: {
+        "employee.name": 1,
+      },
+    },
+  ])
+    .allowDiskUse(true)
+    .then((records) => {
+      const _records = records.map((o) => {
+        const days = o.days.map((day) => {
+          const no_of_days = day.hours <= 4 ? 0.5 : 1;
+
+          return {
+            ...day,
+            no_of_days,
+          };
+        });
+
+        return {
+          ...o,
+          days,
+        };
+      });
+      return res.json(_records);
+    })
+    .catch((err) => res.status(401).json(err));
+});
+
 router.post("/period-report", async (req, res) => {
   const period_covered = [
     moment(req.body.period_covered[0]).startOf("day"),

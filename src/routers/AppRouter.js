@@ -61,6 +61,7 @@ import CashSalesReport from "../components/inventory/CashSalesReport";
 import ChargeSalesReport from "../components/inventory/ChargeSalesReport";
 import CustomerCollectionReport from "../components/inventory/CustomerCollectionReport";
 import ReplacementForm from "../components/inventory/ReplacementForm";
+import LeavesAvailedReport from "../components/payroll/LeavesAvailedReport";
 
 const AppRouter = () => (
   <div className="is-full-height">
@@ -432,6 +433,17 @@ const AppRouter = () => (
           <Route
             path=""
             element={<MenuComponent component={PayrollCheckVoucherForm} />}
+          ></Route>
+        </Route>
+
+        <Route
+          path="/reports/leaves-availed-report"
+          element={<PrivateRoute />}
+          exact={true}
+        >
+          <Route
+            path=""
+            element={<MenuComponent component={LeavesAvailedReport} />}
           ></Route>
         </Route>
 
