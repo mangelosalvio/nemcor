@@ -965,12 +965,17 @@ table.sales-report-table th {
     padding: 1rem 3rem;
   }
   .print {
-    padding: 1rem;
     background-color: #fff !important;
+    padding: 1rem;
   }
 
   .red {
     color: red !important;
+  }
+
+  .print table tr td,
+  .print table tr td {
+    page-break-inside: avoid !important;
   }
 }
 .collection-table {

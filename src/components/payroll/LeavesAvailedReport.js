@@ -227,17 +227,14 @@ export default function LeavesAvailedReport({ history }) {
                 >
                   Search
                 </Button>
+
                 <ReactToPrint
                   trigger={() => (
-                    <Button
-                      type="primary"
-                      icon={<PrinterOutlined />}
-                      className="m-l-1"
-                      bodyClass="print-no-margin"
-                    >
+                    <Button type="primary" icon={<PrinterOutlined />}>
                       Print
                     </Button>
                   )}
+                  bodyClass="print"
                   content={() => report.current}
                 />
               </Space>
@@ -248,10 +245,16 @@ export default function LeavesAvailedReport({ history }) {
           {records.map((o, index) => {
             return (
               <div>
-                <div className=" leave-availed-header">{o.employee?.name}</div>
                 <div>
                   <table className="leave-table">
                     <tbody>
+                      <tr>
+                        <td colSpan={3}>
+                          <div className=" leave-availed-header">
+                            {o.employee?.name}
+                          </div>
+                        </td>
+                      </tr>
                       {o.days.map((day) => {
                         return (
                           <tr>
