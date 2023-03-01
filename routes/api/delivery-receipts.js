@@ -32,6 +32,7 @@ const {
   getStatementOfAccount,
   getSalesReport,
 } = require("../../library/report_functions");
+const { uniqBy, orderBy, sumBy } = require("lodash");
 
 const Model = DeliveryReceipt;
 const ObjectId = mongoose.Types.ObjectId;
@@ -259,6 +260,156 @@ router.post("/:id/print-status", (req, res) => {
       console.log("ID not found");
     }
   });
+});
+
+router.post("/customer-aging-details", async (req, res) => {
+  const date = moment(req.body.date).endOf("day");
+  let transactions = await update_inventory.getCustomerTransactionsAsOfDate(
+    date,
+    req.body.account
+  );
+
+  // const dates = [[0], [1, 30], [31, 60], [61, 90], [90]];
+
+  const dates = [[0], [1, 7], [8, 15], [16, 30], [31, 45], [46, 60], [60]];
+
+  let arr = [];
+  dates.forEach((aging_dates, index) => {
+    if (index === 0) {
+      //first
+      const days = aging_dates[0];
+      const aging_transactions = transactions.filter((o) => o.aging <= days);
+
+      arr = [
+        ...arr,
+        {
+          dates: aging_dates,
+          aging_transactions,
+        },
+      ];
+    } else if (index === dates.length - 1) {
+      //last
+      const days = aging_dates[0];
+      const aging_transactions = transactions.filter((o) => o.aging > days);
+
+      arr = [
+        ...arr,
+        {
+          dates: aging_dates,
+          aging_transactions,
+        },
+      ];
+    } else {
+      const starting_day = aging_dates[0];
+      const ending_day = aging_dates[1];
+
+      const aging_transactions = transactions.filter(
+        (o) => o.aging >= starting_day && o.aging <= ending_day
+      );
+
+      arr = [
+        ...arr,
+        {
+          dates: aging_dates,
+          aging_transactions,
+        },
+      ];
+    }
+  });
+
+  return res.json({
+    aging: arr,
+    total: sumBy(transactions, (o) => o.amount),
+  });
+});
+
+router.post("/customer-aging-summary", async (req, res) => {
+  const date = moment(req.body.date).endOf("day");
+  const transactions = await update_inventory.getCustomerTransactionsAsOfDate(
+    date
+  );
+
+  let accounts = uniqBy(transactions, (o) => o.account._id.toString());
+  accounts = orderBy(accounts, (o) => o.account.name).map((o) => o.account);
+
+  accounts = accounts.map((account) => {
+    const dates = [[0], [1, 7], [8, 15], [16, 30], [31, 45], [46, 60], [60]];
+    // const dates = [[0], [1, 30], [31, 60], [61, 90], [90]];
+
+    let arr = [];
+    dates.forEach((aging_dates, index) => {
+      if (index === 0) {
+        //first
+        const days = aging_dates[0];
+        const aging_transactions = transactions.filter(
+          (o) =>
+            o.aging <= days &&
+            o.account._id.toString() === account._id.toString()
+        );
+
+        const total = sumBy(aging_transactions, (o) => o.amount);
+
+        arr = [...arr, total];
+      } else if (index === dates.length - 1) {
+        //last
+        const days = aging_dates[0];
+        const aging_transactions = transactions.filter(
+          (o) =>
+            o.aging > days &&
+            o.account._id.toString() === account._id.toString()
+        );
+        const total = sumBy(aging_transactions, (o) => o.amount);
+
+        arr = [...arr, total];
+      } else {
+        const starting_day = aging_dates[0];
+        const ending_day = aging_dates[1];
+
+        const aging_transactions = transactions.filter(
+          (o) =>
+            o.aging >= starting_day &&
+            o.aging <= ending_day &&
+            o.account._id.toString() === account._id.toString()
+        );
+
+        const total = sumBy(aging_transactions, (o) => o.amount);
+
+        arr = [...arr, total];
+      }
+    });
+
+    // let keys = ["Current", "1-30", "31-60", "61-90", ">90"];
+
+    let keys = ["Current", "1-7", "8-15", "16-30", "31-45", "46-60", ">60"];
+
+    keys.forEach((key, index) => {
+      account = {
+        ...account,
+        [keys[index]]: arr[index],
+      };
+    });
+
+    return {
+      ...account,
+    };
+  });
+
+  accounts = accounts.map((o) => {
+    return {
+      ...o,
+      total: round(
+        o["Current"] +
+          o["1-7"] +
+          o["8-15"] +
+          o["16-30"] +
+          o["31-45"] +
+          o["46-60"] +
+          o[">60"]
+      ),
+    };
+  });
+
+  return res.json(accounts);
 });
 
 router.post("/statement-of-account", async (req, res) => {
@@ -570,6 +721,10 @@ router.post("/paginate", (req, res) => {
 
     ...(advance_search.payment_type && {
       payment_type: advance_search.payment_type,
+    }),
+
+    ...(advance_search.reference && {
+      reference: advance_search.reference,
     }),
 
     ...(advance_search.branch && {

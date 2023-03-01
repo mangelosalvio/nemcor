@@ -22,6 +22,7 @@ const numeral = require("numeral");
 const async = require("async");
 const { getAverageCostOfStock } = require("./update_functions");
 const DeliveryReceipt = require("../models/DeliveryReceipt");
+const { PAYMENT_TYPE_CHARGE } = require("../config/constants");
 const forOwn = require("lodash").forOwn;
 const sumBy = require("lodash").sumBy;
 const uniqBy = require("lodash").uniqBy;
@@ -1667,7 +1668,7 @@ module.exports.getVendorTransactionsAsOfDate = (date) => {
   });
 };
 
-module.exports.getCustomerTransactionsAsOfDate = (date, customer = null) => {
+module.exports.getCustomerTransactionsAsOfDate = (date, account = null) => {
   return new Promise((resolve, reject) => {
     const report_date = moment(date).endOf("day").toDate();
 
@@ -1680,26 +1681,28 @@ module.exports.getCustomerTransactionsAsOfDate = (date, customer = null) => {
                 "status.approval_status": {
                   $nin: ["Paid", "Cancelled"],
                 },
-                ...(customer && {
-                  "customer._id": ObjectId(customer._id),
+                ...(account && {
+                  "account._id": ObjectId(account._id),
                 }),
-                date: {
-                  $lte: report_date,
-                },
+                payment_type: PAYMENT_TYPE_CHARGE,
+
+                //get all deliveries no invoice date or w/ invoice date before the give cut-off
+                $or: [
+                  {
+                    invoice_date: {
+                      $lte: report_date,
+                    },
+                  },
+                  {
+                    invoice_date: null,
+                  },
+                ],
               },
             },
             {
               $addFields: {
-                dr_date: "$date",
-                date: {
-                  $cond: [
-                    {
-                      $eq: ["$due_date", null],
-                    },
-                    "$date",
-                    "$due_date",
-                  ],
-                },
+                dr_date: { $ifNull: ["$invoice_date", "$date"] },
+                date: { $ifNull: ["$invoice_date", "$date"] },
                 amount: {
                   $reduce: {
                     input: "$items",
@@ -1726,12 +1729,13 @@ module.exports.getCustomerTransactionsAsOfDate = (date, customer = null) => {
             },
             {
               $project: {
-                type: "Delivery Receipt",
+                _id: 1,
+                type: "Charge Sales",
                 date: 1,
-                ref_no: "$dr_no",
+                ref_no: "$reference",
                 dr_date: "$dr_date",
-                si_no: "$si_no",
-                customer: "$customer",
+                // si_no: "$si_no",
+                account: "$account",
                 amount: "$amount",
               },
             },

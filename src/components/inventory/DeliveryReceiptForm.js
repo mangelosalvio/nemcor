@@ -679,23 +679,37 @@ export default function DeliveryReceiptForm({ payment_type }) {
   useEffect(() => {
     const query = qs.parse(location.search, { ignoreQueryPrefix: true });
 
-    (async () => {
-      if (isEmpty(params?.id) && !isEmpty(search_state.branch?._id)) {
-        setTimeout(() => {
-          onSearch({
-            page: current_page,
-            page_size,
-            search_keyword,
-            url,
-            setRecords,
-            setTotalRecords,
-            setCurrentPage,
-            setErrors,
-            advance_search: { ...search_state },
+    if (isEmpty(query?._id) && !isEmpty(search_state.branch?._id)) {
+      setTimeout(() => {
+        onSearch({
+          page: current_page,
+          page_size,
+          search_keyword,
+          url,
+          setRecords,
+          setTotalRecords,
+          setCurrentPage,
+          setErrors,
+          advance_search: { ...search_state },
+        });
+      }, 300);
+    } else if (!isEmpty(query._id)) {
+      edit({
+        record: {
+          _id: query._id,
+        },
+        setState: (record) => {
+          setState({
+            ...record,
+            payments: [...(record.payments || []), {}],
           });
-        }, 300);
-      }
-    })();
+        },
+        setErrors,
+        setRecords,
+        url,
+        date_fields,
+      });
+    }
 
     return () => {};
   }, [search_state.branch, search_state.payment_type]);
@@ -955,6 +969,23 @@ export default function DeliveryReceiptForm({ payment_type }) {
                           name={transaction_counter.key}
                           formItemLayout={smallFormItemLayout}
                           value={search_state[transaction_counter.key]}
+                          onChange={(e) => {
+                            onChange({
+                              key: e.target.name,
+                              value: e.target.value,
+                              setState: setSearchState,
+                            });
+                          }}
+                        />
+                      </Col>
+                    </Row>
+                    <Row>
+                      <Col span={8}>
+                        <TextFieldGroup
+                          label="Reference"
+                          name="reference"
+                          formItemLayout={smallFormItemLayout}
+                          value={search_state.reference}
                           onChange={(e) => {
                             onChange({
                               key: e.target.name,

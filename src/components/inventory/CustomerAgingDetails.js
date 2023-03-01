@@ -73,22 +73,32 @@ export default function CustomerAgingDetails() {
       width: 200,
     },
     {
-      title: "Due Date",
+      title: "Invoice Date",
       dataIndex: "date",
       width: 100,
       render: (date, record) => (
         <span>
-          {record.footer !== 1 && date && moment(date).format("M/D/YY")}
+          {record.footer !== 1 && date && moment(date).format("M/D/YYYY")}
         </span>
       ),
     },
     {
-      title: "Ref No.",
+      title: "Reference",
       dataIndex: "ref_no",
       align: "center",
       width: 100,
+      render: (reference, record) => (
+        <span
+          onClick={(e) => {
+            window.open(`/charge-sales?_id=${record._id}`);
+          }}
+        >
+          {reference}
+        </span>
+      ),
     },
-    {
+    ,
+    /* {
       title: "DR Date",
       dataIndex: "dr_date",
       width: 100,
@@ -97,23 +107,22 @@ export default function CustomerAgingDetails() {
           {record.footer !== 1 && date && moment(date).format("M/D/YY")}
         </span>
       ),
-    },
-    {
+    } */ /* {
       title: "SI No.",
       dataIndex: "si_no",
       align: "center",
       width: 100,
-    },
+    }, */
     {
-      title: "Customer",
-      dataIndex: ["customer", "name"],
+      title: "Account",
+      dataIndex: ["account", "name"],
     },
     {
       title: "Aging",
       dataIndex: "aging",
       align: "right",
       width: 100,
-      render: (aging, record) => <span>{record.amount > 0 && aging}</span>,
+      render: (aging, record) => <span>{aging}</span>,
     },
     {
       title: "Open Balance",
@@ -127,7 +136,7 @@ export default function CustomerAgingDetails() {
   useEffect(() => {
     const form_data = {
       date: state.date,
-      customer: state.customer,
+      account: state.account,
     };
 
     if (state.date) {
@@ -151,7 +160,7 @@ export default function CustomerAgingDetails() {
 
       return () => {};
     }
-  }, [state.date, state.customer]);
+  }, [state.date, state.account]);
 
   return (
     <Content className="content-padding">
@@ -186,22 +195,24 @@ export default function CustomerAgingDetails() {
           </Col>
           <Col span={8}>
             <SelectFieldGroup
-              label="Customer"
-              value={state.customer?.name}
-              onSearch={(value) =>
-                onCustomerSearch({ value, options, setOptions })
-              }
+              label="Account"
+              value={state.account?.name}
+              onFocus={() => {
+                onCustomerSearch({ value: "", setOptions });
+              }}
+              onSearch={(value) => onCustomerSearch({ value, setOptions })}
               onChange={(index) => {
-                const customer = options.customers[index];
+                const account = options.accounts?.[index] || null;
                 setState((prevState) => ({
                   ...prevState,
-                  customer,
+                  account,
                 }));
               }}
-              error={errors.customer}
-              formItemLayout={formItemLayout}
-              data={options.customers}
+              formItemLayout={smallFormItemLayout}
+              data={options.accounts}
               column="name"
+              error={errors.account}
+              onAddItem={() => accountFormModal.current.open()}
             />
           </Col>
         </Row>
@@ -210,11 +221,7 @@ export default function CustomerAgingDetails() {
             <Form.Item {...tailFormItemLayout} className="field is-grouped">
               <ReactToPrint
                 trigger={() => (
-                  <Button
-                    type="primary"
-                    icon={<PrinterOutlined />}
-                    className="m-l-1"
-                  >
+                  <Button type="primary" icon={<PrinterOutlined />}>
                     Print
                   </Button>
                 )}

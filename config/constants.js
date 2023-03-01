@@ -50,7 +50,6 @@ module.exports = {
   CREDIT_MEMO_CLAIMED: "Claimed",
   CREDIT_MEMO_PARTIALLY_CLAIMED: "Partially Claimed",
   STATUS_ALLOW_PRICE_EDIT: "Allow Price Edit",
-  STATUS_PAID: "PAID",
 
   MODULE_WAREHOUSE_RECEIPT: "Warehouse Receipt",
   MODULE_PHYSICAL_COUNT: "Physical Count",

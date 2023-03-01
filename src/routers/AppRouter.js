@@ -62,6 +62,8 @@ import ChargeSalesReport from "../components/inventory/ChargeSalesReport";
 import CustomerCollectionReport from "../components/inventory/CustomerCollectionReport";
 import ReplacementForm from "../components/inventory/ReplacementForm";
 import LeavesAvailedReport from "../components/payroll/LeavesAvailedReport";
+import CustomerAgingSummary from "../components/inventory/CustomerAgingSummary";
+import CustomerAgingDetails from "../components/inventory/CustomerAgingDetails";
 
 const AppRouter = () => (
   <div className="is-full-height">
@@ -297,6 +299,27 @@ const AppRouter = () => (
           <Route
             path=""
             element={<MenuComponent component={CustomerCollectionReport} />}
+          ></Route>
+        </Route>
+        <Route
+          path="/reports/customer-aging-summary"
+          element={<PrivateRoute />}
+          exact={true}
+        >
+          <Route
+            path=""
+            element={<MenuComponent component={CustomerAgingSummary} />}
+          ></Route>
+        </Route>
+
+        <Route
+          path="/reports/customer-aging-details"
+          element={<PrivateRoute />}
+          exact={true}
+        >
+          <Route
+            path=""
+            element={<MenuComponent component={CustomerAgingDetails} />}
           ></Route>
         </Route>
         <Route

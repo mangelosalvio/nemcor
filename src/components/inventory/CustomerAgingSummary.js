@@ -67,7 +67,7 @@ export default function CustomerAgingSummary() {
 
   const records_column = [
     {
-      title: "Supplier",
+      title: "Account",
       dataIndex: ["name"],
     },
     {
@@ -189,11 +189,7 @@ export default function CustomerAgingSummary() {
             <Form.Item {...tailFormItemLayout} className="field is-grouped">
               <ReactToPrint
                 trigger={() => (
-                  <Button
-                    type="primary"
-                    icon={<PrinterOutlined />}
-                    className="m-l-1"
-                  >
+                  <Button type="primary" icon={<PrinterOutlined />}>
                     Print
                   </Button>
                 )}
