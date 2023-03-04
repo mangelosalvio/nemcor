@@ -1771,7 +1771,7 @@ module.exports.chargeDisplayDeliveryReceipt = ({ _id, user }) => {
           dr_no: result.next,
           logs: [],
           status: {
-            approval_status: CLOSED,
+            approval_status: OPEN,
             datetime: moment().toDate(),
             user,
           },
