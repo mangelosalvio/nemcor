@@ -28,6 +28,10 @@ const {
   udpateMeatTypesOfProductInSales,
 } = require("../../library/sale_functions");
 const { updateTransactionsOfItem } = require("../../library/update_functions");
+const {
+  getAccountLedger,
+  getAccountLedgerDetailed,
+} = require("../../library/account_functions");
 const isEqual = require("lodash").isEqual;
 
 const CASHIER_PRINTER_IP = process.env.CASHIER_PRINTER_IP;
@@ -167,6 +171,22 @@ router.put("/", (req, res) => {
         .catch((err) => console.log(err));
     }
   });
+});
+
+router.post("/account-ledger", async (req, res) => {
+  const { ...form_data } = req.body;
+
+  const records = await getAccountLedgerDetailed({ ...form_data });
+
+  return res.json(records);
+});
+
+router.post("/account-ledger-summary", async (req, res) => {
+  const { ...form_data } = req.body;
+
+  const records = await getAccountLedger({ ...form_data });
+
+  return res.json(records);
 });
 
 router.post("/paginate", (req, res) => {

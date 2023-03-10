@@ -64,6 +64,8 @@ import ReplacementForm from "../components/inventory/ReplacementForm";
 import LeavesAvailedReport from "../components/payroll/LeavesAvailedReport";
 import CustomerAgingSummary from "../components/inventory/CustomerAgingSummary";
 import CustomerAgingDetails from "../components/inventory/CustomerAgingDetails";
+import AccountLedgerReport from "../components/inventory/AccountLedgerReport";
+import AccountLedgerSummaryReport from "../components/inventory/AccountLedgerSummaryReport";
 
 const AppRouter = () => (
   <div className="is-full-height">
@@ -402,6 +404,26 @@ const AppRouter = () => (
           <Route
             path=""
             element={<MenuComponent component={StockCardReport} />}
+          ></Route>
+        </Route>
+        <Route
+          path="/reports/account-ledger"
+          element={<PrivateRoute />}
+          exact={true}
+        >
+          <Route
+            path=""
+            element={<MenuComponent component={AccountLedgerReport} />}
+          ></Route>
+        </Route>
+        <Route
+          path="/reports/account-ledger-summary"
+          element={<PrivateRoute />}
+          exact={true}
+        >
+          <Route
+            path=""
+            element={<MenuComponent component={AccountLedgerSummaryReport} />}
           ></Route>
         </Route>
 

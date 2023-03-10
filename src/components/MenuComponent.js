@@ -174,6 +174,14 @@ const MenuComponent = ({ component: Component, auth, logoutUser, ...rest }) => {
                 to="/reports/customer-aging-details"
                 label="Customer Aging Details"
               />
+              <MenuPermission
+                to="/reports/account-ledger-summary"
+                label="Account Ledger Summary"
+              />
+              <MenuPermission
+                to="/reports/account-ledger"
+                label="Account Ledger"
+              />
             </SubMenu>
             <SubMenu
               key="payroll"

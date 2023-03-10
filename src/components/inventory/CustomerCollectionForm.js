@@ -953,20 +953,23 @@ export default function CustomerCollectionForm() {
                   </Col>
                   <Col span={8}>
                     <SelectFieldGroup
-                      label="Customer"
-                      value={search_state?.customer?.name}
+                      label="Account"
+                      value={search_state.account?.name}
+                      onFocus={() => {
+                        onCustomerSearch({ value: "", setOptions });
+                      }}
                       onSearch={(value) =>
-                        onCustomerSearch({ value, options, setOptions })
+                        onCustomerSearch({ value, setOptions })
                       }
                       onChange={(index) => {
-                        const customer = options.customers?.[index] || null;
+                        const account = options.accounts?.[index] || null;
                         setSearchState((prevState) => ({
                           ...prevState,
-                          customer,
+                          account,
                         }));
                       }}
                       formItemLayout={smallFormItemLayout}
-                      data={options.customers}
+                      data={options.accounts}
                       column="name"
                     />
                   </Col>

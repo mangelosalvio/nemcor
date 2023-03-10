@@ -562,6 +562,9 @@ router.post("/paginate", (req, res) => {
     ...(advance_search.user_department?._id && {
       "department._id": ObjectId(advance_search.user_department._id),
     }),
+    ...(advance_search.account?._id && {
+      "account._id": ObjectId(advance_search.account._id),
+    }),
 
     ...(advance_search.period_covered &&
       advance_search.period_covered[0] &&
