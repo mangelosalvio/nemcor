@@ -195,12 +195,12 @@ export default function CustomerCollectionForm() {
       title: "DR#",
       dataIndex: "dr_no",
     },
-    {
-      title: "Ext SI#",
-      dataIndex: "external_si_reference",
-      width: 80,
-      align: "center",
-    },
+    // {
+    //   title: "Ext SI#",
+    //   dataIndex: "external_si_reference",
+    //   width: 80,
+    //   align: "center",
+    // },
     {
       title: "Reference",
       dataIndex: "reference",
@@ -209,7 +209,7 @@ export default function CustomerCollectionForm() {
     },
     {
       title: "Date",
-      dataIndex: "date",
+      dataIndex: "invoice_date",
       render: (date, record) =>
         record.footer !== 1 && moment(date).format("MM/DD/YYYY"),
     },
