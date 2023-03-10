@@ -252,7 +252,7 @@ export default function StatementOfAccountForm() {
           {records.map((record) => {
             return (
               <div className="page-break-after">
-                <Row>
+                <Row className="m-t-3">
                   <Col span={18}>
                     <div>
                       {state?.branch?.company?.logo && (
@@ -310,14 +310,14 @@ export default function StatementOfAccountForm() {
                   <table className="full-width">
                     <thead>
                       <tr>
-                        <th>Invoice Date</th>
+                        <th className="has-text-centered">Invoice Date</th>
 
-                        <th>Reference</th>
-                        <th>PO & DR Notes</th>
+                        <th className="has-text-centered">Reference</th>
+                        <th className="has-text-centered">PO & DR Notes</th>
                         <th className="has-text-centered">Qty</th>
-                        <th>Product</th>
+                        <th className="has-text-centered">Product</th>
                         <th className="has-text-centered">U/P</th>
-                        <th className="has-text-right">Amount</th>
+                        <th className="has-text-centered">Amount</th>
                         <th className="has-text-centered">Total Amount</th>
                         <th className="has-text-centered">Payment Amount</th>
                       </tr>
